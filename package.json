@@ -1,0 +1,25 @@
+{
+  "name": "finleland",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "daisyui": "^5.5.19",
+    "nuxt": "^4.4.4",
+    "pg": "^8.20.0",
+    "tailwindcss": "^4.3.0",
+    "vue": "^3.5.33",
+    "vue-router": "^5.0.6"
+  },
+  "devDependencies": {
+    "@nuxt/icon": "^2.2.2",
+    "@types/pg": "^8.20.0"
+  }
+}

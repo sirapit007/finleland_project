@@ -1,0 +1,45 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: finleland --default, dark --prefersdark;
+}
+
+@plugin "daisyui/theme" {
+  name: "finleland";
+  default: false;
+  prefersdark: false;
+  color-scheme: "light";
+  --color-base-100: oklch(99% 0.005 260);
+  --color-base-200: oklch(97% 0.008 260);
+  --color-base-300: oklch(94% 0.012 260);
+  --color-base-content: oklch(22% 0.03 260);
+  --color-primary: oklch(43% 0.21 260);
+  --color-primary-content: oklch(98% 0.01 260);
+  --color-secondary: oklch(72% 0.20 55);
+  --color-secondary-content: oklch(20% 0.02 55);
+  --color-accent: oklch(78% 0.12 360);
+  --color-accent-content: oklch(30% 0.05 360);
+  --color-neutral: oklch(25% 0.05 260);
+  --color-neutral-content: oklch(96% 0.01 260);
+  --color-info: oklch(70% 0.15 240);
+  --color-info-content: oklch(25% 0.04 240);
+  --color-success: oklch(75% 0.15 160);
+  --color-success-content: oklch(25% 0.04 160);
+  --color-warning: oklch(82% 0.18 85);
+  --color-warning-content: oklch(25% 0.04 85);
+  --color-error: oklch(68% 0.22 25);
+  --color-error-content: oklch(98% 0.01 25);
+  --radius-selector: 0.5rem;
+  --radius-field: 1rem;
+  --radius-box: 1rem;
+  --size-selector: 0.1875rem;
+  --size-field: 0.25rem;
+  --border: 0.5px;
+  --depth: 0;
+  --noise: 0;
+}
+
+body {
+  font-family: "Noto Sans Thai", sans-serif;
+}
