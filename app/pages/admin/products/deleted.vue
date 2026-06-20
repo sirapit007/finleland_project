@@ -1,6 +1,9 @@
 <template>
-  <dialog ref="createModal" class="modal">
-    <div class="modal-box max-w-4xl">
+  <dialog ref="baseModal" class="modal">
+    <div
+      class="modal-box"
+      :class="base.method === 'post' ? 'max-w-xl' : 'max-w-7xl'"
+    >
       <form method="dialog">
         <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
           ✕
@@ -8,87 +11,121 @@
       </form>
       <h3 class="text-lg font-bold">Create Product</h3>
 
-      <div class="mt-2 grid grid-cols-2 gap-4">
+      <div :class="`mt-2 gap-4`">
         <div class="space-y-2">
-          <!-- {{ base }} -->
+          <!-- {{ base.form }} -->
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Owner</legend>
+            <legend class="fieldset-legend">Product Code</legend>
             <input
               type="text"
-              class="input sm:input-sm input-xs w-full"
-              placeholder="Example..."
-              v-model="base.demo_owner"
+              class="input input-sm w-full"
+              placeholder="สูงสุด 50 ตัวอักษร..."
+              v-model="base.form.product_code"
+              disabled
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Code</legend>
+            <legend class="fieldset-legend">Product Name</legend>
             <input
               type="text"
-              class="input sm:input-sm input-xs w-full"
-              placeholder="Example..."
-              v-model="base.demo_code"
+              class="input input-sm w-full"
+              placeholder="สูงสุด 150 ตัวอักษร..."
+              v-model="base.form.product_name"
+              disabled
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Name</legend>
-            <input
-              type="text"
-              class="input sm:input-sm input-xs w-full"
-              placeholder="Example..."
-              v-model="base.demo_name"
+            <legend class="fieldset-legend">Product Category</legend>
+            <ComboBox
+              v-model="base.form.product_category"
+              fetchUrl="/api/products"
+              placeholder="เลือกหมวดหมู่สินค้า..."
+              label="category_name"
+              value="uuid"
+              disabled
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Min</legend>
+            <legend class="fieldset-legend">Product Supplier</legend>
+            <ComboBox
+              v-model="base.form.product_supplier"
+              fetchUrl="/api/suppliers"
+              placeholder="เลือกหมวดหมู่ผู้จัดจำหน่าย..."
+              label="supplier_name"
+              value="uuid"
+              disabled
+            />
+          </fieldset>
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend">Product Cost Price</legend>
             <input
               type="number"
               min="0"
-              class="input sm:input-sm input-xs w-full"
-              placeholder="Example..."
-              v-model="base.demo_min"
+              class="input input-sm w-full"
+              placeholder="ตัวเลข มากกว่า 0 เท่านั้น..."
+              v-model="base.form.product_cost_price"
+              disabled
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Unit</legend>
+            <legend class="fieldset-legend">Product Selling Price</legend>
             <input
-              type="text"
-              class="input sm:input-sm input-xs w-full"
-              placeholder="Example..."
-              v-model="base.demo_unit"
+              type="number"
+              min="0"
+              class="input input-sm w-full"
+              placeholder="ตัวเลข มากกว่า 0 เท่านั้น..."
+              v-model="base.form.product_selling_price"
+              disabled
             />
           </fieldset>
         </div>
-        <div class="border rounded-md max-h-[51.5vh]">
-          <div class="max-h-[90%] overflow-y-auto">
-            <table
-              class="mt-2 table table-zebra table-xs table-pin-rows table-pin-cols"
-            >
-              <thead class="text-xs">
-                <tr>
-                  <th>#</th>
-                  <td>Owner</td>
-                  <td>Code</td>
-                  <td>Name</td>
-                  <td>Min</td>
-                  <td>Unit</td>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="row in data?.rows"
-                  :key="row.id"
-                  class="hover:bg-primary/10"
-                >
-                  <th>{{ row.id }}</th>
-                  <td>{{ row.demo_owner }}</td>
-                  <td>{{ row.demo_code }}</td>
-                  <td>{{ row.demo_name }}</td>
-                  <td>{{ row.demo_min }}</td>
-                  <td>{{ row.demo_unit }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      </div>
+      <div class="max-h-[40vh]" v-if="base.method === 'put'">
+        <div class="max-h-[90%] overflow-auto">
+          <table
+            class="mt-2 table table-zebra table-xs table-pin-rows table-pin-cols"
+          >
+            <thead class="text-xs">
+              <tr>
+                <th>#</th>
+                <td>Name</td>
+                <td>Description</td>
+                <td>Price</td>
+                <td>Start</td>
+                <td>End</td>
+                <td>Created</td>
+                <td>Updated</td>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in detail?.rows"
+                :key="row.id"
+                class="hover:bg-primary/10"
+              >
+                <th>{{ row.id }}</th>
+                <td>{{ row.promotion_name }}</td>
+                <td>{{ row.promotion_description }}</td>
+                <td>
+                  {{
+                    Number(row.promotion_discounted_price)
+                      ? row.promotion_discounted_price
+                      : row.promotion_bundle_price
+                  }}
+                </td>
+                <td>{{ row.promotion_start_date }}</td>
+                <td>{{ row.promotion_end_date }}</td>
+                <td>
+                  <div>{{ row.created_username ?? row.created_by }}</div>
+                  <div>{{ row.created_at }}</div>
+                </td>
+                <td>
+                  <div>{{ row.updated_username ?? row.updated_by }}</div>
+                  <div>{{ row.updated_at }}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -100,21 +137,21 @@
       <div class="text-center mt-5">
         <Icon
           name="lucide:message-circle-question-mark"
-          class="text-primary"
+          class="text-success"
           size="60"
         />
       </div>
       <div class="modal-action">
         <button
-          class="flex-1 btn sm:btn-sm btn-xs"
+          class="flex-1 btn btn-sm"
           @click="restoreModal?.close()"
         >
           ปิด
         </button>
         <button
-          class="flex-1 btn sm:btn-sm btn-xs btn-primary"
+          class="flex-1 btn btn-sm btn-success"
           type="button"
-          @click="onSubmit()"
+          @click="fnRestore.onSubmit()"
         >
           ยืนยัน
         </button>
@@ -122,14 +159,51 @@
     </div>
   </dialog>
 
-  <div class="md:p-4 sm:p-2 p-1">
-    <div class="flex justify-between">
-      <div class="font-bold text-lg">สินค้าที่เคยถูกลบ</div>
+  <dialog ref="imageModal" class="modal">
+    <div class="modal-box max-w-lg">
+      <form method="dialog">
+        <button
+          class="btn btn-xs btn-circle btn-neutral absolute right-2 top-2"
+        >
+          ✕
+        </button>
+      </form>
+
+      <div class="h-100">
+        <img :src="imageSrc" class="h-full w-full object-contain" />
+      </div>
+    </div>
+  </dialog>
+
+  <div class="p-4 bg-base-100">
+    <div class="flex md:flex-row flex-col justify-between">
+      <div class="space-x-3">
+        <span class="font-bold text-xl text-primary">Restore Products</span
+        ><span class="font-semibold text-base text-secondary"
+          >กู้คืนรายการสินค้า</span
+        >
+      </div>
+      <div class="flex items-center gap-4">
+        <label class="input sm:input-sm input-xs shadow-sm w-60">
+          <span class="label"><Icon name="lucide:search" size="16" /></span>
+          <input
+            type="text"
+            placeholder="ค้นหาชื่อสินค้า หรือคำค้นหาอื่นๆ..."
+            v-model="q"
+          />
+        </label>
+      </div>
     </div>
     <div
-      class="max-h-[calc(100dvh-15rem)] overflow-y-auto overflow-x-auto md:my-4 sm:my-2 my-1"
+      class="min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)] overflow-y-auto overflow-x-auto my-4 relative border border-base-content/10 rounded-lg shadow-sm"
+      :class="pending ? 'backdrop-blur-sm' : ''"
     >
-      <!-- <p v-if="pending">Loading...</p> -->
+      <p
+        v-if="pending"
+        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-primary/75 text-4xl font-bold z-20"
+      >
+        Loading...
+      </p>
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
@@ -137,56 +211,85 @@
       >
         <thead class="text-xs">
           <tr>
-            <th>#</th>
-            <td>Owner</td>
+            <td>#</td>
+            <td>Image</td>
             <td>Code</td>
             <td>Name</td>
-            <td>Min</td>
-            <td>Unit</td>
-            <td></td>
+            <td>Category Name</td>
+            <td>Supplier Name</td>
+            <td>Cost Price</td>
+            <td>Selling Price</td>
+            <td>Created</td>
+            <td>Updated</td>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           <tr
             v-for="row in data?.rows"
             :key="row.id"
-            class="hover:bg-primary/10"
+            class="hover:bg-primary/5"
           >
-            <th>{{ row.id }}</th>
-            <td>{{ row.demo_owner }}</td>
-            <td>{{ row.demo_code }}</td>
-            <td>{{ row.demo_name }}</td>
-            <td>{{ row.demo_min }}</td>
-            <td>{{ row.demo_unit }}</td>
-            <td class="text-end">
+            <td>{{ row.id }}</td>
+            <td>
+              <div
+                v-if="row.image_url"
+                class="h-12 w-12 cursor-pointer"
+                v-on:click="fnImage.onOpen(row.image_url)"
+              >
+                <img :src="row.image_url" class="h-full w-full object-cover" />
+              </div>
+              <div v-else class="h-12 w-12 cursor-not-allowed">
+                <img
+                  src="@/assets/images/blank.png"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+            </td>
+            <td>{{ row.product_code }}</td>
+            <td>{{ row.product_name }}</td>
+            <td>{{ row.product_category_name }}</td>
+            <td>{{ row.product_supplier_name || "-" }}</td>
+            <td>{{ row.product_cost_price }}</td>
+            <td>{{ row.product_selling_price }}</td>
+            <td>
+              <div>{{ row.created_username ?? row.created_by }}</div>
+              <div>
+                {{ dayjs(row.created_at).format("YYYY-MM-DD HH:mm:ss") }}
+              </div>
+            </td>
+            <td>
+              <div>{{ row.updated_username ?? row.updated_by }}</div>
+              <div>
+                {{
+                  row.updated_at
+                    ? dayjs(row.updated_at).format("YYYY-MM-DD HH:mm:ss")
+                    : ""
+                }}
+              </div>
+            </td>
+            <th class="text-end">
               <button
-                class="btn btn-xs btn-link btn-success no-underline"
-                v-on:click="onEdit(row)"
+                class="btn btn-xs btn-link no-underline"
+                v-on:click="fnBase.onEdit(row)"
               >
                 ดู
               </button>
-              <button class="btn btn-xs btn-link" v-on:click="onRemove(row)">
+              <button
+                class="btn btn-xs btn-success btn-link"
+                v-on:click="fnBase.onRestore(row)"
+              >
                 กู้คืน
               </button>
-            </td>
+            </th>
           </tr>
         </tbody>
-        <tfoot class="text-xs">
-          <tr>
-            <th>#</th>
-            <td>Owner</td>
-            <td>Code</td>
-            <td>Name</td>
-            <td>Min</td>
-            <td>Unit</td>
-            <td></td>
-          </tr>
-        </tfoot>
       </table>
     </div>
     <TablePagination
       v-model:page="page"
       v-model:page-size="pageSize"
+      :disabled="pending"
       :data="data"
     />
   </div>
@@ -197,55 +300,82 @@ definePageMeta({
   layout: "admin",
 });
 
-const createModal = ref<HTMLDialogElement | null>(null);
+import { useDayjs } from "~~/composables/useDayjs";
+const dayjs = useDayjs();
+
+const baseModal = ref<HTMLDialogElement | null>(null);
 const restoreModal = ref<HTMLDialogElement | null>(null);
+const imageModal = ref<HTMLDialogElement | null>(null);
 
 const page = ref(1);
 const pageSize = ref(10);
-const base = ref({
-  demo_owner: "",
-  demo_code: "",
-  demo_name: "",
-  demo_min: 0,
-  demo_unit: "",
+const q = ref("");
+const base = ref<any>({
+  form: {},
+  method: "",
 });
-const method = ref<any>("post");
+const detail = ref<any>({
+  rows: [],
+  form: {},
+  method: "",
+});
+const imageSrc = ref("");
 
 const { data, pending, error, refresh } = await useFetch("/api/products", {
   server: false,
   query: {
     page,
     pageSize,
+    q,
     deleted: true,
   },
-  watch: [page, pageSize],
+  watch: [page, pageSize, q],
 });
 
-const onEdit = async (row: any) => {
-  base.value = { ...row };
-  method.value = "put";
-  createModal.value?.showModal();
+const fnBase = {
+  onEdit: async (row: any) => {
+    base.value.form = { ...row };
+    base.value.method = "put";
+
+    detail.value.rows = await fnDetail.onGet();
+
+    baseModal.value?.showModal();
+  },
+  onRestore: async (row: any) => {
+    base.value.form = { ...row };
+    restoreModal.value?.showModal();
+  },
 };
 
-const onRemove = async (row: any) => {
-  base.value = { ...row, deleted_by: null };
-  method.value = "put";
-  restoreModal.value?.showModal();
+const fnDetail = {
+  onGet: async () => {
+    const res: any = await $fetch(`/api/promotion/${base.value.form.uuid}`);
+    return res.rows;
+  },
 };
 
-const onSubmit = async () => {
-  const res = await $fetch("/api/products", {
-    method: method.value,
-    body: {
-      ...base.value,
-      user: JSON.parse(localStorage.getItem("web-user") || "null"),
-    },
-  });
+const fnRestore = {
+  onSubmit: async () => {
+    const res = await $fetch(`/api/products/${base.value.form.uuid}`, {
+      method: "put",
+      body: {
+        ...base.value.form,
+        user: JSON.parse(localStorage.getItem("web-user") || "null"),
+      },
+    });
 
-  if (res) {
-    createModal.value?.close();
-    restoreModal.value?.close();
-    refresh();
-  }
+    if (res) {
+      refresh();
+
+      restoreModal.value?.close();
+    }
+  },
+};
+
+const fnImage = {
+  onOpen: (src: string) => {
+    imageSrc.value = src;
+    imageModal.value?.showModal();
+  },
 };
 </script>

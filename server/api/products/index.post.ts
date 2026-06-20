@@ -1,44 +1,64 @@
 import { useDb } from "@@/server/utils/db";
 
 type ProductBody = {
-  demo_owner?: string;
-  demo_code?: string;
-  demo_name?: string;
-  demo_min?: number | string;
-  demo_unit?: string;
+  product_code?: string;
+  product_name?: string;
+  product_supplier?: string;
+  product_category?: string;
+  product_cost_price?: number;
+  product_selling_price?: number;
+  image_url?: string;
   user?: object;
 };
 
 export default defineEventHandler(async (event) => {
+  const tableName = "tb_master_products";
+
   const body = await readBody<ProductBody>(event);
   const db = useDb();
 
-  const demoOwner = String(body.demo_owner || "").trim();
-  const demoCode = String(body.demo_code || "").trim();
-  const demoName = String(body.demo_name || "").trim();
-  const demoMin = Number(body.demo_min || 0);
-  const demoUnit = String(body.demo_unit || "").trim();
+  const product_code = String(body.product_code || "").trim();
+  const product_name = String(body.product_name || "").trim();
+  const product_supplier = String(body.product_supplier || "").trim();
+  const product_category = String(body.product_category || "").trim();
+  const product_cost_price = Number(body.product_cost_price || 0);
+  const product_selling_price = Number(body.product_selling_price || 0);
+  const image_url = String(body.image_url || "").trim();
   const user: any = body.user || "";
 
-  if (!demoOwner || !demoCode || !demoName || !demoUnit) {
+  if (
+    !product_code ||
+    !product_name ||
+    !product_category
+  ) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Product owner, code, name, and unit are required",
+      statusMessage: "Product code, name, and category are required",
     });
   }
 
-  if (!Number.isFinite(demoMin) || demoMin < 0) {
+  if (!Number.isFinite(product_selling_price) || product_selling_price < 0) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Product min must be a number greater than or equal to 0",
+      statusMessage:
+        "Product selling price must be a number greater than or equal to 0",
     });
   }
 
   const result = await db.query(
-    `INSERT INTO tb_all_products_demo (demo_owner, demo_code, demo_name, demo_min, demo_unit, created_by, created_at)
-    VALUES($1, $2, $3, $4, $5 ,$6, now())
+    `INSERT INTO ${tableName} (product_code, product_name, product_supplier, product_category, product_cost_price, product_selling_price, image_url, created_by)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8)
      RETURNING *`,
-    [demoOwner, demoCode, demoName, demoMin, demoUnit, user.uuid],
+    [
+      product_code,
+      product_name,
+      product_supplier,
+      product_category,
+      product_cost_price,
+      product_selling_price,
+      image_url,
+      user.uuid,
+    ],
   );
 
   return {

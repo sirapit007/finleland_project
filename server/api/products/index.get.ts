@@ -1,29 +1,73 @@
 import { useDb } from "@@/server/utils/db";
 
 export default defineEventHandler(async (event) => {
+  const tableName = "vw_master_products";
+
   const db = useDb();
 
   const query = getQuery(event);
 
+  console.log(query.pageSize);
+
   const page = Math.max(Number(query.page || 1), 1);
   const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 100);
-  const owner = String(query.owner || "");
-  const orderBy = String(query.orderBy || "product.id DESC");
+  const orderBy = String(query.orderBy || "base.id DESC");
   const allowedOrderBy = new Set([
-    "product.id DESC",
-    "product.id ASC",
-    "product.demo_price DESC",
-    "product.demo_price ASC",
+    "base.id DESC",
+    "base.id ASC",
+    "base.product_selling_price DESC",
+    "base.product_selling_price ASC",
   ]);
-  const safeOrderBy = allowedOrderBy.has(orderBy) ? orderBy : "product.id DESC";
+  const safeOrderBy = allowedOrderBy.has(orderBy) ? orderBy : "base.id DESC";
   const offset = (page - 1) * pageSize;
   const params: unknown[] = [];
 
+  const uuid = String(query.uuid || "");
+  const category = String(query.category || "");
+  const category_name = String(query.category_name || "");
+  const product_name = String(query.product_name || "");
+
   let condition = " 1 = 1 ";
-  condition += (query?.deleted) ? " AND product.deleted_at IS NOT NULL " : " AND product.deleted_at IS NULL ";
-  if (owner) {
-    params.push(owner);
-    condition += ` AND product.demo_owner = $${params.length} `;
+  condition += query?.deleted
+    ? " AND base.deleted_at IS NOT NULL "
+    : " AND base.deleted_at IS NULL ";
+  condition += query?.q
+    ? ` AND (base.product_code ILIKE '%${query?.q}%' OR base.product_name ILIKE '%${query?.q}%' OR base.product_category_name ILIKE '%${query?.q}%' OR base.product_supplier_name ILIKE '%${query?.q}%') `
+    : "";
+  if (uuid) {
+    params.push(uuid);
+    condition += ` AND base.uuid = $${params.length} `;
+  }
+  if (category) {
+    params.push(category);
+    condition += ` AND base.product_category = $${params.length} `;
+  }
+  if (category_name) {
+    params.push(category_name);
+    condition += ` AND base.product_category_name = $${params.length} `;
+  }
+  if (product_name) {
+    params.push(product_name);
+    condition += ` AND base.product_name = $${params.length} `;
+  }
+
+  const current = String(query.current || "");
+  let currentRow = [];
+
+  if (current) {
+    const currentResult = await db.query(
+      `
+    SELECT *
+    FROM ${tableName}
+    WHERE uuid = $1::uuid
+    `,
+      [current],
+    );
+
+    currentRow = currentResult.rows;
+
+    params.push(current);
+    condition += ` AND base.uuid <> $${params.length}`;
   }
 
   params.push(pageSize, offset);
@@ -32,27 +76,22 @@ export default defineEventHandler(async (event) => {
 
   const result = await db.query(
     `SELECT 
-      product.*,
-      user_c.username AS created_username,
-      user_u.username AS updated_username
-    FROM tb_all_products_demo AS product
-    LEFT JOIN tb_users AS user_c ON user_c.uuid::text = product.created_by
-    LEFT JOIN tb_users AS user_u ON user_u.uuid::text = product.updated_by
-    LEFT JOIN tb_users AS user_d ON user_d.uuid::text = product.deleted_by
+      base.*
+    FROM ${tableName} AS base
     WHERE ${condition} 
     ORDER BY ${safeOrderBy} 
     LIMIT $${limitParam} OFFSET $${offsetParam}`,
-    params
+    params,
   );
 
   const totalResult = await db.query(
-    `SELECT COUNT(product.*) AS total FROM tb_all_products_demo AS product WHERE ${condition}`,
-    params.slice(0, params.length - 2)
+    `SELECT COUNT(base.*) AS total FROM ${tableName} AS base WHERE ${condition}`,
+    params.slice(0, params.length - 2),
   );
   const total = totalResult.rows[0]?.total ?? 0;
 
   return {
-    rows: result.rows,
+    rows: [...currentRow, ...result.rows],
     total,
     page,
     pageSize,

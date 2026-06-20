@@ -10,35 +10,19 @@
       :key="slideIndex"
       class="w-full shrink-0"
     >
-      <div :class="`grid ${gridValue === 4 ? `grid-cols-${props.gridValue}` : 'grid-cols-3'} gap-2 mx-14`">
-        <div
-          v-for="item in slide"
-          :key="item.demo_name"
-          class="my-2.5 card card-border bg-base-300 hover:scale-102 hover:bg-base-200 hover:shadow-lg transition"
-        >
-          <NuxtLink :to="`/products/${item.demo_name}`">
-            <div class="card-body p-4">
-              <img
-                src="@/assets/images/blank.png"
-                class="rounded-lg border border-base-300"
-              />
-
-              <h2 class="card-title text-base">
-                {{ item.demo_code }}
-              </h2>
-
-              <p class="text-base-content/50 text-base">
-                {{ item.demo_owner }}
-                <br />
-                {{ item.demo_name }}
-              </p>
-
-              <p class="font-semibold text-primary text-base">
-                เข้าสู่ระบบเพื่อดูราคา
-              </p>
-            </div>
-          </NuxtLink>
-        </div>
+      <div
+        :class="`grid ${props.gridValue === 4 ? 'grid-cols-4' : 'grid-cols-3'} gap-4 mx-14`"
+      >
+        <template v-if="props.deals">
+          <div v-for="item in slide" :key="item.promotion_name" class="my-2.5">
+            <CardDealsTemplate :object="item" />
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="item in slide" :key="item.product_name" class="my-2.5">
+            <CardTemplate :object="item" />
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -46,7 +30,7 @@
   <!-- Prev -->
   <button
     @click="prevSlide"
-    class="btn btn-xl btn-circle absolute left-0 top-1/2 -translate-y-1/2"
+    class="btn btn-lg btn-circle absolute left-0 top-1/2 -translate-y-1/2"
   >
     ❮
   </button>
@@ -54,7 +38,7 @@
   <!-- Next -->
   <button
     @click="nextSlide"
-    class="btn btn-xl btn-circle absolute right-0 top-1/2 -translate-y-1/2"
+    class="btn btn-lg btn-circle absolute right-0 top-1/2 -translate-y-1/2"
   >
     ❯
   </button>
@@ -78,6 +62,7 @@
 const props = defineProps<{
   data: any[];
   gridValue: number;
+  deals?: true;
 }>();
 
 const currentSlide = ref(0);

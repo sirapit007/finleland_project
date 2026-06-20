@@ -2,24 +2,34 @@
   <div class="w-full flex justify-center">
     <div class="w-[50%] text-center py-10 space-y-4">
       <div class="text-primary text-5xl font-bold">
-        {{ selectedOwner ? selectedOwner : "สินค้าทั้งหมด" }}
+        {{ selectedCategory ? selectedCategory : "สินค้าทั้งหมด" }}
       </div>
       <div class="badge badge-sm badge-soft badge-primary py-3">
         <NuxtLink to="/">หน้าแรก</NuxtLink>/
-        {{ selectedOwner ? selectedOwner : "สินค้าทั้งหมด" }}
+        {{ selectedCategory ? selectedCategory : "สินค้าทั้งหมด" }}
+      </div>
+      <div>
+        <label class="input sm:input-sm input-xs shadow-sm">
+          <span class="label"><Icon name="lucide:search" size="16" /></span>
+          <input
+            type="text"
+            placeholder="ค้นหาชื่อสินค้า หรือคำค้นหาอื่นๆ..."
+            v-model="q"
+          />
+        </label>
       </div>
     </div>
   </div>
   <div class="w-full flex justify-center">
     <div class="w-[75%] py-10 space-y-4 flex gap-8">
-      <div class="w-40 space-y-4">
+      <div class="w-50 space-y-1">
         <div class="text-base">หมวดหมู่สินค้า</div>
         <NuxtLink
           to="/products"
-          class="group flex justify-between items-center text-base cursor-pointer"
+          class="group flex justify-between items-center text-sm cursor-pointer p-2 rounded-lg"
           :class="
-            !selectedOwner
-              ? 'text-base-content font-semibold'
+            !selectedCategory
+              ? 'text-base-content font-semibold bg-primary/20'
               : 'text-base-content/50 hover:text-base-content'
           "
         >
@@ -27,7 +37,7 @@
           <div
             class="badge group-hover:bg-primary group-hover:text-primary-content border-base-content/50 text-xs"
             :class="
-              !selectedOwner
+              !selectedCategory
                 ? 'badge-primary'
                 : 'badge-outline text-base-content/50'
             "
@@ -36,21 +46,21 @@
           </div>
         </NuxtLink>
         <NuxtLink
-          class="group flex justify-between items-center text-base cursor-pointer"
+          class="group flex justify-between items-center text-sm cursor-pointer p-2 rounded-lg"
           v-for="value in base?.rows"
           :key="value.demo_owner"
-          :to="{ path: '/products', query: { owner: value.demo_owner } }"
+          :to="{ path: '/products', query: { category: value.category_name } }"
           :class="
-            selectedOwner === value.demo_owner
-              ? 'text-base-content font-semibold'
+            selectedCategory === value.category_name
+              ? 'text-base-content font-semibold bg-primary/20'
               : 'text-base-content/50 hover:text-base-content'
           "
         >
-          {{ value.demo_owner }}
+          {{ value.category_name }}
           <div
             class="badge group-hover:bg-primary group-hover:text-primary-content border-base-content/50 text-xs"
             :class="
-              selectedOwner === value.demo_owner
+              selectedCategory === value.category_name
                 ? 'badge-primary'
                 : 'badge-outline text-base-content/50'
             "
@@ -67,7 +77,9 @@
             </span>
             <span class="font-semibold">สินค้าทั้งหมด</span>
           </div>
-          <div class="flex-1 flex items-center justify-end gap-4">
+          <div
+            class="flex-1 lg:grid grid-cols-3 grid-cols-1 items-center text-end gap-4 space-y-1"
+          >
             <div class="text-sm">
               <span class="font-semibold">Show : </span>
               <template v-for="(value, index) in pageSizeData">
@@ -91,7 +103,7 @@
                 </span>
               </template>
             </div>
-            <div class="flex gap-1">
+            <div class="space-x-1">
               <Icon
                 name="lucide:square"
                 size="18"
@@ -137,17 +149,21 @@
                 "
               />
             </div>
-            <select
-              class="select select-base select-ghost w-fit cursor-pointer"
-              v-model="orderBy"
-            >
-              <option value="product.id DESC" selected>
-                เรียงตามลำดับ: หลังไปก่อน
-              </option>
-              <option value="product.id ASC">เรียงตามลำดับ: ก่อนไปหลัง</option>
-              <!-- <option value="product.demo_price DESC">เรียงตามราคา: สูงไปต่ำ</option>
+            <div>
+              <select
+                class="select select-base select-ghost bg-base-200 w-fit cursor-pointer"
+                v-model="orderBy"
+              >
+                <option value="product.id DESC" selected>
+                  เรียงตามลำดับ: หลังไปก่อน
+                </option>
+                <option value="product.id ASC">
+                  เรียงตามลำดับ: ก่อนไปหลัง
+                </option>
+                <!-- <option value="product.demo_price DESC">เรียงตามราคา: สูงไปต่ำ</option>
               <option value="product.demo_price ASC">เรียงตามราคา: ต่ำไปสูง</option> -->
-            </select>
+              </select>
+            </div>
           </div>
         </div>
         <p v-if="error" class="text-error">{{ error.message }}</p>
@@ -155,29 +171,9 @@
         <div v-if="pending" class="text-center my-4">
           <span class="loading loading-spinner loading-xl"></span>
         </div>
-        <div v-else :class="`grid grid-cols-${gridValue} gap-4 my-4`">
+        <div :class="`grid grid-cols-${gridValue} gap-4 my-4`">
           <template v-for="row in data?.rows">
-            <div
-              class="card card-border bg-base-300 hover:scale-105 hover:bg-base-200 hover:shodow-lg transition cursor-pointer"
-            >
-              <NuxtLink :to="`/products/${row.demo_name}`">
-                <div class="card-body p-4">
-                  <img
-                    src="@/assets/images/blank.png"
-                    alt="..."
-                    class="rounded-lg border border-base-300"
-                  />
-                  <h2 class="card-title text-base">{{ row.demo_code }}</h2>
-                  <p class="text-base-content/50 text-base">
-                    {{ row.demo_owner }}<br />
-                    {{ row.demo_name }}
-                  </p>
-                  <p class="font-semibold text-primary text-base">
-                    เข้าสู่ระบบเพื่อดูราคา
-                  </p>
-                </div>
-              </NuxtLink>
-            </div>
+            <CardTemplate :object="row" />
           </template>
         </div>
         <CardPagination v-model:page="page" :data="data" :disabled="pending" />
@@ -189,16 +185,18 @@
 <script setup lang="ts">
 const route = useRoute();
 const pageSizeData = ref([9, 12, 18, 24]);
-const gridValue = ref(4);
+const gridValue = ref(3);
 const page = ref(1);
 const pageSize = ref(12);
+const q = ref("");
 const orderBy = ref("product.id DESC");
-const selectedOwner = computed(() => String(route.query.owner || ""));
+const selectedCategory = computed(() => String(route.query.category || ""));
 const productQuery = computed(() => ({
   page: page.value,
   pageSize: pageSize.value,
   orderBy: orderBy.value,
-  ...(selectedOwner.value ? { owner: selectedOwner.value } : {}),
+  q: q.value,
+  ...(selectedCategory.value ? { category_name: selectedCategory.value } : {}),
 }));
 const totalOwnerCount = computed(() => {
   return (
@@ -217,11 +215,13 @@ const { data, pending, error } = await useFetch("/api/products", {
   watch: [productQuery],
 });
 
-watch(selectedOwner, () => {
+watch(selectedCategory, () => {
   page.value = 1;
 });
 
 onMounted(async () => {
-  base.value = await $fetch("/api/products/group-by-owner");
+  base.value = await $fetch("/api/categories", {
+    params: { pageSize: 999 },
+  });
 });
 </script>

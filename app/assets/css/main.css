@@ -31,7 +31,7 @@
   --color-error: oklch(68% 0.22 25);
   --color-error-content: oklch(98% 0.01 25);
   --radius-selector: 0.5rem;
-  --radius-field: 1rem;
+  --radius-field: 0.5rem;
   --radius-box: 1rem;
   --size-selector: 0.1875rem;
   --size-field: 0.25rem;
@@ -42,4 +42,35 @@
 
 body {
   font-family: "Noto Sans Thai", sans-serif;
+}
+
+/* Thin custom scrollbar (cross-browser) */
+:root {
+  --scrollbar-bg: #f5f5f5;
+  --scrollbar-thumb: #cfcfcf;
+  --scrollbar-thumb-hover: #bfbfbf;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-bg);
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-bg);
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
 }

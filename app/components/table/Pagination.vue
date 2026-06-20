@@ -1,48 +1,65 @@
 <template>
   <div class="flex justify-between">
-    <div class="join">
-      <button class="join-item btn sm:btn-sm btn-xs pointer-events-none">Page Size</button>
+    <div class="sm:block hidden text-xs font-semibold">
+      <div>แสดง {{ (pageModel - 1) * pageSizeModel + 1 }} - {{ Math.min(pageModel * pageSizeModel, totalPages * pageSizeModel) > dataTotal ? dataTotal : Math.min(pageModel * pageSizeModel, totalPages * pageSizeModel) }}</div>
+      <div>จากทั้งหมด <span class="text-primary text-sm">{{ dataTotal }}</span> รายการ</div>
+    </div>
+
+    <div class="space-x-2">
+      <button
+        class="join-item btn sm:btn-sm btn-xs btn-outline border-base-content/10 shadow-sm"
+        @click="goToPage(pageModel - 1)"
+        :disabled="props.disabled || pageModel === 1"
+      >
+        <Icon name="lucide:chevron-left" size="12" />
+        <!-- < -->
+      </button>
+
+      <template
+        v-for="(value, index) in paginationItems"
+        :key="`${value}-${index}`"
+      >
+        <button
+          v-if="value !== '...'"
+          class="join-item btn sm:btn-sm btn-xs border-base-content/10 shadow-sm"
+          :class="{
+            'btn-primary pointer-events-none': pageModel === value,
+            'btn-outline': pageModel !== value,
+          }"
+          :aria-disabled="pageModel === value"
+          @click="goToPage(value)"
+          :disabled="props.disabled"
+        >
+          {{ value }}
+        </button>
+        <button
+          v-else
+          class="join-item btn sm:btn-sm btn-xs btn-ghost pointer-events-none"
+        >
+          ...
+        </button>
+      </template>
+
+      <button
+        class="join-item btn sm:btn-sm btn-xs btn-outline border-base-content/10 shadow-sm"
+        @click="goToPage(pageModel + 1)"
+        :disabled="props.disabled || pageModel === totalPages || totalPages === 0"
+      >
+        <Icon name="lucide:chevron-right" size="12" />
+        <!-- > -->
+      </button>
+    </div>
+
+    <div class="sm:flex hidden items-center gap-2">
+      <div class="text-xs font-semibold">แสดงต่อหน้า:</div>
       <select
-        class="join-item select sm:select-sm select-xs w-fit"
+        class="select select-xs w-fit shadow-sm bg-base-300 border-base-content/10"
         v-model.number="pageSizeModel"
       >
         <option :value="10">10</option>
         <option :value="20">20</option>
         <option :value="50">50</option>
       </select>
-    </div>
-
-    <div class="join">
-      <button
-        class="join-item btn sm:btn-sm btn-xs"
-        :disabled="pageModel === 1"
-        @click="goToPage(pageModel - 1)"
-      >
-        Prev
-      </button>
-
-      <template v-for="(value, index) in paginationItems" :key="`${value}-${index}`">
-        <button
-          v-if="value !== '...'"
-          class="join-item btn sm:btn-sm btn-xs"
-          :class="{ 'btn-primary pointer-events-none': pageModel === value }"
-          :aria-disabled="pageModel === value"
-          @click="goToPage(value)"
-        >
-          {{ value }}
-        </button>
-        <button v-else class="join-item btn sm:btn-sm btn-xs pointer-events-none">
-          ...
-        </button>
-      </template>
-
-      <button
-        class="join-item btn sm:btn-sm btn-xs"
-        :disabled="pageModel === totalPages"
-        @click="goToPage(pageModel + 1)"
-      >
-        Next
-      </button>
     </div>
   </div>
 </template>
@@ -52,8 +69,10 @@ const props = defineProps<{
   page: number;
   pageSize: number;
   data?: {
+    total?: number;
     totalPages?: number;
   } | null;
+  disabled: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -61,6 +80,7 @@ const emit = defineEmits<{
   "update:pageSize": [value: number];
 }>();
 
+const dataTotal = computed(() => props.data?.total ?? 0);
 const totalPages = computed(() => props.data?.totalPages ?? 0);
 const paginationItems = computed<(number | "...")[]>(() => {
   if (totalPages.value <= 0) {
