@@ -1,17 +1,20 @@
 import { useDb } from "@@/server/utils/db";
 
 type ProductBody = {
-  uuid?: string;
-  demo_owner?: string;
-  demo_code?: string;
-  demo_name?: string;
-  demo_min?: number | string;
-  demo_unit?: string;
+  product_code?: string;
+  product_name?: string;
+  product_supplier?: string;
+  product_category?: string;
+  product_cost_price?: number;
+  product_selling_price?: number;
+  image_url?: string;
   deleted_by?: string;
   user?: object;
 };
 
 export default defineEventHandler(async (event) => {
+  const tableName = "tb_master_products";
+
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<ProductBody>(event);
@@ -23,38 +26,58 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const demoOwner = String(body.demo_owner || "").trim();
-  const demoCode = String(body.demo_code || "").trim();
-  const demoName = String(body.demo_name || "").trim();
-  const demoMin = Number(body.demo_min || 0);
-  const demoUnit = String(body.demo_unit || "").trim();
-  const deletedBy = body.deleted_by
-    ? String(body.deleted_by || "").trim()
-    : null;
-  const deletedAt = deletedBy ? new Date() : null;
+  const product_code = String(body.product_code || "").trim();
+  const product_name = String(body.product_name || "").trim();
+  const product_supplier = String(body.product_supplier || "").trim();
+  const product_category = String(body.product_category || "").trim();
+  const product_cost_price = Number(body.product_cost_price || 0);
+  const product_selling_price = Number(body.product_selling_price || 0);
+  const image_url = String(body.image_url || "").trim();
+  const deleted_by = null;
+  const deleted_at = null;
   const user: any = body.user || "";
 
-  if (!Number.isFinite(demoMin) || demoMin < 0) {
+  if (!product_code || !product_name || !product_category) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Product min must be a number greater than or equal to 0",
+      statusMessage: "Product code, name, and category are required",
+    });
+  }
+
+  if (!Number.isFinite(product_selling_price) || product_selling_price < 0) {
+    throw createError({
+      statusCode: 400,
+      statusMessage:
+        "Product selling price must be a number greater than or equal to 0",
     });
   }
 
   const result = await db.query(
-    `UPDATE tb_all_products_demo
-    SET demo_owner = $1, demo_code = $2, demo_name = $3, demo_min = $4, demo_unit = $5, updated_by = $6, updated_at = now(), deleted_by = $7, deleted_at = $8
-    WHERE uuid = $9
+    `UPDATE ${tableName}
+    SET product_code = $1
+    , product_name = $2
+    , product_supplier = $3
+    , product_category = $4
+    , product_cost_price = $5
+    , product_selling_price = $6
+    , image_url = $7
+    , updated_by = $8
+    , updated_at = now()
+    , deleted_by = $9
+    , deleted_at = $10
+    WHERE uuid = $11
      RETURNING *`,
     [
-      demoOwner,
-      demoCode,
-      demoName,
-      demoMin,
-      demoUnit,
+      product_code,
+      product_name,
+      product_supplier,
+      product_category,
+      product_cost_price,
+      product_selling_price,
+      image_url,
       user.uuid,
-      deletedBy,
-      deletedAt,
+      deleted_by,
+      deleted_at,
       uuid,
     ],
   );

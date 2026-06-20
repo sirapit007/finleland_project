@@ -1,7 +1,7 @@
 <template>
   <header>
     <div class="bg-primary h-10 flex justify-center">
-      <div class="navbar-start w-[75%] flex justify-between">
+      <div class="navbar-start w-[80%] flex justify-between">
         <div class="w-full space-x-5 text-xs">
           <NuxtLink
             to="/products"
@@ -51,9 +51,9 @@
     <div
       class="navbar border-b border-base-300 bg-base-100 h-20 flex justify-center"
     >
-      <div class="navbar-start w-[75%] flex justify-between">
+      <div class="navbar-start w-[80%] flex justify-between">
         <NuxtLink to="/">
-          <img src="@/assets/images/logo.png" alt="..." class="max-h-15" />
+          <img src="@/assets/images/logo.png" alt="..." class="max-h-40" />
         </NuxtLink>
         <div class="space-x-5">
           <template v-for="menu in menus">

@@ -10,24 +10,38 @@
       :key="slideIndex"
       class="w-full shrink-0"
     >
-      <div :class="`grid grid-cols-${props.gridValue} gap-2 mx-0`">
+      <div :class="`grid grid-cols-6 gap-2 mx-6`">
         <div
           v-for="item in slide"
           :key="item.demo_name"
-          class="my-2.5 card card-border bg-base-300 hover:scale-102 hover:bg-base-200 hover:shadow-lg transition"
+          class="my-2.5 text-center space-y-1.5"
         >
-          <NuxtLink :to="{ path: '/products', query: { owner: item.demo_owner } }">
-            <div class="card-body p-0 relative">
-              <img
-                src="@/assets/images/blank.png"
-                class="rounded-lg border border-base-300"
-              />
-
-              <p class="text-accent text-lg font-extrabold absolute bottom-2 left-4">
-                {{ item.demo_owner }}
-              </p>
-            </div>
-          </NuxtLink>
+          <div
+            class="card border border-base-content/20 shadow-sm bg-base-300 hover:scale-105 hover:bg-base-200 hover:shodow-lg transition cursor-pointer"
+          >
+            <NuxtLink
+              :to="{
+                path: '/products',
+                query: { category: item.category_name },
+              }"
+            >
+              <div class="card-body p-0">
+                <img
+                  v-if="item.image_url"
+                  :src="item.image_url"
+                  class="rounded-2xl bg-base-300 border border-base-300 object-cover min-h-[20vh] max-h-[20vh]"
+                />
+                <img
+                  v-else
+                  src="@/assets/images/blank.png"
+                  class="rounded-2xl border border-base-300 object-contain min-h-[20vh] max-h-[20vh]"
+                />
+              </div>
+            </NuxtLink>
+          </div>
+          <p class="text-accent lg:text-lg text-xs font-extrabold">
+            {{ item.category_name }}
+          </p>
         </div>
       </div>
     </div>
@@ -36,7 +50,7 @@
   <!-- Prev -->
   <button
     @click="prevSlide"
-    class="btn btn-xl btn-circle bg-transparent border-transparent absolute left-0 top-1/2 -translate-y-1/2"
+    class="btn btn-circle lg:btn-lg btn-xs absolute left-0 top-2/5 -translate-y-1/2"
   >
     ❮
   </button>
@@ -44,7 +58,7 @@
   <!-- Next -->
   <button
     @click="nextSlide"
-    class="btn btn-xl btn-circle bg-transparent border-transparent absolute right-0 top-1/2 -translate-y-1/2"
+    class="btn btn-circle lg:btn-lg btn-xs absolute right-0 top-2/5 -translate-y-1/2"
   >
     ❯
   </button>

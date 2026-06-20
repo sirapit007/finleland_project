@@ -1,13 +1,13 @@
 <template>
   <div class="flex justify-center">
-    <div class="join">
+    <div class="space-x-2">
       <button
-        v-if="pageModel !== 1"
-        class="join-item btn btn-sm btn-ghost rounded-none"
+        class="join-item btn sm:btn-sm btn-xs btn-outline border-base-content/10 shadow-sm"
         @click="goToPage(pageModel - 1)"
-        :disabled="props.disabled"
+        :disabled="props.disabled || pageModel === 1"
       >
-        <Icon name="lucide:chevron-left" size="18" />
+        <Icon name="lucide:chevron-left" size="12" />
+        <!-- < -->
       </button>
 
       <template
@@ -16,10 +16,10 @@
       >
         <button
           v-if="value !== '...'"
-          class="join-item btn btn-sm rounded-none"
+          class="join-item btn sm:btn-sm btn-xs border-base-content/10 shadow-sm"
           :class="{
             'btn-primary pointer-events-none': pageModel === value,
-            'btn-ghost': pageModel !== value,
+            'btn-outline': pageModel !== value,
           }"
           :aria-disabled="pageModel === value"
           @click="goToPage(value)"
@@ -29,19 +29,21 @@
         </button>
         <button
           v-else
-          class="join-item btn btn-sm btn-ghost pointer-events-none"
+          class="join-item btn sm:btn-sm btn-xs btn-ghost pointer-events-none"
         >
           ...
         </button>
       </template>
 
       <button
-        v-if="pageModel !== totalPages"
-        class="join-item btn btn-sm btn-ghost rounded-none"
+        class="join-item btn sm:btn-sm btn-xs btn-outline border-base-content/10 shadow-sm"
         @click="goToPage(pageModel + 1)"
-        :disabled="props.disabled"
+        :disabled="
+          props.disabled || pageModel === totalPages || totalPages === 0
+        "
       >
-        <Icon name="lucide:chevron-right" size="18" />
+        <Icon name="lucide:chevron-right" size="12" />
+        <!-- > -->
       </button>
     </div>
   </div>
