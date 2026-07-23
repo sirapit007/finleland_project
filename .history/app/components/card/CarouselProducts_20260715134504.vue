@@ -1,0 +1,86 @@
+<template>
+  <div
+    class="flex transition-transform duration-500 ease-in-out"
+    :style="{
+      transform: `translateX(-${currentSlide * 100}%)`,
+    }"
+  >
+    <div
+      v-for="(slide, slideIndex) in slides"
+      :key="slideIndex"
+      class="w-full shrink-0"
+    >
+      <div class="mx-ๅจ grid grid-cols-1 gap-4 sm:mx-12 sm:grid-cols-3 lg:grid-cols-4">
+        <template v-if="props.deals">
+          <div v-for="item in slide" :key="item.promotion_name" class="my-2.5">
+            <CardDealsTemplate :object="item" />
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="item in slide" :key="item.product_name" class="my-2.5">
+            <CardTemplate :object="item" />
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prev -->
+  <button
+    @click="prevSlide"
+    class="btn btn-circle btn-sm absolute left-0 top-1/2 -translate-y-1/2 sm:btn-lg"
+  >
+    ❮
+  </button>
+
+  <!-- Next -->
+  <button
+    @click="nextSlide"
+    class="btn btn-circle btn-sm absolute right-0 top-1/2 -translate-y-1/2 sm:btn-lg"
+  >
+    ❯
+  </button>
+
+  <div class="flex gap-3 justify-center mb-6">
+    <button
+      v-for="(_, index) in slides"
+      :key="index"
+      @click="currentSlide = index"
+      class="w-2.5 h-2.5 rounded-full transition"
+      :class="
+        currentSlide === index
+          ? 'bg-base-content'
+          : 'border border-base-content'
+      "
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+const props = defineProps<{
+  data: any[];
+  // gridValue: number;
+  deals?: true;
+}>();
+
+const currentSlide = ref(0);
+
+const slides = computed(() => {
+  const result = [];
+
+  for (let i = 0; i < props.data.length; i += 4) {
+    result.push(props.data.slice(i, i + 4));
+  }
+
+  return result;
+});
+
+const prevSlide = () => {
+  currentSlide.value =
+    (currentSlide.value - 1 + slides.value.length) % slides.value.length;
+};
+
+const nextSlide = () => {
+  currentSlide.value = (currentSlide.value + 1) % slides.value.length;
+};
+</script>

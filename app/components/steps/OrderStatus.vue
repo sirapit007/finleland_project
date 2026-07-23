@@ -1,0 +1,78 @@
+<template>
+  <ol class="space-y-0">
+    <li
+      v-for="(history, index) in histories"
+      :key="history.uuid || `${history.order_status_history_status}-${index}`"
+      class="relative flex gap-3 pb-5 last:pb-0"
+    >
+      <span
+        v-if="index < histories.length - 1"
+        class="absolute left-2.75 top-6 h-[calc(100%-0.5rem)] w-px bg-base-300"
+      />
+      <span
+        class="relative z-10 mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-content"
+      >
+        <Icon
+          :name="statusMeta(history.order_status_history_status).icon"
+          size="13"
+        />
+      </span>
+      <div class="min-w-0 pb-1">
+        <p class="text-sm font-semibold">
+          {{ statusMeta(history.order_status_history_status).label }}
+        </p>
+        <p
+          v-if="history.order_status_history_note"
+          class="mt-0.5 text-xs leading-5 text-base-content/60"
+        >
+          {{ history.order_status_history_note }}
+        </p>
+        <p class="mt-1 text-xs text-base-content/45">
+          {{ formatDate(history.created_at) }}
+          <template v-if="showActor">
+            · {{ history.created_username || "ระบบ" }}
+          </template>
+        </p>
+      </div>
+    </li>
+  </ol>
+</template>
+
+<script setup lang="ts">
+type OrderStatusHistory = Record<string, any>;
+
+withDefaults(
+  defineProps<{
+    histories?: OrderStatusHistory[];
+    showActor?: boolean;
+  }>(),
+  {
+    histories: () => [],
+    showActor: false,
+  },
+);
+
+const statusOptions: Record<string, { icon: string; label: string }> = {
+  pending: { icon: "lucide:clock-3", label: "รอตรวจสอบ" },
+  confirmed: { icon: "lucide:badge-check", label: "ยืนยันคำสั่งซื้อ" },
+  processing: { icon: "lucide:package-open", label: "กำลังเตรียมสินค้า" },
+  ready_for_pickup: { icon: "lucide:store", label: "พร้อมรับสินค้า" },
+  shipped: { icon: "lucide:truck", label: "กำลังจัดส่ง" },
+  completed: { icon: "lucide:circle-check-big", label: "สำเร็จ" },
+  canceled: { icon: "lucide:circle-x", label: "ยกเลิก" },
+};
+
+const statusMeta = (status: string) =>
+  statusOptions[status] || {
+    icon: "lucide:circle-help",
+    label: status || "ไม่ระบุสถานะ",
+  };
+
+const formatDate = (value: string) =>
+  value
+    ? new Intl.DateTimeFormat("th-TH", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date(value))
+    : "-";
+</script>
