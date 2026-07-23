@@ -1,11 +1,18 @@
 <template>
+  <ModalConfirm
+    v-model="isRemoveConfirmOpen"
+    title="ยืนยันการลบรายการนี้"
+    confirm-text="ยืนยัน"
+    @confirm="fnRemove.onSubmit()"
+  />
+
   <dialog ref="baseModal" class="modal">
     <div class="modal-box max-w-sm">
       <h3 class="text-lg font-bold">Create Supplier</h3>
 
       <div class="mt-4 space-y-3">
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Supplier Codde</legend>
+          <legend class="fieldset-legend">รหัสผู้จัดจำหน่าย</legend>
           <input
             type="text"
             class="input input-sm w-full"
@@ -14,7 +21,7 @@
           />
         </fieldset>
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Supplier Name</legend>
+          <legend class="fieldset-legend">ชื่อผู้จัดจำหน่าย</legend>
           <input
             type="text"
             class="input input-sm w-full"
@@ -23,8 +30,12 @@
           />
         </fieldset>
         <fieldset class="fieldset">
-          <legend class="fieldset-legend">Supplier Address</legend>
-          <textarea class="textarea textarea-sm w-full" placeholder="กี่ตัวตัวอักษรก็ได้..." v-model="base.form.supplier_address"></textarea>
+          <legend class="fieldset-legend">ที่อยู่ผู้จัดจำหน่าย</legend>
+          <textarea
+            class="textarea textarea-sm w-full"
+            placeholder="กี่ตัวตัวอักษรก็ได้..."
+            v-model="base.form.supplier_address"
+          ></textarea>
         </fieldset>
       </div>
 
@@ -43,41 +54,22 @@
     </div>
   </dialog>
 
-  <dialog ref="removeModal" class="modal">
-    <div class="modal-box max-w-xs">
-      <h3 class="text-lg font-bold">ยืนยันการลบรายการนี้</h3>
-      <div class="text-center mt-5">
-        <Icon
-          name="lucide:message-circle-warning"
-          class="text-error"
-          size="60"
-        />
-      </div>
-      <div class="modal-action">
-        <button class="flex-1 btn btn-sm" @click="removeModal?.close()">
-          ปิด
-        </button>
-        <button
-          class="flex-1 btn btn-sm btn-error"
-          type="button"
-          @click="fnRemove.onSubmit()"
-        >
-          ยืนยัน
-        </button>
-      </div>
-    </div>
-  </dialog>
-
   <div class="p-4 bg-base-100">
-    <div class="flex md:flex-row flex-col justify-between">
-      <div class="space-x-3 xl:flex grid">
+    <div
+      class="flex flex-col justify-between gap-3 md:flex-row md:items-center"
+    >
+      <div
+        class="flex flex-row items-center gap-3 md:flex-col md:items-start md:gap-0"
+      >
         <span class="font-bold text-xl text-primary">Manage Suppliers</span
         ><span class="font-semibold text-base text-secondary"
           >จัดการรายการผู้จัดจำหน่าย</span
         >
       </div>
-      <div class="flex items-center gap-4">
-        <label class="input sm:input-sm input-xs shadow-sm w-68">
+      <div class="flex w-full gap-2 sm:items-center md:w-auto">
+        <label
+          class="flex-1 input input-xs w-full shadow-sm sm:input-sm md:w-80"
+        >
           <span class="label"><Icon name="lucide:search" size="16" /></span>
           <input
             type="text"
@@ -86,7 +78,7 @@
           />
         </label>
         <button
-          class="btn sm:btn-sm btn-xs btn-primary shadow-sm"
+          class="sm:flex-none flex-1 btn btn-xs w-full shadow-sm sm:btn-sm sm:w-auto btn-primary"
           v-on:click="fnBase.onCreate()"
         >
           <Icon name="lucide:plus" size="16" />
@@ -95,7 +87,7 @@
       </div>
     </div>
     <div
-      class="min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)] overflow-y-auto overflow-x-auto my-4 relative border border-base-content/10 rounded-lg shadow-sm"
+      class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
       :class="pending ? 'backdrop-blur-sm' : ''"
     >
       <p
@@ -107,16 +99,16 @@
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
-        class="table table-zebra sm:table-sm table-xs table-pin-rows table-pin-cols"
+        class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-pin-rows table-pin-cols"
       >
         <thead class="text-xs">
           <tr>
             <td>#</td>
-            <td>Code</td>
-            <td>Name</td>
-            <td>Address</td>
-            <td>Created</td>
-            <td>Updated</td>
+            <td>รหัส</td>
+            <td>ชื่อผู้จัดจำหน่าย</td>
+            <td>ที่อยู่</td>
+            <td>สร้างโดย / เมื่อ</td>
+            <td>แก้ไขโดย / เมื่อ</td>
             <th></th>
           </tr>
         </thead>
@@ -182,7 +174,7 @@ import { useDayjs } from "~~/composables/useDayjs";
 const dayjs = useDayjs();
 
 const baseModal = ref<HTMLDialogElement | null>(null);
-const removeModal = ref<HTMLDialogElement | null>(null);
+const isRemoveConfirmOpen = ref(false);
 
 const page = ref(1);
 const pageSize = ref(10);
@@ -228,7 +220,6 @@ const fnBase = {
       method: base.value.method,
       body: {
         ...base.value.form,
-        user: JSON.parse(localStorage.getItem("web-user") || "null"),
       },
     });
 
@@ -239,7 +230,7 @@ const fnBase = {
   },
   onRemove: async (row: any) => {
     base.value.form = { ...row };
-    removeModal.value?.showModal();
+    isRemoveConfirmOpen.value = true;
   },
 };
 
@@ -249,14 +240,13 @@ const fnRemove = {
       method: "delete",
       body: {
         ...base.value.form,
-        user: JSON.parse(localStorage.getItem("web-user") || "null"),
       },
     });
 
     if (res) {
       refresh();
 
-      removeModal.value?.close();
+      isRemoveConfirmOpen.value = false;
     }
   },
 };

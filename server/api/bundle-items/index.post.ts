@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type BundleItemsBody = {
   bundle_item_promotion?: string;
@@ -13,12 +14,12 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb();
   const body = await readBody<BundleItemsBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   const bundle_item_promotion = String(body.bundle_item_promotion || "").trim();
   const bundle_item_product = String(body.bundle_item_product || "").trim();
   const bundle_item_quantity = body.bundle_item_quantity || 0;
   const bundle_item_unit_price = body.bundle_item_unit_price || 0;
-  const user: any = body.user || "";
 
   if (
     !bundle_item_promotion ||
@@ -48,7 +49,7 @@ export default defineEventHandler(async (event) => {
       bundle_item_product,
       bundle_item_quantity,
       bundle_item_unit_price,
-      user.uuid,
+      admin.uuid,
     ],
   );
 

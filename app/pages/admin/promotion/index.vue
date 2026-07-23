@@ -1,4 +1,13 @@
 <template>
+  <ModalConfirm
+    v-model="isRemoveConfirmOpen"
+    title="ยืนยันการลบรายการนี้"
+    confirm-text="ยืนยัน"
+    @confirm="fnRemove.onSubmit()"
+  />
+
+  <ModalImagePreview v-model="isImagePreviewOpen" :src="imageSrc" />
+
   <dialog ref="baseModal" class="modal">
     <div class="modal-box max-w-2xl">
       <form method="dialog">
@@ -12,7 +21,7 @@
         <!-- {{ base.form.promotion_type }} -->
         <div>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Promotion Product</legend>
+            <legend class="fieldset-legend">สินค้าที่ร่วมโปรโมชั่น</legend>
             <ComboBox
               v-model="base.form.promotion_product"
               fetchUrl="/api/products"
@@ -22,7 +31,7 @@
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Promotion Type</legend>
+            <legend class="fieldset-legend">ประเภทโปรโมชั่น</legend>
             <ComboBox
               v-model="base.form.promotion_type"
               fetchUrl="/api/promotion/types"
@@ -32,7 +41,7 @@
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Promotion Name</legend>
+            <legend class="fieldset-legend">ชื่อโปรโมชั่น</legend>
             <input
               type="text"
               class="input input-sm w-full"
@@ -41,7 +50,7 @@
             />
           </fieldset>
           <fieldset class="fieldset">
-            <legend class="fieldset-legend">Promotion Description</legend>
+            <legend class="fieldset-legend">รายละเอียดโปรโมชั่น</legend>
             <textarea
               class="textarea textarea-sm w-full"
               placeholder="กี่ตัวตัวอักษรก็ได้..."
@@ -50,7 +59,7 @@
           </fieldset>
           <div class="grid grid-cols-2 gap-2">
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">Promotion Start Date</legend>
+              <legend class="fieldset-legend">วันที่เริ่มโปรโมชั่น</legend>
               <input
                 type="date"
                 class="input input-sm w-full"
@@ -59,7 +68,7 @@
               />
             </fieldset>
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">Promotion End Date</legend>
+              <legend class="fieldset-legend">วันที่สิ้นสุดโปรโมชั่น</legend>
               <input
                 type="date"
                 class="input input-sm w-full"
@@ -77,9 +86,7 @@
             "
           >
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">
-                Promotion Discounted Price
-              </legend>
+              <legend class="fieldset-legend">ราคาหลังส่วนลด</legend>
               <input
                 type="number"
                 min="1"
@@ -96,7 +103,7 @@
             "
           >
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">Promotion Min Quantity</legend>
+              <legend class="fieldset-legend">จำนวนขั้นต่ำ</legend>
               <input
                 type="number"
                 min="1"
@@ -113,9 +120,7 @@
             "
           >
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">
-                Promotion Min Purchase Amount
-              </legend>
+              <legend class="fieldset-legend">ยอดซื้อขั้นต่ำ</legend>
               <input
                 type="number"
                 min="1"
@@ -133,7 +138,7 @@
             class="space-y-2"
           >
             <fieldset class="fieldset">
-              <legend class="fieldset-legend">Promotion Bundle Price</legend>
+              <legend class="fieldset-legend">ราคาชุดโปรโมชั่น</legend>
               <input
                 type="number"
                 min="1"
@@ -159,7 +164,7 @@
                 {{ (i as number) + 1 }}
               </div>
               <fieldset class="fieldset mt-3">
-                <legend class="fieldset-legend">Bundle Product</legend>
+                <legend class="fieldset-legend">สินค้าในชุด</legend>
                 <ComboBox
                   v-model="detail.rows[i].bundle_item_product"
                   fetchUrl="/api/products"
@@ -171,7 +176,7 @@
               </fieldset>
               <div class="grid grid-cols-2 gap-2">
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">Bundle Quantity</legend>
+                  <legend class="fieldset-legend">จำนวนสินค้าในชุด</legend>
                   <input
                     type="number"
                     min="1"
@@ -181,7 +186,7 @@
                   />
                 </fieldset>
                 <fieldset class="fieldset">
-                  <legend class="fieldset-legend">Bundle Unit Price</legend>
+                  <legend class="fieldset-legend">ราคาต่อหน่วยในชุด</legend>
                   <input
                     type="number"
                     min="1"
@@ -219,44 +224,22 @@
     </div>
   </dialog>
 
-  <dialog ref="removeModal" class="modal">
-    <div class="modal-box max-w-xs">
-      <h3 class="text-lg font-bold">ยืนยันการลบรายการนี้</h3>
-      <div class="text-center mt-5">
-        <Icon
-          name="lucide:message-circle-warning"
-          class="text-error"
-          size="60"
-        />
-      </div>
-      <div class="modal-action">
-        <button
-          class="flex-1 btn sm:btn-sm btn-xs"
-          @click="removeModal?.close()"
-        >
-          ปิด
-        </button>
-        <button
-          class="flex-1 btn sm:btn-sm btn-xs btn-error"
-          type="button"
-          @click="fnRemove.onSubmit()"
-        >
-          ยืนยัน
-        </button>
-      </div>
-    </div>
-  </dialog>
-
   <div class="p-4 bg-base-100">
-    <div class="flex md:flex-row flex-col justify-between">
-      <div class="space-x-3">
+    <div
+      class="flex flex-col justify-between gap-3 md:flex-row md:items-center"
+    >
+      <div
+        class="flex flex-row items-center gap-3 md:flex-col md:items-start md:gap-0"
+      >
         <span class="font-bold text-xl text-primary">Event Promotion</span
         ><span class="font-semibold text-base text-secondary"
           >โปรโมชั่นสินค้า</span
         >
       </div>
-      <div class="flex items-center gap-4">
-        <label class="input sm:input-sm input-xs shadow-sm w-64">
+      <div class="flex w-full gap-2 sm:items-center md:w-auto">
+        <label
+          class="flex-1 input input-xs w-full shadow-sm sm:input-sm md:w-80"
+        >
           <span class="label"><Icon name="lucide:search" size="16" /></span>
           <input
             type="text"
@@ -265,7 +248,7 @@
           />
         </label>
         <button
-          class="btn sm:btn-sm btn-xs btn-primary shadow-sm"
+          class="sm:flex-none flex-1 btn btn-xs w-full shadow-sm sm:btn-sm sm:w-auto btn-primary"
           v-on:click="fnBase.onCreate()"
         >
           <Icon name="lucide:plus" size="16" />
@@ -274,7 +257,7 @@
       </div>
     </div>
     <div
-      class="min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)] overflow-y-auto overflow-x-auto my-4 relative border border-base-content/10 rounded-lg shadow-sm"
+      class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
       :class="pending ? 'backdrop-blur-sm' : ''"
     >
       <p
@@ -286,22 +269,23 @@
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
-        class="table table-zebra sm:table-sm table-xs table-pin-rows table-pin-cols"
+        class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-pin-rows table-pin-cols"
       >
         <thead class="text-xs">
           <tr>
             <td>#</td>
-            <td>Name</td>
-            <td>Description</td>
-            <td>Start Data</td>
-            <td>End Data</td>
-            <td>Discounted Price</td>
-            <td>Min Quantity</td>
-            <td>Min Purchase Amount</td>
-            <td>Bundle Price</td>
-            <td>Active</td>
-            <td>Created</td>
-            <td>Updated</td>
+            <td>รูปภาพ</td>
+            <td>ชื่อโปรโมชั่น</td>
+            <td>รายละเอียด</td>
+            <td>วันที่เริ่มต้น</td>
+            <td>วันที่สิ้นสุด</td>
+            <td>ราคาหลังส่วนลด</td>
+            <td>จำนวนขั้นต่ำ</td>
+            <td>ยอดซื้อขั้นต่ำ</td>
+            <td>ราคาชุดโปรโมชั่น</td>
+            <td>เปิดใช้งาน</td>
+            <td>สร้างโดย / เมื่อ</td>
+            <td>แก้ไขโดย / เมื่อ</td>
             <th></th>
           </tr>
         </thead>
@@ -313,6 +297,21 @@
             :class="!row.promotion_is_active ? 'opacity-50' : ''"
           >
             <td>{{ row.id }}</td>
+            <td>
+              <div
+                v-if="row.image_url"
+                class="h-12 w-12 cursor-pointer"
+                v-on:click="fnImage.onOpen(row.image_url)"
+              >
+                <img :src="row.image_url" class="h-full w-full object-cover" />
+              </div>
+              <div v-else class="h-12 w-12 cursor-not-allowed">
+                <img
+                  src="@/assets/images/blank.png"
+                  class="h-full w-full object-cover"
+                />
+              </div>
+            </td>
             <td>{{ row.promotion_name }}</td>
             <td>{{ row.promotion_description }}</td>
             <td>{{ dayjs(row.promotion_start_date).format("YYYY-MM-DD") }}</td>
@@ -381,7 +380,8 @@ import { useDayjs } from "~~/composables/useDayjs";
 const dayjs = useDayjs();
 
 const baseModal = ref<HTMLDialogElement | null>(null);
-const removeModal = ref<HTMLDialogElement | null>(null);
+const isRemoveConfirmOpen = ref(false);
+const isImagePreviewOpen = ref(false);
 
 const page = ref(1);
 const pageSize = ref(10);
@@ -397,6 +397,7 @@ const remove = ref<any>({
   form: {},
   path: "",
 });
+const imageSrc = ref("");
 
 const { data, pending, error, refresh } = await useFetch("/api/promotion", {
   server: false,
@@ -434,7 +435,6 @@ const fnBase = {
       method: base.value.method,
       body: {
         ...base.value.form,
-        user: JSON.parse(localStorage.getItem("web-user") || "null"),
       },
     });
 
@@ -461,7 +461,6 @@ const fnBase = {
       body: {
         ...row,
         promotion_is_active: row.promotion_is_active ? false : true,
-        user: JSON.parse(localStorage.getItem("web-user") || "null"),
       },
     });
 
@@ -472,7 +471,7 @@ const fnBase = {
   onRemove: async (row: any) => {
     remove.value.path = "/api/promotion";
     remove.value.form = { ...row };
-    removeModal.value?.showModal();
+    isRemoveConfirmOpen.value = true;
   },
 };
 
@@ -504,7 +503,6 @@ const fnDetail = {
         method: base.value.method,
         body: {
           ...v,
-          user: JSON.parse(localStorage.getItem("web-user") || "null"),
         },
       });
     });
@@ -517,21 +515,30 @@ const fnRemove = {
       method: "delete",
       body: {
         ...remove.value.form,
-        user: JSON.parse(localStorage.getItem("web-user") || "null"),
       },
     });
 
     if (res) {
-      removeModal.value?.close();
+      isRemoveConfirmOpen.value = false;
       refresh();
     }
+  },
+};
+
+const fnImage = {
+  onOpen: (src: string) => {
+    imageSrc.value = src;
+    isImagePreviewOpen.value = true;
   },
 };
 
 watch(
   () => base.value.form.promotion_type,
   (v) => {
-    if (v === "70977b66-e3d8-45f2-bdfb-b9776f959027" && base.value.method === "post") {
+    if (
+      v === "70977b66-e3d8-45f2-bdfb-b9776f959027" &&
+      base.value.method === "post"
+    ) {
       detail.value.rows = [
         {
           bundle_item_product: base.value.form.promotion_product,

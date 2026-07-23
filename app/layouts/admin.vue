@@ -43,6 +43,53 @@
 
       <!-- Menu -->
       <div class="flex-1 h-full overflow-y-auto mt-2 px-3 pb-3">
+        <div class="mb-2">
+          <NuxtLink
+            :key="'/admin'"
+            :to="'/admin'"
+            @click="isSidebarOpen = false"
+            class="group relative mb-2 flex h-8 items-center gap-3 rounded-xl px-3 transition-all duration-200"
+            :class="
+              route.path === '/admin'
+                ? 'bg-primary/10 text-primary font-semibold'
+                : 'hover:bg-base-200'
+            "
+            :title="isSidebarCollapsed ? 'แดชบอร์ด' : undefined"
+          >
+            <Icon :name="'lucide:home'" size="18" class="shrink-0" />
+
+            <span
+              class="truncate text-xs"
+              :class="isSidebarCollapsed ? 'hidden lg:hidden' : ''"
+            >
+              {{ "แดชบอร์ด" }}
+            </span>
+          </NuxtLink>
+        </div>
+        <div class="mb-2">
+          <NuxtLink
+            :key="'/admin/orders'"
+            :to="'/admin/orders'"
+            @click="isSidebarOpen = false"
+            class="group relative mb-2 flex h-8 items-center gap-3 rounded-xl px-3 transition-all duration-200"
+            :class="
+              route.path === '/admin/orders'
+                ? 'bg-primary/10 text-primary font-semibold'
+                : 'hover:bg-base-200'
+            "
+            :title="isSidebarCollapsed ? 'คำสั่งซื้อ' : undefined"
+          >
+            <Icon :name="'lucide:clipboard-clock'" size="18" class="shrink-0" />
+
+            <span
+              class="truncate text-xs"
+              :class="isSidebarCollapsed ? 'hidden lg:hidden' : ''"
+            >
+              {{ "คำสั่งซื้อ" }}
+            </span>
+          </NuxtLink>
+        </div>
+
         <div v-for="group in menuGroups" :key="group.title" class="mb-2">
           <div
             v-if="!isSidebarCollapsed"
@@ -64,12 +111,6 @@
             "
             :title="isSidebarCollapsed ? item.label : undefined"
           >
-            <!-- Active indicator -->
-            <div
-              v-if="route.path === item.to"
-              class="absolute left-0 top-1 bottom-1 w-1 rounded-full bg-primary"
-            />
-
             <Icon :name="item.icon" size="18" class="shrink-0" />
 
             <span
@@ -91,13 +132,13 @@
           <div
             class="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-content font-semibold shrink-0"
           >
-            A
+            {{ adminInitials }}
           </div>
 
           <div v-if="!isSidebarCollapsed" class="min-w-0">
-            <div class="font-medium truncate">admin</div>
+            <div class="font-medium truncate">{{ adminName }}</div>
 
-            <div class="text-xs text-base-content/50">Administrator</div>
+            <div class="text-xs text-base-content/50">{{ adminRole }}</div>
           </div>
         </div>
       </div>
@@ -149,7 +190,10 @@
           </div>
         </div>
 
-        <button class="btn btn-error btn-outline sm:btn-sm btn-xs" @click="onSignOut">
+        <button
+          class="btn btn-error btn-outline sm:btn-sm btn-xs"
+          @click="onSignOut"
+        >
           <Icon name="lucide:log-out" size="16" />
           Sign out
         </button>
@@ -165,6 +209,22 @@
 <script setup lang="ts">
 const isSidebarOpen = ref(false);
 const isSidebarCollapsed = ref(false);
+const { syncFromStorage, user } = useCurrentUser();
+
+const adminName = computed(() => {
+  const name = [user.value?.firstname, user.value?.lastname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return name || user.value?.email || "ผู้ดูแลระบบ";
+});
+const adminRole = computed(() => user.value?.role || "ผู้ดูแลระบบ");
+const adminInitials = computed(() => adminName.value.slice(0, 1).toUpperCase());
+
+onMounted(() => {
+  syncFromStorage();
+});
 
 const menuGroups = computed(() => [
   {
@@ -190,6 +250,11 @@ const navAdminItems = [
     to: "/admin/users",
     label: "ดูแลผู้ใช้งานระบบ",
     icon: "lucide:users-round",
+  },
+  {
+    to: "/admin/contacts",
+    label: "ความคิดเห็นผู้ใช้งาน",
+    icon: "lucide:message-square-text",
   },
 ];
 

@@ -12,13 +12,17 @@ const TOKEN_AGE_SECONDS = 60 * 60 * 24;
 type LoginBody = {
   username?: string;
   password?: string;
-  //   rememberMe?: boolean;
+  rememberMe?: boolean;
+  admin?: boolean;
 };
 
 type UserRow = {
   id: number | string;
   uuid: string;
-  username: string;
+  firstname: string;
+  lastname: string;
+  phone: string;
+  email: string;
   password: string;
   role?: string | null;
 };
@@ -67,6 +71,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<LoginBody>(event);
   const username = String(body.username || "").trim();
   const password = String(body.password || "");
+  const admin = Boolean(body.admin);
 
   if (!username || !password) {
     throw createError({
@@ -77,9 +82,9 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb();
   const result = await db.query<UserRow>(
-    `SELECT id, uuid, username, password, role
+    `SELECT *
      FROM tb_users
-     WHERE username = $1
+     WHERE phone = $1 OR email = $1
      LIMIT 1`,
     [username],
   );
@@ -94,6 +99,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (admin && user.role !== "Admin") {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "This account does not have admin privileges",
+    });
+  }
+
   const jwtSecret = process.env.JWT_SECRET;
 
   if (!jwtSecret) {
@@ -103,19 +115,21 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  //   const maxAge = body.rememberMe ? TOKEN_AGE_SECONDS * 30 : TOKEN_AGE_SECONDS;
-  const maxAge = TOKEN_AGE_SECONDS;
+  const maxAge = body.rememberMe ? TOKEN_AGE_SECONDS * 30 : TOKEN_AGE_SECONDS;
   const token = signJwt(
     {
-      sub: String(user.id),
-      username: user.username,
-      role: user.role || "admin",
+      sub: String(user?.id),
+      firstname: user?.firstname,
+      lastname: user?.lastname,
+      phone: user?.phone,
+      email: user?.email,
+      role: user?.role,
     },
     jwtSecret,
     maxAge,
   );
 
-  setCookie(event, "admin_token", token, {
+  setCookie(event, admin ? "admin_token" : "user_token", token, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -126,10 +140,7 @@ export default defineEventHandler(async (event) => {
   return {
     token,
     user: {
-      id: user.id,
-      uuid: user.uuid,
-      username: user.username,
-      role: user.role || "admin",
+      ...user,
     },
   };
 });

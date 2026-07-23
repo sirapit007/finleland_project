@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
   product_code?: string;
@@ -16,6 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<ProductBody>(event);
   const db = useDb();
+  const admin = await requireCurrentAdmin(event);
 
   const product_code = String(body.product_code || "").trim();
   const product_name = String(body.product_name || "").trim();
@@ -24,7 +26,6 @@ export default defineEventHandler(async (event) => {
   const product_cost_price = Number(body.product_cost_price || 0);
   const product_selling_price = Number(body.product_selling_price || 0);
   const image_url = String(body.image_url || "").trim();
-  const user: any = body.user || "";
 
   if (
     !product_code ||
@@ -57,7 +58,7 @@ export default defineEventHandler(async (event) => {
       product_cost_price,
       product_selling_price,
       image_url,
-      user.uuid,
+      admin.uuid,
     ],
   );
 

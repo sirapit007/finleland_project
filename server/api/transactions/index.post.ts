@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
   all_products_demo_uuid?: string;
@@ -13,6 +14,7 @@ type ProductBody = {
 export default defineEventHandler(async (event) => {
   const body = await readBody<ProductBody>(event);
   const db = useDb();
+  const admin = await requireCurrentAdmin(event);
 
   const allProductsDemo = String(body.all_products_demo_uuid || "").trim();
   const demoStatus = String(body.demo_status || "").trim();
@@ -20,7 +22,6 @@ export default defineEventHandler(async (event) => {
   const demoAmount = Number(body.demo_amount || 0);
   const demoPrice = Number(body.demo_price || 0);
   const demoComment = String(body.demo_comment || "").trim();;
-  const user: any = body.user || "";
 
   if (!Number.isFinite(demoAmount) || demoAmount < 0) {
     throw createError({
@@ -33,7 +34,7 @@ export default defineEventHandler(async (event) => {
     `INSERT INTO tb_product_transactions_demo (all_products_demo_uuid, demo_status, demo_rack, demo_amount, demo_price, demo_comment, created_by, created_at)
     VALUES($1, $2, $3, $4, $5, $6, $7, now())
      RETURNING *`,
-    [allProductsDemo, demoStatus, demoRack, demoAmount, demoPrice, demoComment, user.uuid],
+    [allProductsDemo, demoStatus, demoRack, demoAmount, demoPrice, demoComment, admin.uuid],
   );
 
   return {

@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type PromotionBody = {
   promotion_product?: string;
@@ -12,6 +13,7 @@ type PromotionBody = {
   promotion_min_quantity?: number;
   promotion_min_purchase_amount?: number;
   promotion_bundle_price?: number;
+  image_url?: string;
   user?: object;
 };
 
@@ -20,6 +22,7 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb();
   const body = await readBody<PromotionBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   const promotion_product = String(body.promotion_product || "").trim();
   const promotion_type = String(body.promotion_type || "").trim();
@@ -31,7 +34,7 @@ export default defineEventHandler(async (event) => {
   const promotion_min_quantity = body.promotion_min_quantity || 0;
   const promotion_min_purchase_amount = body.promotion_min_purchase_amount || 0;
   const promotion_bundle_price = body.promotion_bundle_price || 0;
-  const user: any = body.user || "";
+  const image_url = String(body.image_url || "").trim();
 
   if (
     !promotion_product ||
@@ -48,8 +51,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const result = await db.query(
-    `INSERT INTO ${tableName} (promotion_product, promotion_type, promotion_name, promotion_description, promotion_start_date, promotion_end_date, promotion_discounted_price, promotion_min_quantity, promotion_min_purchase_amount, promotion_bundle_price, created_by)
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    `INSERT INTO ${tableName} (promotion_product, promotion_type, promotion_name, promotion_description, promotion_start_date, promotion_end_date, promotion_discounted_price, promotion_min_quantity, promotion_min_purchase_amount, promotion_bundle_price, image_url, created_by)
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
     [
       promotion_product,
@@ -62,7 +65,8 @@ export default defineEventHandler(async (event) => {
       promotion_min_quantity,
       promotion_min_purchase_amount,
       promotion_bundle_price,
-      user.uuid,
+      image_url,
+      admin.uuid,
     ],
   );
 

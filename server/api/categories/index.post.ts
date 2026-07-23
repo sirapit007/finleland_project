@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type CategoryBody = {
   category_name?: string;
@@ -11,10 +12,10 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<CategoryBody>(event);
   const db = useDb();
+  const admin = await requireCurrentAdmin(event);
 
   const category_name = String(body.category_name || "").trim();
   const image_url = String(body.image_url || "").trim();
-  const user: any = body.user || "";
 
   if (!category_name) {
     throw createError({
@@ -27,7 +28,7 @@ export default defineEventHandler(async (event) => {
     `INSERT INTO ${tableName} (category_name, image_url, created_by)
     VALUES($1, $2, $3)
      RETURNING *`,
-    [category_name, image_url, user.uuid],
+    [category_name, image_url, admin.uuid],
   );
 
   return {

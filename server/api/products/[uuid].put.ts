@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
   product_code?: string;
@@ -18,6 +19,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<ProductBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   if (!uuid) {
     throw createError({
@@ -35,7 +37,6 @@ export default defineEventHandler(async (event) => {
   const image_url = String(body.image_url || "").trim();
   const deleted_by = null;
   const deleted_at = null;
-  const user: any = body.user || "";
 
   if (!product_code || !product_name || !product_category) {
     throw createError({
@@ -75,7 +76,7 @@ export default defineEventHandler(async (event) => {
       product_cost_price,
       product_selling_price,
       image_url,
-      user.uuid,
+      admin.uuid,
       deleted_by,
       deleted_at,
       uuid,

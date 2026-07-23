@@ -1,60 +1,66 @@
 <template>
-  <div class="flex justify-between">
-    <div class="sm:block hidden text-xs font-semibold">
-      <div>แสดง {{ (pageModel - 1) * pageSizeModel + 1 }} - {{ Math.min(pageModel * pageSizeModel, totalPages * pageSizeModel) > dataTotal ? dataTotal : Math.min(pageModel * pageSizeModel, totalPages * pageSizeModel) }}</div>
-      <div>จากทั้งหมด <span class="text-primary text-sm">{{ dataTotal }}</span> รายการ</div>
+  <div
+    class="flex flex-wrap items-center gap-3 rounded-2xl border border-base-300 bg-base-100 p-3 shadow-sm sm:grid sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center sm:p-4"
+  >
+    <div class="order-2 min-w-0 flex-1 whitespace-nowrap text-[10px] font-semibold text-base-content/65 sm:order-1 sm:text-xs">
+      แสดง {{ rangeStart }} - {{ rangeEnd }} จากทั้งหมด
+      <span class="text-sm text-primary">{{ dataTotal }}</span> รายการ
     </div>
 
-    <div class="space-x-2">
-      <button
-        class="join-item btn sm:btn-sm btn-xs btn-outline border-base-content/10 shadow-sm"
-        @click="goToPage(pageModel - 1)"
-        :disabled="props.disabled || pageModel === 1"
-      >
-        <Icon name="lucide:chevron-left" size="12" />
-        <!-- < -->
-      </button>
-
-      <template
-        v-for="(value, index) in paginationItems"
-        :key="`${value}-${index}`"
-      >
+    <div class="order-1 flex min-w-0 basis-full justify-center sm:order-2 sm:basis-auto">
+      <div class="flex max-w-full items-center gap-1 overflow-x-auto px-1 py-1">
         <button
-          v-if="value !== '...'"
-          class="join-item btn sm:btn-sm btn-xs border-base-content/10 shadow-sm"
-          :class="{
-            'btn-primary pointer-events-none': pageModel === value,
-            'btn-outline': pageModel !== value,
-          }"
-          :aria-disabled="pageModel === value"
-          @click="goToPage(value)"
-          :disabled="props.disabled"
+          class="btn btn-square btn-xs border-base-content/10 bg-base-100 shadow-sm transition-transform hover:-translate-y-0.5 sm:btn-sm"
+          :disabled="props.disabled || pageModel === 1"
+          aria-label="Previous page"
+          @click="goToPage(pageModel - 1)"
         >
-          {{ value }}
+          <Icon name="lucide:chevron-left" size="12" />
         </button>
-        <button
-          v-else
-          class="join-item btn sm:btn-sm btn-xs btn-ghost pointer-events-none"
-        >
-          ...
-        </button>
-      </template>
 
-      <button
-        class="join-item btn sm:btn-sm btn-xs btn-outline border-base-content/10 shadow-sm"
-        @click="goToPage(pageModel + 1)"
-        :disabled="props.disabled || pageModel === totalPages || totalPages === 0"
-      >
-        <Icon name="lucide:chevron-right" size="12" />
-        <!-- > -->
-      </button>
+        <template v-for="(value, index) in paginationItems" :key="`${value}-${index}`">
+          <button
+            v-if="value !== '...'"
+            class="btn btn-square btn-xs border-base-content/10 bg-base-100 shadow-sm transition-transform hover:-translate-y-0.5 sm:btn-sm"
+            :class="{
+              'pointer-events-none shadow-primary/20': pageModel === value,
+              'btn-outline': pageModel !== value,
+            }"
+            :aria-disabled="pageModel === value"
+            :disabled="props.disabled"
+            @click="goToPage(value)"
+          >
+            {{ value }}
+          </button>
+          <button
+            v-else
+            class="btn btn-square btn-xs btn-ghost pointer-events-none sm:btn-sm"
+            aria-label="More pages"
+          >
+            <Icon name="lucide:ellipsis" size="15" />
+          </button>
+        </template>
+
+        <button
+          class="btn btn-square btn-xs border-base-content/10 bg-base-100 shadow-sm transition-transform hover:-translate-y-0.5 sm:btn-sm"
+          :disabled="props.disabled || pageModel === totalPages || totalPages === 0"
+          aria-label="Next page"
+          @click="goToPage(pageModel + 1)"
+        >
+          <Icon name="lucide:chevron-right" size="12" />
+        </button>
+      </div>
     </div>
 
-    <div class="sm:flex hidden items-center gap-2">
-      <div class="text-xs font-semibold">แสดงต่อหน้า:</div>
+    <div class="order-3 flex shrink-0 items-center gap-1 sm:justify-end sm:gap-2">
+      <label class="whitespace-nowrap text-[10px] font-semibold text-base-content/65 sm:text-xs" for="table-page-size">
+        แสดงต่อหน้า:
+      </label>
       <select
-        class="select select-xs w-fit shadow-sm bg-base-300 border-base-content/10"
+        id="table-page-size"
         v-model.number="pageSizeModel"
+        class="select select-xs w-16 border-base-content/10 bg-base-200 font-semibold shadow-sm sm:w-20 sm:select-sm"
+        :disabled="props.disabled"
       >
         <option :value="10">10</option>
         <option :value="20">20</option>
@@ -82,6 +88,12 @@ const emit = defineEmits<{
 
 const dataTotal = computed(() => props.data?.total ?? 0);
 const totalPages = computed(() => props.data?.totalPages ?? 0);
+const rangeStart = computed(() =>
+  dataTotal.value ? (pageModel.value - 1) * pageSizeModel.value + 1 : 0,
+);
+const rangeEnd = computed(() =>
+  Math.min(pageModel.value * pageSizeModel.value, dataTotal.value),
+);
 const paginationItems = computed<(number | "...")[]>(() => {
   if (totalPages.value <= 0) {
     return [];

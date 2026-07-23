@@ -1,7 +1,9 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 export default defineEventHandler(async (event) => {
   const tableName = "tb_master_promotion_types";
+  await requireCurrentAdmin(event);
 
   const db = useDb();
 

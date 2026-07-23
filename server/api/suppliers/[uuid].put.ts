@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type SupplierBody = {
   supplier_code?: string;
@@ -13,6 +14,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<SupplierBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   if (!uuid) {
     throw createError({
@@ -26,7 +28,6 @@ export default defineEventHandler(async (event) => {
   const supplier_address = String(body.supplier_address || "").trim();
   const deleted_by = null;
   const deleted_at = null;
-  const user: any = body.user || "";
 
   if (!supplier_code || !supplier_name) {
     throw createError({
@@ -44,7 +45,7 @@ export default defineEventHandler(async (event) => {
       supplier_code,
       supplier_name,
       supplier_address,
-      user.uuid,
+      admin.uuid,
       deleted_by,
       deleted_at,
       uuid,

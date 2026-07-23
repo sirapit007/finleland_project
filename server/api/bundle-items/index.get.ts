@@ -1,6 +1,8 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 export default defineEventHandler(async (event) => {
+  await requireCurrentAdmin(event);
   const tableName = "tb_event_bundle_items";
 
   const db = useDb();

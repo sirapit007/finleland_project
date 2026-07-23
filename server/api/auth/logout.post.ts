@@ -1,7 +1,7 @@
 export default defineEventHandler((event) => {
-  deleteCookie(event, "admin_token", {
-    path: "/",
-  });
+  for (const cookie of ["user_token", "admin_token"]) {
+    deleteCookie(event, cookie, { path: "/" });
+  }
 
   return {
     success: true,

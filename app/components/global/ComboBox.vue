@@ -28,7 +28,7 @@
     />
 
     <button
-      v-if="!disabled"
+      v-if="!disabled && !!query"
       class="btn btn-xs btn-ghost btn-error absolute right-1 top-1"
       v-on:click="onClearSelect()"
     >
@@ -97,44 +97,30 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps({
-  modelValue: {
-    type: [String, Number, Object, Boolean] as unknown as () => unknown,
-    default: null,
-  },
-  fetchUrl: {
-    type: String,
-    default: "",
-  },
-  placeholder: {
-    type: String,
-    default: "เลือกตัวเลือก...",
-  },
-  label: {
-    type: String,
-    default: "",
-  },
-  value: {
-    type: String,
-    default: "",
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-  clearOnSelect: {
-    type: Boolean,
-    default: false,
-  },
-  // New props for pagination
-  pageSize: {
-    type: Number,
-    default: 50,
-  },
+type ComboBoxProps = {
+  modelValue?: any;
+  fetchUrl?: string;
+  placeholder?: string;
+  label?: string;
+  value?: string;
+  disabled?: boolean;
+  clearOnSelect?: boolean;
+  pageSize?: number;
+};
+
+const props = withDefaults(defineProps<ComboBoxProps>(), {
+  modelValue: null,
+  fetchUrl: "",
+  placeholder: "เลือกตัวเลือก...",
+  label: "",
+  value: "",
+  disabled: false,
+  clearOnSelect: false,
+  pageSize: 50,
 });
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: unknown): void;
+  (e: "update:modelValue", value: any): void;
   (e: "select", value: any): void;
 }>();
 

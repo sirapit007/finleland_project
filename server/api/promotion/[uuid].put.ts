@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type PromotionBody = {
   promotion_product?: string;
@@ -12,6 +13,7 @@ type PromotionBody = {
   promotion_min_quantity?: number;
   promotion_min_purchase_amount?: number;
   promotion_bundle_price?: number;
+    image_url?: string;
   user?: object;
 };
 
@@ -21,6 +23,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<PromotionBody>(event);
+  const admin = await requireCurrentAdmin(event);
   
   if (!uuid) {
     throw createError({
@@ -40,22 +43,21 @@ export default defineEventHandler(async (event) => {
   const promotion_min_quantity = body.promotion_min_quantity || 0;
   const promotion_min_purchase_amount = body.promotion_min_purchase_amount || 0;
   const promotion_bundle_price = body.promotion_bundle_price || 0;
+  const image_url = String(body.image_url || "").trim();
   const deleted_by = null;
   const deleted_at = null;
-  const user: any = body.user || "";
 
   if (
     !promotion_product ||
     !promotion_type ||
     !promotion_name ||
-    !promotion_description ||
     !promotion_start_date ||
     !promotion_end_date
   ) {
     throw createError({
       statusCode: 400,
       statusMessage:
-        "Promotion code, name, description, start date and end date is required",
+        "Promotion code, name, start date and end date is required",
     });
   }
 
@@ -72,11 +74,12 @@ export default defineEventHandler(async (event) => {
     , promotion_min_quantity = $9
     , promotion_min_purchase_amount = $10
     , promotion_bundle_price = $11
-    , updated_by = $12
+    , image_url = $12
+    , updated_by = $13
     , updated_at = now()
-    , deleted_by = $13
-    , deleted_at = $14
-    WHERE uuid = $15
+    , deleted_by = $14
+    , deleted_at = $15
+    WHERE uuid = $16
      RETURNING *`,
     [
       promotion_product,
@@ -90,7 +93,8 @@ export default defineEventHandler(async (event) => {
       promotion_min_quantity,
       promotion_min_purchase_amount,
       promotion_bundle_price,
-      user.uuid,
+      image_url,
+      admin.uuid,
       deleted_by,
       deleted_at,
       uuid,

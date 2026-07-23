@@ -1,6 +1,8 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 export default defineEventHandler(async (event) => {
+  await requireCurrentAdmin(event);
   const db = useDb();
 
   const uuid = getRouterParam(event, "uuid");

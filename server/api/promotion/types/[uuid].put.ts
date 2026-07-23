@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type PromotionTypeBody = {
   promotion_type_code?: string;
@@ -14,6 +15,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<PromotionTypeBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   if (!uuid) {
     throw createError({
@@ -28,7 +30,6 @@ export default defineEventHandler(async (event) => {
   const promotion_type_is_active = (body.promotion_type_is_active || false);
   const deleted_by = null;
   const deleted_at = null;
-  const user: any = body.user || "";
 
   if (!promotion_type_name || !promotion_type_name || !promotion_type_name) {
     throw createError({
@@ -42,7 +43,7 @@ export default defineEventHandler(async (event) => {
     SET promotion_type_code = $1, promotion_type_name = $2, promotion_type_description = $3, promotion_type_is_active = $4, updated_by = $5, updated_at = now(), deleted_by = $6, deleted_at = $7
     WHERE uuid = $8
      RETURNING *`,
-    [promotion_type_code, promotion_type_name, promotion_type_description, promotion_type_is_active, user.uuid, deleted_by, deleted_at, uuid],
+    [promotion_type_code, promotion_type_name, promotion_type_description, promotion_type_is_active, admin.uuid, deleted_by, deleted_at, uuid],
   );
 
   return {

@@ -1,15 +1,21 @@
 <template>
   <div class="p-4 bg-base-100">
-    <div class="flex md:flex-row flex-col justify-between">
-      <div class="space-x-3 xl:flex grid">
+    <div
+      class="flex flex-col justify-between gap-3 md:flex-row md:items-center"
+    >
+      <div
+        class="flex flex-row items-center gap-3 md:flex-col md:items-start md:gap-0"
+      >
         <span class="font-bold text-xl text-primary"
           >Manage Promotion Types</span
         ><span class="font-semibold text-base text-secondary"
           >จัดการประเภทโปรโมชั่น</span
         >
       </div>
-      <div class="flex items-center gap-4">
-        <label class="input sm:input-sm input-xs shadow-sm w-68">
+      <div class="flex w-full gap-2 sm:items-center md:w-auto">
+        <label
+          class="flex-1 input input-xs w-full shadow-sm sm:input-sm md:w-80"
+        >
           <span class="label"><Icon name="lucide:search" size="16" /></span>
           <input
             type="text"
@@ -20,7 +26,7 @@
       </div>
     </div>
     <div
-      class="min-h-[calc(100dvh-12.5rem)] max-h-[calc(100dvh-12.5rem)] overflow-y-auto overflow-x-auto my-4 relative border border-base-content/10 rounded-lg shadow-sm"
+      class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
       :class="pending ? 'backdrop-blur-sm' : ''"
     >
       <p
@@ -32,17 +38,17 @@
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
-        class="table table-zebra sm:table-sm table-xs table-pin-rows table-pin-cols"
+        class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-pin-rows table-pin-cols"
       >
         <thead class="text-xs">
           <tr>
             <td>#</td>
-            <td>Code</td>
-            <td>Name</td>
-            <td>Description</td>
-            <td>Active</td>
-            <td>Created</td>
-            <td>Updated</td>
+            <td>รหัส</td>
+            <td>ชื่อประเภทโปรโมชั่น</td>
+            <td>รายละเอียด</td>
+            <td>เปิดใช้งาน</td>
+            <td>สร้างโดย / เมื่อ</td>
+            <td>แก้ไขโดย / เมื่อ</td>
           </tr>
         </thead>
         <tbody>
@@ -128,7 +134,6 @@ const fnBase = {
       body: {
         ...row,
         promotion_type_is_active: row.promotion_type_is_active ? false : true,
-        user: JSON.parse(localStorage.getItem("web-user") || "null"),
       },
     });
 

@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type CategoryBody = {
   category_name?: string;
@@ -12,6 +13,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<CategoryBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   if (!uuid) {
     throw createError({
@@ -24,7 +26,6 @@ export default defineEventHandler(async (event) => {
     const image_url = String(body.image_url || "").trim();
   const deleted_by = null;
   const deleted_at = null;
-  const user: any = body.user || "";
 
   if (!category_name) {
     throw createError({
@@ -38,7 +39,7 @@ export default defineEventHandler(async (event) => {
     SET category_name = $1, image_url = $2, updated_by = $3, updated_at = now(), deleted_by = $4, deleted_at = $5
     WHERE uuid = $6
      RETURNING *`,
-    [category_name, image_url, user.uuid, deleted_by, deleted_at, uuid],
+    [category_name, image_url, admin.uuid, deleted_by, deleted_at, uuid],
   );
 
   return {

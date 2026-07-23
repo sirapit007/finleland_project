@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
   uuid?: string;
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
   const uuid = getRouterParam(event, "uuid");
   const body = await readBody<ProductBody>(event);
+  const admin = await requireCurrentAdmin(event);
 
   if (!uuid) {
     throw createError({
@@ -27,11 +29,8 @@ export default defineEventHandler(async (event) => {
   const demoAmount = Number(body.demo_amount || 0);
   const demoPrice = Number(body.demo_price || 0);
   const demoComment = String(body.demo_comment || "").trim();
-  const deletedBy = body.deleted_by
-    ? String(body.deleted_by || "").trim()
-    : null;
+  const deletedBy = body.deleted_by ? admin.uuid : null;
   const deletedAt = deletedBy ? new Date() : null;
-  const user: any = body.user || "";
 
   if (!Number.isFinite(demoAmount) || demoAmount < 0) {
     throw createError({
@@ -50,7 +49,7 @@ export default defineEventHandler(async (event) => {
       demoAmount,
       demoPrice,
       demoComment,
-      user.uuid,
+      admin.uuid,
       deletedBy,
       deletedAt,
       uuid,

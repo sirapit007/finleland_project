@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type SupplierBody = {
   supplier_code?: string;
@@ -12,11 +13,11 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<SupplierBody>(event);
   const db = useDb();
+  const admin = await requireCurrentAdmin(event);
 
   const supplier_code = String(body.supplier_code || "").trim();
   const supplier_name = String(body.supplier_name || "").trim();
   const supplier_address = String(body.supplier_address || "").trim();
-  const user: any = body.user || "";
 
   if (!supplier_code || !supplier_name) {
     throw createError({
@@ -29,7 +30,7 @@ export default defineEventHandler(async (event) => {
     `INSERT INTO ${tableName} (supplier_code, supplier_name, supplier_address, created_by)
     VALUES($1, $2, $3, $4)
      RETURNING *`,
-    [supplier_code, supplier_name, supplier_address, user.uuid],
+    [supplier_code, supplier_name, supplier_address, admin.uuid],
   );
 
   return {

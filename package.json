@@ -17,11 +17,13 @@
     "nuxt": "^4.4.4",
     "pg": "^8.20.0",
     "tailwindcss": "^4.3.0",
+    "thailand-geography-json": "github:thailand-geography-data/thailand-geography-json",
     "vue": "^3.5.33",
     "vue-router": "^5.0.6"
   },
   "devDependencies": {
     "@nuxt/icon": "^2.2.2",
-    "@types/pg": "^8.20.0"
+    "@types/pg": "^8.20.0",
+    "prettier": "^3.9.6"
   }
 }

@@ -28,19 +28,11 @@ async function upload(e: Event) {
 </script>
 
 <template>
-  <!-- <div class="border hover:bg-base-200">
-    <input type="file" accept="image/*" @change="upload" />
-
-    <div v-if="loading">Uploading...</div>
-
-    <img v-if="model" :src="model" width="200" />
-  </div> -->
-
   <div
     class="m-1 group relative overflow-hidden rounded-lg border-2 border-dashed border-primary/30 bg-base-100 transition-all duration-300 hover:border-primary hover:bg-base-200"
   >
     <label
-      class="flex h-112 cursor-pointer flex-col items-center justify-center gap-4"
+      class="flex h-80 cursor-pointer flex-col items-center justify-center gap-4"
     >
       <input type="file" accept="image/*" class="hidden" @change="upload" />
 
@@ -65,12 +57,12 @@ async function upload(e: Event) {
         </div>
 
         <div class="text-center">
-          <p class="text-lg font-semibold">Upload Image</p>
+          <p class="text-lg font-semibold">อัปโหลดรูปภาพ</p>
           <p class="text-sm text-base-content/60">
-            Drag & Drop หรือคลิกเพื่อเลือกไฟล์
+            ลากและวาง หรือคลิกเพื่อเลือกไฟล์
           </p>
           <p class="mt-2 text-xs text-base-content/40">
-            PNG, JPG, WEBP (Max 5MB)
+            PNG, JPG, WEBP (สูงสุด 5MB)
           </p>
         </div>
       </template>
