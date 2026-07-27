@@ -1,4 +1,6 @@
 <template>
+  <AuthBothModal ref="signModal" />
+
   <article
     class="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
   >
@@ -31,22 +33,36 @@
         >
           {{ props.object.product_category_name }}
         </span>
-        <h2 class="min-h-12 line-clamp-2 text-sm font-semibold leading-6 text-base-content sm:text-base">
+        <h2
+          class="min-h-12 line-clamp-2 text-sm font-semibold leading-6 text-base-content sm:text-base"
+        >
           {{ props.object.product_name }}
         </h2>
-        <p v-if="props.object.product_code" class="truncate text-xs text-base-content/50">
+        <p
+          v-if="props.object.product_code"
+          class="truncate text-xs text-base-content/50"
+        >
           รหัสสินค้า {{ props.object.product_code }}
         </p>
       </div>
     </NuxtLink>
 
-    <div v-if="user" class="mt-auto space-y-3 border-t border-base-300 px-4 pb-4 pt-3">
+    <div
+      v-if="user"
+      class="mt-auto space-y-3 border-t border-base-300 px-4 pb-4 pt-3"
+    >
       <div class="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p v-if="hasDiscount" class="text-xs text-base-content/45 line-through">
+          <p
+            v-if="hasDiscount"
+            class="text-xs text-base-content/45 line-through"
+          >
             ฿{{ formatPrice(originalPrice) }}
           </p>
-          <p class="text-xl font-bold" :class="hasDiscount ? 'text-error' : 'text-primary'">
+          <p
+            class="text-xl font-bold"
+            :class="hasDiscount ? 'text-error' : 'text-primary'"
+          >
             ฿{{ formatPrice(displayPrice) }}
           </p>
           <p
@@ -58,7 +74,11 @@
           </p>
         </div>
         <div class="join">
-          <button class="btn btn-xs join-item" type="button" @click="onReduceQuantity">
+          <button
+            class="btn btn-xs join-item"
+            type="button"
+            @click="onReduceQuantity"
+          >
             <Icon name="lucide:minus" size="14" />
           </button>
           <input
@@ -68,7 +88,11 @@
             class="input input-xs join-item w-11 text-center"
             aria-label="จำนวนสินค้า"
           />
-          <button class="btn btn-xs join-item" type="button" @click="onIncreaseQuantity">
+          <button
+            class="btn btn-xs join-item"
+            type="button"
+            @click="onIncreaseQuantity"
+          >
             <Icon name="lucide:plus" size="14" />
           </button>
         </div>
@@ -79,19 +103,30 @@
         :disabled="quantity <= 0 || isAdding"
         @click="onAddToCart"
       >
-        <Icon :name="isAdding ? 'lucide:loader-circle' : 'lucide:shopping-cart'" :class="isAdding ? 'animate-spin' : ''" size="16" />
+        <Icon
+          :name="isAdding ? 'lucide:loader-circle' : 'lucide:shopping-cart'"
+          :class="isAdding ? 'animate-spin' : ''"
+          size="16"
+        />
         เพิ่มลงตะกร้า
       </button>
     </div>
 
     <div v-else class="mt-auto border-t border-base-300 px-4 py-4">
-      <p class="text-sm font-semibold text-primary">เข้าสู่ระบบเพื่อดูราคา</p>
+      <p class="text-sm font-semibold text-primary cursor-pointer" @click="onSignIn">
+        เข้าสู่ระบบเพื่อดูราคา
+      </p>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
 const props = defineProps<{ object: Record<string, any> }>();
+type SignModalHandle = {
+  onSignIn: () => void;
+};
+
+const signModal = ref<SignModalHandle | null>(null);
 
 const quantity = ref(0);
 const isAdding = ref(false);
@@ -112,7 +147,9 @@ const imageSrc = computed(() => {
   }
 });
 
-const originalPrice = computed(() => Number(props.object.product_selling_price || 0));
+const originalPrice = computed(() =>
+  Number(props.object.product_selling_price || 0),
+);
 const promotionPrice = computed(() =>
   Number(
     props.object.promotion_discounted_price ||
@@ -122,30 +159,45 @@ const promotionPrice = computed(() =>
       0,
   ),
 );
-const hasDiscount = computed(() => promotionPrice.value > 0 && promotionPrice.value < originalPrice.value);
-const displayPrice = computed(() => (hasDiscount.value ? promotionPrice.value : originalPrice.value));
+const hasDiscount = computed(
+  () => promotionPrice.value > 0 && promotionPrice.value < originalPrice.value,
+);
+const displayPrice = computed(() =>
+  hasDiscount.value ? promotionPrice.value : originalPrice.value,
+);
 const discountLabel = computed(() => {
   if (!originalPrice.value || !promotionPrice.value) return "";
-  const percent = Math.round(((originalPrice.value - promotionPrice.value) / originalPrice.value) * 100);
+  const percent = Math.round(
+    ((originalPrice.value - promotionPrice.value) / originalPrice.value) * 100,
+  );
   return percent > 0 ? `${percent}%` : "พิเศษ";
 });
 const promotionRequirement = computed(() => {
   const requirements: string[] = [];
   const minQuantity = Number(props.object.promotion_min_quantity || 0);
-  const minPurchaseAmount = Number(props.object.promotion_min_purchase_amount || 0);
+  const minPurchaseAmount = Number(
+    props.object.promotion_min_purchase_amount || 0,
+  );
 
   if (minQuantity > 0) {
-    requirements.push(`ซื้อขั้นต่ำ ${minQuantity.toLocaleString("th-TH")} ชิ้น`);
+    requirements.push(
+      `ซื้อขั้นต่ำ ${minQuantity.toLocaleString("th-TH")} ชิ้น`,
+    );
   }
   if (minPurchaseAmount > 0) {
     requirements.push(`ยอดซื้อขั้นต่ำ ฿${formatPrice(minPurchaseAmount)}`);
   }
 
-  return requirements.length ? `${requirements.join(" หรือ ")} เพื่อรับราคาพิเศษ` : "";
+  return requirements.length
+    ? `${requirements.join(" หรือ ")} เพื่อรับราคาพิเศษ`
+    : "";
 });
 
 const formatPrice = (price: number) =>
-  new Intl.NumberFormat("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(price);
+  new Intl.NumberFormat("th-TH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(price);
 
 const onReduceQuantity = () => {
   quantity.value = Math.max(0, Number(quantity.value || 0) - 1);
@@ -164,11 +216,19 @@ const onAddToCart = async () => {
 
   isAdding.value = true;
   try {
-    await addToBasket({ ...props.object, product_selling_price: originalPrice.value }, quantity.value);
-    showToast(`เพิ่ม ${props.object.product_name} ลงตะกร้าแล้ว`, "success", 3500, {
-      label: "ดูตะกร้า",
-      to: "/shopping-basket",
-    });
+    await addToBasket(
+      { ...props.object, product_selling_price: originalPrice.value },
+      quantity.value,
+    );
+    showToast(
+      `เพิ่ม ${props.object.product_name} ลงตะกร้าแล้ว`,
+      "success",
+      3500,
+      {
+        label: "ดูตะกร้า",
+        to: "/shopping-basket",
+      },
+    );
     quantity.value = 0;
   } catch (error) {
     console.error("Unable to add product to basket", error);
@@ -176,6 +236,10 @@ const onAddToCart = async () => {
   } finally {
     isAdding.value = false;
   }
+};
+
+const onSignIn = () => {
+  signModal.value?.onSignIn();
 };
 
 onMounted(syncFromStorage);

@@ -409,14 +409,7 @@
     </div>
     <div
       class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
-      :class="pending ? 'backdrop-blur-sm' : ''"
     >
-      <p
-        v-if="pending"
-        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-primary/75 text-4xl font-bold z-20"
-      >
-        Loading...
-      </p>
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
@@ -438,7 +431,9 @@
           </tr>
         </thead>
         <tbody>
+          <SkeletonTableRows v-if="pending" :columns="11" :image-column="1" />
           <tr
+            v-else
             v-for="row in data?.rows"
             :key="row.id"
             class="hover:bg-primary/5"
@@ -446,11 +441,14 @@
             <td>{{ row.id }}</td>
             <td>
               <div
-                v-if="row.image_url"
+                v-if="firstProductImageUrl(row.image_url)"
                 class="h-12 w-12 cursor-pointer"
-                v-on:click="fnImage.onOpen(row.image_url)"
+                v-on:click="fnImage.onOpen(firstProductImageUrl(row.image_url))"
               >
-                <img :src="row.image_url" class="h-full w-full object-cover" />
+                <img
+                  :src="firstProductImageUrl(row.image_url)"
+                  class="h-full w-full object-cover"
+                />
               </div>
               <div v-else class="h-12 w-12 cursor-not-allowed">
                 <img
@@ -514,6 +512,7 @@ definePageMeta({
 });
 
 import { useDayjs } from "~~/composables/useDayjs";
+import { firstProductImageUrl, normalizeProductImageUrls } from "~/utils/productImages";
 const dayjs = useDayjs();
 
 const baseModal = ref<HTMLDialogElement | null>(null);
@@ -557,7 +556,7 @@ const { data, pending, error, refresh } = await useFetch("/api/products", {
       ...data,
       rows: data.rows.map((item) => ({
         ...item,
-        image_url: item.image_url ? JSON.parse(item.image_url) : [],
+        image_url: normalizeProductImageUrls(item.image_url),
       })),
     };
   },

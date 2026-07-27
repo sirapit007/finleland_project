@@ -47,7 +47,8 @@
 
     <section class="mx-auto w-full max-w-7xl  px-4 sm:px-2 lg:px-1 py-6 sm:py-8 lg:py-10">
       <div class="relative overflow-hidden">
-        <CarouselPromotions :data="rows.promotion" />
+        <SkeletonHomeSections v-if="loading.promotion" type="promotion" />
+        <CarouselPromotions v-else :data="rows.promotion" />
       </div>
     </section>
 
@@ -59,12 +60,13 @@
           หมวดหมู่สินค้า
         </h2>
         <div class="relative overflow-hidden">
-          <AvatarCategories :items="rows.categories" />
+          <SkeletonHomeSections v-if="loading.categories" type="categories" />
+          <AvatarCategories v-else :items="rows.categories" />
         </div>
       </div>
     </section>
 
-    <section class="bg-base-200">
+    <section class="bg-base-200 border border-base-300">
       <div
         class="mx-auto flex w-full max-w-7xl flex-col items-center gap-5 px-4 py-10 text-center sm:px-6 md:flex-row md:text-left lg:px-8 lg:py-14"
       >
@@ -101,12 +103,13 @@
           </NuxtLink>
         </div>
         <div class="relative overflow-hidden">
-          <CarouselProducts :data="rows.products" />
+          <SkeletonHomeSections v-if="loading.products" type="products" />
+          <CarouselProducts v-else :data="rows.products" />
         </div>
       </div>
     </section>
 
-    <section class="bg-base-200">
+    <section class="bg-base-200 border border-base-300">
       <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <div
           class="relative space-y-4 text-sm italic leading-7 text-base-content/75 sm:text-base sm:leading-8"
@@ -144,44 +147,45 @@ const rows = ref<any>({
   categories: [],
   promotion: [],
   products: [],
-  related_products: [],
 });
-const tabs = ref("af285599-4943-4786-b140-f2b9cd2aaf0e");
+const loading = reactive({ categories: true, promotion: true, products: true });
 
 const openMap = () => {
   window.open("https://maps.app.goo.gl/QLdLX6w2srqyPVzM8", "_blank");
 };
 
 onMounted(async () => {
-  const categories: any = await $fetch("/api/categories", {
-    params: { pageSize: 999 },
-  });
-  rows.value.categories = categories.rows;
-
-  const promotion: any = await $fetch("/api/promotion", {
-    params: { now: true },
-  });
-  rows.value.promotion = promotion.rows;
-
-  const relatedProducts: any = await $fetch("/api/products", {
-    params: { pageSize: 12, category: tabs.value },
-  });
-  rows.value.related_products = relatedProducts.rows;
-
-  const products: any = await $fetch("/api/products", {
-    params: { pageSize: 12, orderBy: "product.created_at DESC" },
-  });
-  products.rows = products.rows.map((item: any) => ({
-    ...item,
-    image_url: item.image_url ? JSON.parse(item.image_url) : [],
-  }));
-  rows.value.products = products.rows;
-});
-
-watch(tabs, async (newValue) => {
-  const relatedProducts: any = await $fetch("/api/products", {
-    params: { pageSize: 12, category: newValue },
-  });
-  rows.value.related_products = relatedProducts.rows;
+  await Promise.all([
+    (async () => {
+      try {
+        const categories: any = await $fetch("/api/categories", {
+          params: { pageSize: 999 },
+        });
+        rows.value.categories = categories.rows || [];
+      } finally {
+        loading.categories = false;
+      }
+    })(),
+    (async () => {
+      try {
+        const promotion: any = await $fetch("/api/promotion", {
+          params: { now: true },
+        });
+        rows.value.promotion = promotion.rows || [];
+      } finally {
+        loading.promotion = false;
+      }
+    })(),
+    (async () => {
+      try {
+        const products: any = await $fetch("/api/products", {
+          params: { pageSize: 12, orderBy: "base.id DESC" },
+        });
+        rows.value.products = products.rows || [];
+      } finally {
+        loading.products = false;
+      }
+    })(),
+  ]);
 });
 </script>

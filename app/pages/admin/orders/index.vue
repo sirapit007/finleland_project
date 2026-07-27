@@ -156,14 +156,7 @@
 
     <div
       class="relative md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)] min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm md:my-4 sm:my-2 my-1"
-      :class="pending ? 'backdrop-blur-sm' : ''"
     >
-      <p
-        v-if="pending"
-        class="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 text-4xl font-bold text-primary/75"
-      >
-        Loading...
-      </p>
       <p v-if="error" class="p-4 text-error">{{ error.message }}</p>
       <table
         class="table min-w-max table-zebra bg-base-100 text-xs table-pin-rows table-pin-cols sm:table-sm"
@@ -182,7 +175,8 @@
           </tr>
         </thead>
         <tbody>
-          <template v-for="order in data?.rows || []" :key="order.uuid">
+          <SkeletonTableRows v-if="pending" :columns="9" />
+          <template v-else v-for="order in data?.rows || []" :key="order.uuid">
             <tr class="hover:bg-primary/5">
               <td>
                 <p class="font-mono font-bold text-primary">
@@ -272,14 +266,9 @@
             </tr>
             <tr v-if="expandedOrderUuid === order.uuid">
               <td colspan="9" class="bg-base-200/40 p-0">
-                <div
+                <SkeletonOrderDetail
                   v-if="detailLoadingOrderUuid === order.uuid"
-                  class="flex justify-center py-10"
-                >
-                  <span
-                    class="loading loading-spinner loading-md text-primary"
-                  />
-                </div>
+                />
                 <div
                   v-else
                   class="grid gap-5 p-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]"
@@ -393,83 +382,12 @@
                         </tbody>
                       </table>
                     </div>
-                    <div
-                      class="mt-4 flex justify-end gap-5 border-t border-base-300 pt-3 text-sm"
-                    >
-                      <span
-                        >ส่วนลด ฿{{ formatMoney(order.order_discount) }}</span
-                      ><span class="font-bold text-primary"
-                        >ยอดรวม ฿{{
-                          formatMoney(order.order_grand_total)
-                        }}</span
-                      >
-                    </div>
                   </section>
                   <div class="space-y-5">
-                    <section
-                      class="rounded-xl border border-base-300 bg-base-100 p-4"
-                    >
-                      <div class="mb-3 flex items-center gap-2">
-                        <Icon
-                          name="lucide:map-pinned"
-                          size="18"
-                          class="text-primary"
-                        />
-                        <h2 class="font-bold">ที่อยู่จัดส่ง</h2>
-                      </div>
-                      <div
-                        v-if="order.order_delivery_method === 'pickup'"
-                        class="rounded-lg bg-base-200 p-3 text-sm"
-                      >
-                        <p class="font-semibold">
-                          {{
-                            order.order_delivery_label || "รับสินค้าด้วยตัวเอง"
-                          }}
-                        </p>
-                        <p class="mt-1 text-xs text-base-content/60">
-                          {{
-                            order.order_delivery_description ||
-                            "ลูกค้าจะรับสินค้าที่จุดรับสินค้า"
-                          }}
-                        </p>
-                      </div>
-                      <div v-else class="space-y-2 text-sm">
-                        <div
-                          class="flex flex-wrap items-center justify-between gap-2"
-                        >
-                          <p class="font-semibold">
-                            {{ order.order_shipping_recipient || "-" }}
-                          </p>
-                          <span
-                            v-if="order.order_shipping_label"
-                            class="badge badge-outline badge-sm"
-                          >
-                            {{ order.order_shipping_label }}
-                          </span>
-                        </div>
-                        <p
-                          v-if="order.order_shipping_phone"
-                          class="text-base-content/65"
-                        >
-                          {{ order.order_shipping_phone }}
-                        </p>
-                        <p class="leading-6 text-xs text-base-content/75">
-                          {{ shippingAddressLine(order) || "-" }}
-                        </p>
-                        <p
-                          v-if="order.order_shipping_postcode"
-                          class="text-xs text-base-content/55"
-                        >
-                          รหัสไปรษณีย์ {{ order.order_shipping_postcode }}
-                        </p>
-                        <p
-                          v-if="order.order_shipping_note"
-                          class="rounded-lg bg-warning/10 p-2 text-xs text-base-content/70"
-                        >
-                          หมายเหตุ: {{ order.order_shipping_note }}
-                        </p>
-                      </div>
-                    </section>
+                    <OrderSummary
+                      :order="order"
+                      :total-quantity="orderTotalQuantity(order)"
+                    />
                     <section
                       class="rounded-xl border border-base-300 bg-base-100 p-4"
                     >
@@ -606,15 +524,16 @@ const statusMeta = (status: string) =>
   statusMap[status] || { badge: "badge-ghost", label: status || "-" };
 const paymentMeta = (status: string) =>
   paymentMap[status] || { badge: "badge-ghost", label: status || "-" };
-const shippingAddressLine = (order: Row) =>
-  [
-    order.order_shipping_address,
-    order.order_shipping_subdistrict,
-    order.order_shipping_district,
-    order.order_shipping_province,
-  ]
-    .filter(Boolean)
-    .join(" ");
+
+const orderTotalQuantity = (order: Row) => {
+  const items = detailByOrder.value[order.uuid]?.items;
+  if (!items) return Number(order.order_item_count || 0);
+
+  return items.reduce(
+    (total, item) => total + Number(item.order_item_quantity || 0),
+    0,
+  );
+};
 
 const isTerminal = (order: Row) =>
   ["completed", "canceled"].includes(order.order_status);

@@ -1,20 +1,10 @@
 <script setup lang="ts">
-const model = defineModel<string[]>();
+import { normalizeProductImageUrls } from "~/utils/productImages";
+
+const model = defineModel<string[]>({ default: () => [] });
 
 const loading = ref(false);
-const images = ref<string[]>([]);
-
-watch(
-  () => model.value,
-  (value) => {
-    images.value = value ?? [];
-  },
-  { immediate: true },
-);
-
-watch(images, (value) => {
-  model.value = value;
-});
+const images = computed(() => normalizeProductImageUrls(model.value));
 
 async function uploadFile(file: File) {
   const formData = new FormData();
@@ -39,11 +29,13 @@ async function upload(e: Event) {
       files.map((file) => uploadFile(file)),
     );
 
-    uploads.forEach((result) => {
-      if (result.status === "fulfilled") {
-        images.value.push(result.value);
-      }
-    });
+    const uploadedUrls = uploads.flatMap((result) =>
+      result.status === "fulfilled" ? [result.value] : [],
+    );
+
+    if (uploadedUrls.length) {
+      model.value = [...images.value, ...uploadedUrls];
+    }
   } finally {
     loading.value = false;
     (e.target as HTMLInputElement).value = "";
@@ -51,7 +43,7 @@ async function upload(e: Event) {
 }
 
 function removeImage(index: number) {
-  images.value.splice(index, 1);
+  model.value = images.value.filter((_, imageIndex) => imageIndex !== index);
 }
 </script>
 

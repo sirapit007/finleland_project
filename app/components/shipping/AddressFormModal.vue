@@ -30,9 +30,13 @@
             <input
               v-model.trim="form.shipping_phone"
               type="tel"
-              inputmode="tel"
+              inputmode="numeric"
+              autocomplete="tel"
+              pattern="[0-9]{10}"
+              minlength="10"
+              maxlength="10"
               class="input input-sm w-full"
-              placeholder="08x-xxx-xxxx"
+              placeholder="กรอกเบอร์โทรศัพท์ 10 หลัก"
               required
             />
           </fieldset>

@@ -1,4 +1,8 @@
 import { useDb } from "@@/server/utils/db";
+import {
+  normalizeProductImageUrls,
+  serializeProductImageUrls,
+} from "@@/server/utils/productImages";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
@@ -8,7 +12,7 @@ type ProductBody = {
   product_category?: string;
   product_cost_price?: number;
   product_selling_price?: number;
-  image_url?: string;
+  image_url?: unknown;
   user?: object;
 };
 
@@ -25,7 +29,7 @@ export default defineEventHandler(async (event) => {
   const product_category = String(body.product_category || "").trim();
   const product_cost_price = Number(body.product_cost_price || 0);
   const product_selling_price = Number(body.product_selling_price || 0);
-  const image_url = String(body.image_url || "").trim();
+  const image_url = serializeProductImageUrls(body.image_url);
 
   if (
     !product_code ||
@@ -63,6 +67,9 @@ export default defineEventHandler(async (event) => {
   );
 
   return {
-    row: result.rows[0],
+    row: {
+      ...result.rows[0],
+      image_url: normalizeProductImageUrls(result.rows[0]?.image_url),
+    },
   };
 });

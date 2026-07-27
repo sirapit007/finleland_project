@@ -4,7 +4,7 @@
       <div
         class="mb-6 shadow-sm rounded-box border border-base-300 bg-base-100 p-5"
       >
-        <ModalSignIn admin />
+        <AuthSignInForm admin />
       </div>
     </section>
   </main>

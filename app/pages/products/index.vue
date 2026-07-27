@@ -35,7 +35,19 @@
         <div class="col-span-full text-sm sm:text-base">
           หมวดหมู่สินค้า
         </div>
-        <NuxtLink
+        <template v-if="isCategoriesLoading">
+          <div
+            v-for="item in 7"
+            :key="item"
+            class="flex items-center justify-between p-2"
+            aria-hidden="true"
+          >
+            <div class="skeleton h-3 w-24" />
+            <div class="skeleton h-6 w-9 rounded-full" />
+          </div>
+        </template>
+        <template v-else>
+          <NuxtLink
           to="/products"
           class="group flex cursor-pointer items-center justify-between rounded-lg p-2 text-xs sm:text-sm"
           :class="
@@ -55,8 +67,8 @@
           >
             {{ totalOwnerCount }}
           </div>
-        </NuxtLink>
-        <NuxtLink
+          </NuxtLink>
+          <NuxtLink
           class="group flex cursor-pointer items-center justify-between rounded-lg p-2 text-xs sm:text-sm"
           v-for="value in base?.rows"
           :key="value.demo_owner"
@@ -81,7 +93,8 @@
           >
             {{ value.qty_count }}
           </div>
-        </NuxtLink>
+          </NuxtLink>
+        </template>
       </div>
       <div class="min-w-0 flex-1">
         <div
@@ -183,11 +196,14 @@
         <CardPagination v-model:page="page" :data="data" :disabled="pending" />
         <p v-if="error" class="text-error">{{ error.message }}</p>
 
-        <div v-if="pending" class="text-center my-4">
-          <span class="loading loading-spinner loading-xl"></span>
+        <div
+          v-if="pending"
+          class="my-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+        >
+          <SkeletonProductCards :count="pageSize" />
         </div>
         <div
-          v-if="data?.rows.length"
+          v-else-if="data?.rows.length"
           class="grid lg:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4 my-4"
         >
           <template v-for="row in data?.rows">
@@ -229,20 +245,12 @@ const totalOwnerCount = computed(() => {
 const base = ref<any>({
   rows: [],
 });
+const isCategoriesLoading = ref(true);
 
 const { data, pending, error } = await useFetch("/api/products", {
   server: false,
   query: productQuery,
   watch: [productQuery],
-  transform: (data) => {
-    return {
-      ...data,
-      rows: data.rows.map((item) => ({
-        ...item,
-        image_url: item.image_url ? JSON.parse(item.image_url) : [],
-      })),
-    };
-  },
 });
 
 watch(selectedCategory, () => {
@@ -250,8 +258,12 @@ watch(selectedCategory, () => {
 });
 
 onMounted(async () => {
-  base.value = await $fetch("/api/categories", {
-    params: { pageSize: 999 },
-  });
+  try {
+    base.value = await $fetch("/api/categories", {
+      params: { pageSize: 999 },
+    });
+  } finally {
+    isCategoriesLoading.value = false;
+  }
 });
 </script>

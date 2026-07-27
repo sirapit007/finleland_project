@@ -1,14 +1,50 @@
 <template>
-  <div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
+  <AuthBothModal ref="signModal" />
+
+  <div
+    v-if="isProductLoading"
+    class="mx-auto grid w-full max-w-7xl gap-8 px-4 py-8 lg:grid-cols-2 lg:px-8 lg:py-12"
+    aria-hidden="true"
+  >
+    <div class="skeleton h-72 w-full rounded-2xl" />
+    <div class="space-y-5 py-4">
+      <div class="skeleton h-4 w-2/3" />
+      <div class="skeleton h-6 w-28 rounded-full" />
+      <div class="skeleton h-10 w-4/5" />
+      <div class="skeleton h-7 w-36" />
+      <div class="skeleton h-10 w-full" />
+      <div class="skeleton h-4 w-44" />
+    </div>
+  </div>
+  <div v-else class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-12">
     <div class="flex flex-col gap-6 lg:flex-row lg:gap-8">
         <div
-          v-if="base.object.image_url"
-          class="flex w-full flex-1 justify-center lg:justify-end"
+          v-if="selectedProductImage"
+          class="flex w-full flex-1 flex-col items-center gap-3 lg:items-end"
         >
           <img
-            :src="base.object.image_url"
+            :src="selectedProductImage"
             class="h-56 max-w-full rounded-lg border border-base-300 object-contain sm:h-64 lg:h-75"
           />
+          <div
+            v-if="productImages.length > 1"
+            class="flex max-w-full gap-2 overflow-x-auto pb-1"
+          >
+            <button
+              v-for="image in productImages"
+              :key="image"
+              type="button"
+              class="shrink-0 rounded-lg border bg-base-100 p-1 transition"
+              :class="
+                selectedProductImage === image
+                  ? 'border-primary ring-2 ring-primary/20'
+                  : 'border-base-300 hover:border-primary/50'
+              "
+              @click="activeProductImage = image"
+            >
+              <img :src="image" class="size-14 object-contain sm:size-16" />
+            </button>
+          </div>
         </div>
         <div v-else class="flex w-full flex-1 justify-center lg:justify-end">
           <img
@@ -96,7 +132,7 @@
               </button>
             </div>
           </div>
-          <div v-else class="text-sm font-semibold text-primary sm:text-base lg:text-lg">
+          <div v-else class="text-sm font-semibold text-primary sm:text-base lg:text-lg cursor-pointer" @click="onSignIn">
             เข้าสู่ระบบเพื่อดูราคา
           </div>
           <hr class="text-base-content/10" />
@@ -119,7 +155,10 @@
     <div
       class="relative mx-auto w-full max-w-7xl overflow-hidden px-4 sm:px-6 lg:px-8"
     >
-      <CarouselProducts :data="rows.related_categories" />
+      <div v-if="isRelatedLoading" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <SkeletonProductCards :count="4" />
+      </div>
+      <CarouselProducts v-else :data="rows.related_categories" />
     </div>
   </div>
   <div
@@ -134,17 +173,39 @@
     <div
       class="relative mx-auto w-full max-w-7xl overflow-hidden px-4 sm:px-6 lg:px-8"
     >
-      <CarouselProducts :data="rows.new_products" />
+      <div v-if="isNewProductsLoading" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        <SkeletonProductCards :count="4" />
+      </div>
+      <CarouselProducts v-else :data="rows.new_products" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { normalizeProductImageUrls } from "~/utils/productImages";
+type SignModalHandle = {
+  onSignIn: () => void;
+};
+
+const signModal = ref<SignModalHandle | null>(null);
+const isProductLoading = ref(true);
+const isRelatedLoading = ref(true);
+const isNewProductsLoading = ref(true);
+
 const route = useRoute();
 const base = ref<any>({
   rows: [],
   object: {},
 });
+const activeProductImage = ref("");
+const productImages = computed(() =>
+  normalizeProductImageUrls(base.value.object?.image_url),
+);
+const selectedProductImage = computed(() =>
+  productImages.value.includes(activeProductImage.value)
+    ? activeProductImage.value
+    : productImages.value[0] || "",
+);
 
 const rows = ref<any>({
   related_categories: [],
@@ -244,31 +305,41 @@ onMounted(async () => {
   const stored = localStorage.getItem("web-user");
   user.value = stored ? JSON.parse(stored) : null;
 
-  const object: any = await $fetch(`/api/products`, {
-    params: { product_name: route.params.product },
-  });
-  object.rows = object.rows.map((item: any) => ({
-    ...item,
-    image_url: item.image_url ? JSON.parse(item.image_url) : [],
-  }));
-  base.value.object = object.rows[0];
+  try {
+    const object: any = await $fetch(`/api/products`, {
+      params: { product_name: route.params.product },
+    });
+    base.value.object = object.rows?.[0] || {};
+  } finally {
+    isProductLoading.value = false;
+  }
 
-  const relatedCategories: any = await $fetch(`/api/products/`, {
-    params: { category: base.value.object.product_category },
-  });
-  relatedCategories.rows = relatedCategories.rows.map((item: any) => ({
-    ...item,
-    image_url: item.image_url ? JSON.parse(item.image_url) : [],
-  }));
-  rows.value.related_categories = relatedCategories.rows;
-
-  const newProducts: any = await $fetch(`/api/products`, {
-    params: { pageSize: 12, orderBy: "product.created_at DESC" },
-  });
-  newProducts.rows = newProducts.rows.map((item: any) => ({
-    ...item,
-    image_url: item.image_url ? JSON.parse(item.image_url) : [],
-  }));
-  rows.value.new_products = newProducts.rows;
+  await Promise.all([
+    (async () => {
+      try {
+        if (!base.value.object.product_category) return;
+        const relatedCategories: any = await $fetch(`/api/products/`, {
+          params: { category: base.value.object.product_category },
+        });
+        rows.value.related_categories = relatedCategories.rows || [];
+      } finally {
+        isRelatedLoading.value = false;
+      }
+    })(),
+    (async () => {
+      try {
+        const newProducts: any = await $fetch(`/api/products`, {
+          params: { pageSize: 12, orderBy: "base.id DESC" },
+        });
+        rows.value.new_products = newProducts.rows || [];
+      } finally {
+        isNewProductsLoading.value = false;
+      }
+    })(),
+  ]);
 });
+
+const onSignIn = () => {
+  signModal.value?.onSignIn();
+};
 </script>

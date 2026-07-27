@@ -99,11 +99,11 @@ export async function requireCurrentActor(event: any): Promise<{
   isAdmin: boolean;
   user: SessionUser;
 }> {
-  if (getUserSession(event)) {
-    return { isAdmin: false, user: await requireCurrentUser(event) };
-  }
   if (getAdminSession(event)) {
     return { isAdmin: true, user: await requireCurrentAdmin(event) };
+  }
+  if (getUserSession(event)) {
+    return { isAdmin: false, user: await requireCurrentUser(event) };
   }
 
   throw createError({

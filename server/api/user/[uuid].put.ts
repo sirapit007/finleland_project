@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   const lastname = String(body.lastname || "").trim();
   const phone = String(body.phone || "").trim();
   const email = String(body.email || "").trim();
-  const password = actor.isAdmin ? String(body.password || "").trim() : "";
+  const password = actor.isAdmin ? String(body.password || "") : "";
   const role = actor.isAdmin
     ? String(body.role || "User").trim()
     : String(actor.user.role || "User");
@@ -54,11 +54,25 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (!/^[0-9]{10}$/.test(phone)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Phone number must contain exactly 10 digits",
+    });
+  }
+
+  if (password && password.length < 6) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Password must contain at least 6 characters",
+    });
+  }
+
   // ตรวจสอบ email ซ้ำ (ยกเว้น record ตัวเอง)
   const duplicate = await db.query(
     `SELECT id
      FROM ${tableName}
-     WHERE email = $1 OR phone = $2
+     WHERE (email = $1 OR phone = $2)
        AND uuid <> $3
      LIMIT 1`,
     [email, phone, uuid],

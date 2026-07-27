@@ -1,21 +1,5 @@
 <template>
-  <dialog ref="signInModal" class="modal">
-    <div class="modal-box max-w-md">
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle absolute right-4 top-4">×</button>
-      </form>
-      <ModalSignIn :key="signInKey" @update:leaving="onSignUp" />
-    </div>
-  </dialog>
-
-  <dialog ref="signUpModal" class="modal">
-    <div class="modal-box max-w-md">
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle absolute right-4 top-4">×</button>
-      </form>
-      <ModalSignUp :key="signUpKey" @update:leaving="onSignIn" />
-    </div>
-  </dialog>
+  <AuthBothModal ref="signModal" />
 
   <header class="shrink-0 border-b border-base-300 bg-base-100">
     <div
@@ -148,7 +132,7 @@
     </div>
   </header>
 
-  <div class="fab fab-flower fixed bottom-5 right-5 z-50 sm:hidden">
+  <div class="fab fab-flower fixed bottom-5 right-5 z-50 md:hidden">
     <div
       tabindex="0"
       role="button"
@@ -170,7 +154,7 @@
       <NuxtLink
         :key="`fab-${menu.path}`"
         :to="menu.path"
-        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow"
+        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
         :title="menu.title"
         :aria-label="menu.title"
       >
@@ -180,7 +164,7 @@
     <div v-if="isLoggedIn" class="tooltip tooltip-left" data-tip="ตะกร้าสินค้า">
       <NuxtLink
         to="/shopping-basket"
-        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow"
+        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
         title="ตะกร้าสินค้า"
         aria-label="ตะกร้าสินค้า"
       >
@@ -196,10 +180,12 @@
 </template>
 
 <script setup lang="ts">
-const signInModal = ref<HTMLDialogElement | null>(null);
-const signUpModal = ref<HTMLDialogElement | null>(null);
-const signInKey = ref(0);
-const signUpKey = ref(0);
+type SignModalHandle = {
+  onSignIn: () => void;
+  onSignUp: () => void;
+};
+
+const signModal = ref<SignModalHandle | null>(null);
 const isTopBarVisible = ref(true);
 const { itemCount, refreshBasket } = useBasket();
 const { clearCurrentUser, syncFromStorage, user } = useCurrentUser();
@@ -258,15 +244,11 @@ onBeforeUnmount(() => {
 });
 
 const onSignIn = () => {
-  signUpModal.value?.close();
-  signInKey.value += 1;
-  signInModal.value?.showModal();
+  signModal.value?.onSignIn();
 };
 
 const onSignUp = () => {
-  signInModal.value?.close();
-  signUpKey.value += 1;
-  signUpModal.value?.showModal();
+  signModal.value?.onSignUp();
 };
 
 const onSignOut = async () => {

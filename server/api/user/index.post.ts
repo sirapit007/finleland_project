@@ -27,13 +27,27 @@ export default defineEventHandler(async (event) => {
   const lastname = String(body.lastname || "").trim();
   const phone = String(body.phone || "").trim();
   const email = String(body.email || "").trim();
-  const password = String(body.password || "").trim();
+  const password = String(body.password || "");
   const role = String(body.role || "User").trim();
 
   if (!firstname || !lastname || !phone || !email || !password) {
     throw createError({
       statusCode: 400,
       statusMessage: "All fields are required",
+    });
+  }
+
+  if (!/^[0-9]{10}$/.test(phone)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Phone number must contain exactly 10 digits",
+    });
+  }
+
+  if (password.length < 6) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Password must contain at least 6 characters",
     });
   }
 
@@ -58,8 +72,8 @@ export default defineEventHandler(async (event) => {
     `INSERT INTO ${tableName}
       (firstname, lastname, phone, email, password, role, created_by)
      VALUES
-      ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING *`,
+       ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, uuid, firstname, lastname, phone, email, role, created_at, updated_at`,
     [firstname, lastname, phone, email, hashedPassword, role, admin.uuid],
   );
 

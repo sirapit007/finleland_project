@@ -99,9 +99,7 @@
 
       <div
         v-if="
-          currentUser?.uuid &&
-          !isShippingLoading &&
-          !shippingAddresses.length
+          currentUser?.uuid && !isShippingLoading && !shippingAddresses.length
         "
         role="alert"
         class="alert alert-warning text-sm"
@@ -149,13 +147,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-if="isLoading && !basketRows.length">
-                  <td colspan="4" class="py-14 text-center">
-                    <span
-                      class="loading loading-spinner loading-md text-primary"
-                    />
-                  </td>
-                </tr>
+                <SkeletonTableRows
+                  v-if="isLoading && !basketRows.length"
+                  :columns="4"
+                  :rows="4"
+                  :image-column="0"
+                />
                 <tr v-else-if="!basketRows.length">
                   <td colspan="4" class="py-14 text-center">
                     <Icon
@@ -421,7 +418,7 @@
             <label
               v-for="option in deliveryOptions"
               :key="option.id"
-              class="block cursor-pointer"
+              class="relative block cursor-pointer"
             >
               <input
                 v-model="delivery"
@@ -456,11 +453,74 @@
             </label>
           </div>
 
+          <div
+            v-if="delivery === 'express' && selectedShippingAddress"
+            class="mt-4 space-y-2"
+          >
+            <p
+              v-if="isShippingDistanceLoading"
+              class="flex items-center gap-2 text-xs text-base-content/60"
+              aria-hidden="true"
+            >
+              <span class="skeleton h-4 w-4 rounded-full" />
+              <span class="skeleton h-3 w-56 max-w-full" />
+            </p>
+            <div
+              v-else-if="shippingDistanceQuote?.isOverWarningDistance"
+              role="alert"
+              class="alert alert-warning alert-dash text-secondary py-3"
+            >
+              <Icon name="lucide:clock-alert" size="20" />
+              <div>
+                <p class="text-sm font-bold">อาจใช้เวลานานกว่า 2 ชม.</p>
+                <p class="mt-0.5 text-xs">
+                  ระยะทางตามถนนโดยประมาณ
+                  {{ formattedShippingDistance }} กม. จากสาขาเวียงสา
+                </p>
+              </div>
+            </div>
+            <p
+              v-else-if="shippingDistanceQuote"
+              class="flex items-center gap-2 text-xs text-base-content/60"
+            >
+              <Icon name="lucide:route" size="15" class="text-primary" />
+              ระยะทางตามถนนโดยประมาณ {{ formattedShippingDistance }} กม.
+              จากสาขาเวียงสา
+            </p>
+            <p
+              v-else-if="shippingDistanceError"
+              role="status"
+              class="flex items-start gap-2 text-xs text-warning"
+            >
+              <Icon
+                name="lucide:triangle-alert"
+                size="15"
+                class="mt-0.5 shrink-0"
+              />
+              {{ shippingDistanceError }}
+            </p>
+            <p
+              v-if="shippingDistanceQuote || shippingDistanceError"
+              class="text-[10px] text-base-content/45"
+            >
+              ข้อมูลแผนที่
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="link link-hover"
+              >
+                © OpenStreetMap contributors
+              </a>
+            </p>
+          </div>
+
           <button
             class="btn btn-primary mt-5 w-full"
             :disabled="
               subtotal < 1500 ||
               (delivery !== 'pickup' && !selectedShippingAddress) ||
+              isShippingDistanceLoading ||
               isCheckingOut
             "
             @click="requestCheckout"
@@ -523,6 +583,7 @@
         </div>
         <button
           class="btn btn-circle btn-ghost btn-sm"
+          type="button"
           @click="selectAddressModal?.close()"
         >
           <Icon name="lucide:x" size="18" />
@@ -533,17 +594,22 @@
         <div class="flex flex-wrap justify-between gap-2">
           <button
             class="btn btn-primary btn-sm"
+            type="button"
             @click="openCreateAddressModal"
           >
             <Icon name="lucide:plus" size="16" /> เพิ่มที่อยู่ใหม่
           </button>
-          <button class="btn btn-outline btn-sm" @click="loadShippingAddresses">
+          <button
+            class="btn btn-outline btn-sm"
+            type="button"
+            @click="loadShippingAddresses"
+          >
             <Icon name="lucide:refresh-cw" size="16" /> โหลดข้อมูลใหม่
           </button>
         </div>
 
-        <div v-if="isShippingLoading" class="py-10 text-center">
-          <span class="loading loading-spinner loading-md text-primary" />
+        <div v-if="isShippingLoading" class="space-y-3">
+          <SkeletonAddressCards />
         </div>
 
         <div v-else-if="!shippingAddresses.length" class="py-8 text-center">
@@ -559,18 +625,21 @@
         </div>
 
         <div class="space-y-3">
-          <button
+          <div
             v-for="address in shippingAddresses"
             :key="address.uuid"
-            class="w-full rounded-xl border p-4 text-left transition"
+            class="relative w-full rounded-xl border text-left transition"
             :class="
               selectedShippingAddressId === address.uuid
                 ? 'border-primary bg-primary/5 ring-1 ring-primary'
                 : 'border-base-300 hover:border-primary/50'
             "
-            @click="selectShippingAddress(address.uuid)"
           >
-            <div class="flex items-start gap-3">
+            <button
+              class="flex w-full items-start gap-3 p-4 pr-20 text-left"
+              type="button"
+              @click="selectShippingAddress(address.uuid)"
+            >
               <Icon
                 name="lucide:map-pin"
                 size="18"
@@ -602,14 +671,15 @@
                   หมายเหตุ: {{ address.shipping_note }}
                 </p>
               </div>
-              <button
-                class="btn btn-ghost btn-xs"
-                @click.stop="openEditAddressModal(address)"
-              >
-                แก้ไข
-              </button>
-            </div>
-          </button>
+            </button>
+            <button
+              class="btn btn-ghost btn-xs absolute right-4 top-4"
+              type="button"
+              @click="openEditAddressModal(address)"
+            >
+              แก้ไข
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -633,16 +703,29 @@
     :confirm-text="confirmButtonText"
     :variant="confirmVariant"
     :loading="isConfirmLoading"
+    :shipping-address="confirmShippingAddress"
+    :delivery-method="confirmDeliveryMethod"
     @confirm="confirmBasketAction"
+    @cancel="reopenAddressFormAfterCancel"
   />
 </template>
 
 <script setup lang="ts">
-useHead({
-  bodyAttrs: {
-    class: "overflow-hidden",
-  },
-});
+type ShippingDistanceQuote = {
+  addressUuid: string;
+  store: {
+    label: string;
+    address: string;
+  };
+  distanceMeters: number;
+  distanceKm: number;
+  durationMinutes: number;
+  isOverWarningDistance: boolean;
+  warningDistanceKm: number;
+  approximate: boolean;
+  calculatedAt: string;
+  attribution: string;
+};
 
 const delivery = ref("normal");
 const errorMessage = ref("");
@@ -652,6 +735,11 @@ const isCheckingOut = ref(false);
 const currentUser = ref<any>(null);
 const shippingAddresses = ref<ShippingAddress[]>([]);
 const selectedShippingAddressId = ref("");
+const shippingDistanceQuote = ref<ShippingDistanceQuote | null>(null);
+const isShippingDistanceLoading = ref(false);
+const shippingDistanceError = ref("");
+const shippingDistanceQuoteCache = new Map<string, ShippingDistanceQuote>();
+let shippingDistanceAbortController: AbortController | null = null;
 const isShippingLoading = ref(false);
 const isSavingAddress = ref(false);
 const editingAddressUuid = ref("");
@@ -714,6 +802,45 @@ const deliveryOptions = [
     icon: "lucide:bike",
   },
 ];
+
+const confirmShippingAddress = computed(() => {
+  const address = selectedShippingAddress.value;
+  if (
+    confirmAction.value !== "checkout" ||
+    delivery.value === "pickup" ||
+    !address
+  ) {
+    return null;
+  }
+
+  return {
+    label: address.shipping_label,
+    recipient: address.shipping_recipient,
+    phone: address.shipping_phone,
+    address: formatShippingAddress(address),
+    note: address.shipping_note,
+  };
+});
+
+const confirmDeliveryMethod = computed(() => {
+  if (confirmAction.value !== "checkout") {
+    return null;
+  }
+
+  const option = deliveryOptions.find(
+    (deliveryOption) => deliveryOption.id === delivery.value,
+  );
+
+  return option
+    ? {
+        id: option.id,
+        label: option.label,
+        description: option.description,
+        price: option.price,
+        icon: option.icon,
+      }
+    : null;
+});
 
 const confirmTitle = computed(() => {
   if (confirmAction.value === "remove") return "ยืนยันการลบรายการนี้";
@@ -858,6 +985,27 @@ const selectedShippingAddress = computed(() => {
   );
 });
 
+const selectedShippingAddressQuoteKey = computed(() => {
+  const address = selectedShippingAddress.value;
+  if (!address) return "";
+
+  return [
+    address.uuid,
+    address.updated_at,
+    address.shipping_subdistrict,
+    address.shipping_district,
+    address.shipping_province,
+    address.shipping_postcode,
+  ]
+    .map((value) => String(value || "").trim())
+    .join("|");
+});
+
+const shouldLoadShippingDistance = computed(
+  () =>
+    delivery.value !== "pickup" && Boolean(selectedShippingAddress.value?.uuid),
+);
+
 const totalQuantity = computed(() =>
   basketRows.value.reduce(
     (total, basket) => total + Number(basket.basket_quantity || 0),
@@ -895,6 +1043,16 @@ const shippingFee = computed(() =>
 
 const grandTotal = computed(() => subtotal.value + shippingFee.value);
 
+const formattedShippingDistance = computed(() => {
+  const distance = Number(shippingDistanceQuote.value?.distanceKm);
+  if (!Number.isFinite(distance)) return "-";
+
+  return new Intl.NumberFormat("th-TH", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(distance);
+});
+
 const productImage = (basket: any) => {
   if (Array.isArray(basket.image_url)) {
     return basket.image_url[0] || "";
@@ -928,6 +1086,64 @@ const formatShippingAddress = (address: ShippingAddress) =>
   ]
     .filter(Boolean)
     .join(", ");
+
+const loadShippingDistance = async () => {
+  shippingDistanceAbortController?.abort();
+  shippingDistanceAbortController = null;
+  shippingDistanceQuote.value = null;
+  shippingDistanceError.value = "";
+  isShippingDistanceLoading.value = false;
+
+  const address = selectedShippingAddress.value;
+  if (!shouldLoadShippingDistance.value || !address?.uuid) {
+    return;
+  }
+  const quoteKey = selectedShippingAddressQuoteKey.value || address.uuid;
+
+  const cachedQuote = shippingDistanceQuoteCache.get(quoteKey);
+  if (cachedQuote) {
+    shippingDistanceQuote.value = cachedQuote;
+    return;
+  }
+
+  const controller = new AbortController();
+  shippingDistanceAbortController = controller;
+  isShippingDistanceLoading.value = true;
+
+  try {
+    const quote = await $fetch<ShippingDistanceQuote>("/api/shipping/quote", {
+      method: "POST",
+      body: {
+        shipping_address_uuid: address.uuid,
+      },
+      signal: controller.signal,
+    });
+
+    if (
+      controller.signal.aborted ||
+      quoteKey !== selectedShippingAddressQuoteKey.value ||
+      !shouldLoadShippingDistance.value
+    ) {
+      return;
+    }
+
+    shippingDistanceQuoteCache.set(quoteKey, quote);
+    shippingDistanceQuote.value = quote;
+  } catch (error: any) {
+    if (controller.signal.aborted) {
+      return;
+    }
+
+    shippingDistanceError.value =
+      error?.data?.statusMessage ||
+      "ไม่สามารถคำนวณระยะทางได้ในขณะนี้ แต่ยังสั่งซื้อได้ตามปกติ";
+  } finally {
+    if (shippingDistanceAbortController === controller) {
+      shippingDistanceAbortController = null;
+      isShippingDistanceLoading.value = false;
+    }
+  }
+};
 
 const pickSelectedShippingAddress = () => {
   if (!shippingAddresses.value.length) {
@@ -986,10 +1202,12 @@ const loadShippingAddresses = async () => {
 
 const openSelectAddressModal = async () => {
   await loadShippingAddresses();
-  selectAddressModal.value?.showModal();
+  if (!selectAddressModal.value?.open) {
+    selectAddressModal.value?.showModal();
+  }
 };
 
-const openCreateAddressModal = () => {
+const openCreateAddressModal = async () => {
   if (!currentUser.value?.uuid) {
     shippingError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มที่อยู่จัดส่ง";
     return;
@@ -1006,14 +1224,18 @@ const openCreateAddressModal = () => {
       shippingAddresses.value.length === 0 ||
       !shippingAddresses.value.some((address) => address.shipping_is_default),
   });
+  selectAddressModal.value?.close();
+  await nextTick();
   isAddressFormOpen.value = true;
 };
 
-const openEditAddressModal = (address: ShippingAddress) => {
+const openEditAddressModal = async (address: ShippingAddress) => {
   confirmAction.value = "edit-address";
   addressFormMode.value = "edit";
   editingAddressUuid.value = address.uuid;
   addressForm.value = toShippingAddressForm(address);
+  selectAddressModal.value?.close();
+  await nextTick();
   isAddressFormOpen.value = true;
 };
 
@@ -1023,8 +1245,22 @@ const selectShippingAddress = (addressUuid: string) => {
   showToast("เลือกที่อยู่จัดส่งเรียบร้อยแล้ว");
 };
 
-const requestSaveAddress = () => {
+const requestSaveAddress = async () => {
+  isAddressFormOpen.value = false;
+  await nextTick();
   isConfirmModalOpen.value = true;
+};
+
+const reopenAddressFormAfterCancel = async () => {
+  if (
+    confirmAction.value !== "create-address" &&
+    confirmAction.value !== "edit-address"
+  ) {
+    return;
+  }
+
+  await nextTick();
+  isAddressFormOpen.value = true;
 };
 
 const saveCreateAddress = async () => {
@@ -1032,7 +1268,7 @@ const saveCreateAddress = async () => {
 
   if (!currentUser.value?.uuid) {
     shippingError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มที่อยู่จัดส่ง";
-    return;
+    return false;
   }
 
   isSavingAddress.value = true;
@@ -1053,8 +1289,10 @@ const saveCreateAddress = async () => {
     if (res?.row?.uuid) {
       selectedShippingAddressId.value = res.row.uuid;
     }
+    return true;
   } catch {
     shippingError.value = "ไม่สามารถเพิ่มที่อยู่จัดส่งได้";
+    return false;
   } finally {
     isSavingAddress.value = false;
   }
@@ -1065,12 +1303,12 @@ const saveEditAddress = async () => {
 
   if (!editingAddressUuid.value) {
     shippingError.value = "ไม่พบรายการที่อยู่จัดส่ง";
-    return;
+    return false;
   }
 
   if (!currentUser.value?.uuid) {
     shippingError.value = "กรุณาเข้าสู่ระบบก่อนแก้ไขที่อยู่จัดส่ง";
-    return;
+    return false;
   }
 
   isSavingAddress.value = true;
@@ -1089,8 +1327,10 @@ const saveEditAddress = async () => {
     if (res?.row?.uuid) {
       selectedShippingAddressId.value = res.row.uuid;
     }
+    return true;
   } catch {
     shippingError.value = "ไม่สามารถแก้ไขที่อยู่จัดส่งได้";
+    return false;
   } finally {
     isSavingAddress.value = false;
   }
@@ -1147,6 +1387,8 @@ const requestClearBasket = () => {
 };
 
 const requestCheckout = () => {
+  if (isShippingDistanceLoading.value) return;
+
   confirmAction.value = "checkout";
   isConfirmModalOpen.value = true;
 };
@@ -1210,23 +1452,40 @@ const onCheckout = async () => {
 };
 
 const confirmBasketAction = async () => {
+  let actionSucceeded = false;
+
   if (confirmAction.value === "remove" && confirmBasketTarget.value) {
     await onRemoveBasketItem(confirmBasketTarget.value);
+    actionSucceeded = !errorMessage.value;
   } else if (confirmAction.value === "clear") {
     await onClearBasket();
+    actionSucceeded = !errorMessage.value;
   } else if (confirmAction.value === "create-address") {
-    await saveCreateAddress();
+    actionSucceeded = await saveCreateAddress();
   } else if (confirmAction.value === "edit-address") {
-    await saveEditAddress();
+    actionSucceeded = await saveEditAddress();
   } else if (confirmAction.value === "checkout") {
     await onCheckout();
+    actionSucceeded = !errorMessage.value && !shippingError.value;
   }
 
-  if (!errorMessage.value && !shippingError.value) {
+  if (actionSucceeded) {
     isConfirmModalOpen.value = false;
+    confirmBasketTarget.value = null;
   }
-  confirmBasketTarget.value = null;
 };
+
+watch(
+  [selectedShippingAddressQuoteKey, shouldLoadShippingDistance],
+  () => {
+    void loadShippingDistance();
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(() => {
+  shippingDistanceAbortController?.abort();
+});
 
 onMounted(async () => {
   loadCurrentUser();

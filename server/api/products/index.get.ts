@@ -1,4 +1,5 @@
 import { useDb } from "@@/server/utils/db";
+import { normalizeProductImageUrls } from "@@/server/utils/productImages";
 
 export default defineEventHandler(async (event) => {
   const tableName = "vw_master_products";
@@ -6,8 +7,6 @@ export default defineEventHandler(async (event) => {
   const db = useDb();
 
   const query = getQuery(event);
-
-  console.log(query.pageSize);
 
   const page = Math.max(Number(query.page || 1), 1);
   const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 100);
@@ -31,9 +30,16 @@ export default defineEventHandler(async (event) => {
   condition += query?.deleted
     ? " AND base.deleted_at IS NOT NULL "
     : " AND base.deleted_at IS NULL ";
-  condition += query?.q
-    ? ` AND (base.product_code ILIKE '%${query?.q}%' OR base.product_name ILIKE '%${query?.q}%' OR base.product_category_name ILIKE '%${query?.q}%' OR base.product_supplier_name ILIKE '%${query?.q}%') `
-    : "";
+  const search = String(query.q || "").trim();
+  if (search) {
+    params.push(`%${search}%`);
+    condition += ` AND (
+      base.product_code ILIKE $${params.length}
+      OR base.product_name ILIKE $${params.length}
+      OR base.product_category_name ILIKE $${params.length}
+      OR base.product_supplier_name ILIKE $${params.length}
+    ) `;
+  }
   if (uuid) {
     params.push(uuid);
     condition += ` AND base.uuid = $${params.length} `;
@@ -91,7 +97,10 @@ export default defineEventHandler(async (event) => {
   const total = totalResult.rows[0]?.total ?? 0;
 
   return {
-    rows: [...currentRow, ...result.rows],
+    rows: [...currentRow, ...result.rows].map((row) => ({
+      ...row,
+      image_url: normalizeProductImageUrls(row.image_url),
+    })),
     total,
     page,
     pageSize,

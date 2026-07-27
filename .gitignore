@@ -46,3 +46,9 @@ coverage/
 
 # Misc
 *.local
+
+.agents/
+.codex/
+3001/
+3002/
+.history/

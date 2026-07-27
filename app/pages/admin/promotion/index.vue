@@ -258,14 +258,7 @@
     </div>
     <div
       class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
-      :class="pending ? 'backdrop-blur-sm' : ''"
     >
-      <p
-        v-if="pending"
-        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-primary/75 text-4xl font-bold z-20"
-      >
-        Loading...
-      </p>
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
@@ -290,7 +283,9 @@
           </tr>
         </thead>
         <tbody>
+          <SkeletonTableRows v-if="pending" :columns="14" :image-column="1" />
           <tr
+            v-else
             v-for="row in data?.rows"
             :key="row.id"
             class="hover:bg-primary/5"

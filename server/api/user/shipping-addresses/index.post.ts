@@ -55,6 +55,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  if (!/^[0-9]{10}$/.test(shipping_phone)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Phone number must contain exactly 10 digits",
+    });
+  }
+
   const client = await db.connect();
 
   try {
