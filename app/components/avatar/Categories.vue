@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full grid lg:grid-cols-9 sm:grid-cols-5 grid-cols-3">
+  <div class="w-full grid lg:grid-cols-10 sm:grid-cols-5 grid-cols-3">
     <div
       v-for="item in items"
       :key="item.demo_name"

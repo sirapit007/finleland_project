@@ -46,6 +46,28 @@
         {{ overviewError.message }}
       </p>
 
+      <div
+        v-else-if="overviewPending"
+        class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        aria-hidden="true"
+      >
+        <article v-for="item in 4" :key="item" class="rounded-xl border border-base-300 p-4">
+          <div class="skeleton h-4 w-2/3" />
+          <div class="mt-3 skeleton h-8 w-1/2" />
+          <div class="mt-3 skeleton h-3 w-4/5" />
+        </article>
+      </div>
+      <div
+        v-else-if="reportPending"
+        class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+        aria-hidden="true"
+      >
+        <article v-for="item in 4" :key="item" class="rounded-xl bg-base-200 p-4">
+          <div class="skeleton h-4 w-2/3" />
+          <div class="mt-3 skeleton h-8 w-1/2" />
+          <div class="mt-3 skeleton h-3 w-4/5" />
+        </article>
+      </div>
       <div v-else class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div class="flex items-start justify-between gap-3">
@@ -130,9 +152,15 @@
 
           <div
             v-if="overviewPending"
-            class="grid h-56 place-items-center text-base-content/50"
+            class="mt-5 grid h-56 grid-cols-7 items-end gap-3"
+            aria-hidden="true"
           >
-            <span class="loading loading-spinner loading-md" />
+            <div
+              v-for="height in [45, 70, 52, 86, 62, 78, 58]"
+              :key="height"
+              class="skeleton w-full rounded-t-lg"
+              :style="{ height: `${height}%` }"
+            />
           </div>
           <div
             v-else
@@ -176,6 +204,20 @@
           </div>
           <ol class="mt-3 divide-y divide-base-200">
             <li
+              v-for="item in overviewPending ? 5 : 0"
+              :key="`overview-skeleton-${item}`"
+              class="flex items-center gap-3 py-3"
+              aria-hidden="true"
+            >
+              <div class="skeleton size-8 shrink-0 rounded-lg" />
+              <div class="min-w-0 flex-1 space-y-2">
+                <div class="skeleton h-3 w-3/4" />
+                <div class="skeleton h-3 w-1/3" />
+              </div>
+              <div class="skeleton h-4 w-20" />
+            </li>
+            <li
+              v-if="!overviewPending"
               v-for="(product, index) in overview?.topProducts || []"
               :key="`${product.order_item_transaction_product_code}-${index}`"
               class="flex items-center gap-3 py-3"
@@ -198,7 +240,7 @@
               </p>
             </li>
             <li
-              v-if="!(overview?.topProducts || []).length"
+              v-if="!overviewPending && !(overview?.topProducts || []).length"
               class="grid min-h-48 place-items-center text-sm text-base-content/50"
             >
               ยังไม่มีข้อมูลสินค้าสำหรับวันนี้
@@ -325,6 +367,17 @@
         </div>
         <div class="mt-4 space-y-3">
           <div
+            v-for="item in reportPending ? 7 : 0"
+            :key="`day-skeleton-${item}`"
+            class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3"
+            aria-hidden="true"
+          >
+            <div class="skeleton h-3 w-16" />
+            <div class="skeleton h-2 w-full" />
+            <div class="skeleton h-4 w-20" />
+          </div>
+          <div
+            v-if="!reportPending"
             v-for="day in report?.byDay || []"
             :key="day.sale_date"
             class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 text-sm"
@@ -343,7 +396,7 @@
             >
           </div>
           <p
-            v-if="!(report?.byDay || []).length"
+            v-if="!reportPending && !(report?.byDay || []).length"
             class="py-8 text-center text-sm text-base-content/50"
           >
             ยังไม่มีรายการขายในช่วงวันที่เลือก
@@ -363,6 +416,20 @@
         </div>
         <ol class="mt-3 divide-y divide-base-200">
           <li
+            v-for="item in reportPending ? 5 : 0"
+            :key="`report-product-skeleton-${item}`"
+            class="flex items-center gap-3 py-3"
+            aria-hidden="true"
+          >
+            <div class="skeleton size-7 shrink-0 rounded-full" />
+            <div class="min-w-0 flex-1 space-y-2">
+              <div class="skeleton h-3 w-3/4" />
+              <div class="skeleton h-3 w-1/2" />
+            </div>
+            <div class="skeleton h-4 w-20" />
+          </li>
+          <li
+            v-if="!reportPending"
             v-for="(product, index) in report?.topProducts || []"
             :key="`${product.order_item_transaction_product_code}-${index}`"
             class="flex items-center gap-3 py-3"
@@ -386,7 +453,7 @@
             </p>
           </li>
           <li
-            v-if="!(report?.topProducts || []).length"
+            v-if="!reportPending && !(report?.topProducts || []).length"
             class="py-8 text-center text-sm text-base-content/50"
           >
             ยังไม่มีข้อมูลสินค้า
@@ -399,6 +466,16 @@
       <h2 class="mb-3 text-lg font-bold">ข้อมูลระบบ</h2>
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <div
+          v-for="item in isTotalsLoading ? 6 : 0"
+          :key="`total-skeleton-${item}`"
+          class="flex items-center justify-between rounded-xl bg-base-100 p-4 shadow-sm"
+          aria-hidden="true"
+        >
+          <div class="skeleton h-4 w-2/3" />
+          <div class="skeleton h-6 w-12 rounded-lg" />
+        </div>
+        <div
+          v-show="!isTotalsLoading"
           role="alert"
           class="alert bg-base-100 shadow-sm flex justify-between items-center"
         >
@@ -413,6 +490,7 @@
           </div>
         </div>
         <div
+          v-show="!isTotalsLoading"
           role="alert"
           class="alert bg-base-100 shadow-sm flex justify-between items-center"
         >
@@ -429,6 +507,7 @@
           </div>
         </div>
         <div
+          v-show="!isTotalsLoading"
           role="alert"
           class="alert bg-base-100 shadow-sm flex justify-between items-center"
         >
@@ -445,6 +524,7 @@
           </div>
         </div>
         <div
+          v-show="!isTotalsLoading"
           role="alert"
           class="alert bg-base-100 shadow-sm flex justify-between items-center"
         >
@@ -461,6 +541,7 @@
           </div>
         </div>
         <div
+          v-show="!isTotalsLoading"
           role="alert"
           class="alert bg-base-100 shadow-sm flex justify-between items-center"
         >
@@ -477,6 +558,7 @@
           </div>
         </div>
         <div
+          v-show="!isTotalsLoading"
           role="alert"
           class="alert bg-base-100 shadow-sm flex justify-between items-center"
         >
@@ -507,6 +589,7 @@ const today = dayjs().format("YYYY-MM-DD");
 const overviewDate = ref(today);
 const dateFrom = ref(dayjs().startOf("month").format("YYYY-MM-DD"));
 const dateTo = ref(today);
+const isTotalsLoading = ref(true);
 const total = ref({
   users: 0,
   products: 0,
@@ -601,23 +684,27 @@ const salesBarWidth = (value: number | string) =>
   Math.max(4, (Number(value || 0) / maxDailySales.value) * 100);
 
 onMounted(async () => {
-  const [users, products, categories, suppliers, types, promotion] =
-    await Promise.all([
-      $fetch<any>("/api/user", { params: { pageSize: 1 } }),
-      $fetch<any>("/api/products", { params: { pageSize: 1 } }),
-      $fetch<any>("/api/categories", { params: { pageSize: 1 } }),
-      $fetch<any>("/api/suppliers", { params: { pageSize: 1 } }),
-      $fetch<any>("/api/promotion/types", { params: { pageSize: 1 } }),
-      $fetch<any>("/api/promotion", { params: { now: true } }),
-    ]);
+  try {
+    const [users, products, categories, suppliers, types, promotion] =
+      await Promise.all([
+        $fetch<any>("/api/user", { params: { pageSize: 1 } }),
+        $fetch<any>("/api/products", { params: { pageSize: 1 } }),
+        $fetch<any>("/api/categories", { params: { pageSize: 1 } }),
+        $fetch<any>("/api/suppliers", { params: { pageSize: 1 } }),
+        $fetch<any>("/api/promotion/types", { params: { pageSize: 1 } }),
+        $fetch<any>("/api/promotion", { params: { now: true } }),
+      ]);
 
-  total.value = {
-    users: users.total,
-    products: products.total,
-    categories: categories.total,
-    suppliers: suppliers.total,
-    types: types.total,
-    promotion: promotion.total,
-  };
+    total.value = {
+      users: users.total,
+      products: products.total,
+      categories: categories.total,
+      suppliers: suppliers.total,
+      types: types.total,
+      promotion: promotion.total,
+    };
+  } finally {
+    isTotalsLoading.value = false;
+  }
 });
 </script>

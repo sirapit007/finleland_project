@@ -55,14 +55,36 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<RegisterBody>(event);
   const firstname = String(body.firstname || "").trim().toLowerCase();
   const lastname = String(body.lastname || "").trim().toLowerCase();
-  const phone = String(body.phone || "").trim().toLowerCase();
+  const phone = String(body.phone || "").trim();
   const email = String(body.email || "").trim().toLowerCase();
   const password = String(body.password || "");
 
-  if (!email || !phone || !password) {
+  if (!firstname || !lastname || !email || !phone || !password) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Email, phone and password are required",
+      statusMessage: "All signup fields are required",
+    });
+  }
+
+  if (!/^[0-9]{10}$/.test(phone)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Phone number must contain exactly 10 digits",
+    });
+  }
+
+  if (password.length < 6) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Password must contain at least 6 characters",
+    });
+  }
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: "JWT_SECRET is not configured",
     });
   }
 
@@ -86,19 +108,12 @@ export default defineEventHandler(async (event) => {
   const result = await db.query<UserRow>(
     `INSERT INTO ${USERS_TABLE} (firstname, lastname, phone, email, password, role)
      VALUES ($1, $2, $3, $4, $5, $6)
-     RETURNING *`,
+     RETURNING
+       id, uuid, firstname, lastname, phone, email, role`,
     [firstname, lastname, phone, email, hashedPassword, role],
   );
 
   const user = result.rows[0];
-
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: "JWT_SECRET is not configured",
-    });
-  }
 
   const token = signJwt(
     {

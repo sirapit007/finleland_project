@@ -91,10 +91,13 @@
                 <input
                   v-model.trim="profileForm.phone"
                   type="tel"
-                  inputmode="tel"
+                  inputmode="numeric"
+                  autocomplete="tel"
+                  pattern="[0-9]{10}"
+                  minlength="10"
                   maxlength="10"
                   class="input input-sm w-full"
-                  placeholder="08x-xxx-xxxx"
+                  placeholder="กรอกเบอร์โทรศัพท์ 10 หลัก"
                 />
               </fieldset>
               <fieldset class="fieldset">
@@ -139,7 +142,8 @@
                   :type="show.password ? 'text' : 'password'"
                   class="input input-sm w-full pr-10"
                   autocomplete="new-password"
-                  placeholder="ตั้งรหัสผ่านใหม่"
+                  minlength="6"
+                  placeholder="ตั้งรหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)"
                 />
                 <button
                   type="button"
@@ -163,6 +167,7 @@
                   :type="show.confirmPassword ? 'text' : 'password'"
                   class="input input-sm w-full pr-10"
                   autocomplete="new-password"
+                  minlength="6"
                   placeholder="ยืนยันรหัสผ่านใหม่"
                 />
                 <button
@@ -208,8 +213,8 @@
             </div>
           </div>
 
-          <div v-if="isLineLoading" class="py-12 text-center">
-            <span class="loading loading-spinner loading-md text-primary" />
+          <div v-if="isLineLoading" class="mt-5 space-y-3">
+            <SkeletonLineAccounts :count="1" />
           </div>
 
           <div
@@ -311,8 +316,8 @@
         </div>
 
         <div class="mt-5">
-          <div v-if="isShippingLoading" class="py-12 text-center">
-            <span class="loading loading-spinner loading-md text-primary" />
+          <div v-if="isShippingLoading" class="grid gap-3 md:grid-cols-2">
+            <SkeletonAddressCards :count="2" />
           </div>
 
           <div v-else-if="!shippingAddresses.length" class="py-10 text-center">
@@ -402,6 +407,7 @@
     :variant="confirmVariant"
     :loading="isSavingAddress || isRemovingAddress"
     @confirm="confirmAddressAction"
+    @cancel="reopenAddressFormAfterCancel"
   />
 
   <ModalConfirm
@@ -611,8 +617,28 @@ const openRemoveAddressModal = (address: ShippingAddress) => {
   isConfirmModalOpen.value = true;
 };
 
-const requestSaveAddress = () => {
+const requestSaveAddress = async () => {
+  shippingError.value = "";
+  const shippingPhone = String(addressForm.value.shipping_phone || "").trim();
+
+  if (!/^[0-9]{10}$/.test(shippingPhone)) {
+    shippingError.value = "กรุณากรอกเบอร์โทรศัพท์เป็นตัวเลขให้ครบ 10 หลัก";
+    return;
+  }
+
+  addressForm.value.shipping_phone = shippingPhone;
+  isAddressFormOpen.value = false;
+  await nextTick();
   isConfirmModalOpen.value = true;
+};
+
+const reopenAddressFormAfterCancel = async () => {
+  if (confirmAction.value !== "create" && confirmAction.value !== "edit") {
+    return;
+  }
+
+  await nextTick();
+  isAddressFormOpen.value = true;
 };
 
 const saveCreateAddress = async () => {
@@ -620,7 +646,7 @@ const saveCreateAddress = async () => {
 
   if (!currentUser.value?.uuid) {
     shippingError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มที่อยู่จัดส่ง";
-    return;
+    return false;
   }
 
   isSavingAddress.value = true;
@@ -636,8 +662,10 @@ const saveCreateAddress = async () => {
     isAddressFormOpen.value = false;
     showToast("เพิ่มที่อยู่จัดส่งเรียบร้อยแล้ว");
     await loadShippingAddresses();
+    return true;
   } catch {
     shippingError.value = "ไม่สามารถเพิ่มที่อยู่จัดส่งได้";
+    return false;
   } finally {
     isSavingAddress.value = false;
   }
@@ -648,7 +676,7 @@ const saveEditAddress = async () => {
 
   if (!editingAddressUuid.value || !currentUser.value?.uuid) {
     shippingError.value = "ไม่พบรายการที่อยู่จัดส่ง";
-    return;
+    return false;
   }
 
   isSavingAddress.value = true;
@@ -662,8 +690,10 @@ const saveEditAddress = async () => {
     isAddressFormOpen.value = false;
     showToast("บันทึกการแก้ไขที่อยู่เรียบร้อยแล้ว");
     await loadShippingAddresses();
+    return true;
   } catch {
     shippingError.value = "ไม่สามารถแก้ไขที่อยู่จัดส่งได้";
+    return false;
   } finally {
     isSavingAddress.value = false;
   }
@@ -674,7 +704,7 @@ const saveRemoveAddress = async () => {
 
   if (!removeAddressTarget.value || !currentUser.value?.uuid) {
     shippingError.value = "ไม่พบรายการที่อยู่จัดส่ง";
-    return;
+    return false;
   }
 
   isRemovingAddress.value = true;
@@ -687,23 +717,27 @@ const saveRemoveAddress = async () => {
     removeAddressTarget.value = null;
     showToast("ลบที่อยู่จัดส่งเรียบร้อยแล้ว");
     await loadShippingAddresses();
+    return true;
   } catch {
     shippingError.value = "ไม่สามารถลบที่อยู่จัดส่งได้";
+    return false;
   } finally {
     isRemovingAddress.value = false;
   }
 };
 
 const confirmAddressAction = async () => {
+  let actionSucceeded = false;
+
   if (confirmAction.value === "create") {
-    await saveCreateAddress();
+    actionSucceeded = await saveCreateAddress();
   } else if (confirmAction.value === "edit") {
-    await saveEditAddress();
+    actionSucceeded = await saveEditAddress();
   } else if (confirmAction.value === "remove") {
-    await saveRemoveAddress();
+    actionSucceeded = await saveRemoveAddress();
   }
 
-  if (!shippingError.value) {
+  if (actionSucceeded) {
     isConfirmModalOpen.value = false;
   }
 };
@@ -726,6 +760,14 @@ const saveProfile = async () => {
     return;
   }
 
+  const phone = String(profileForm.value.phone || "").trim();
+
+  if (!/^[0-9]{10}$/.test(phone)) {
+    profileError.value = "กรุณากรอกเบอร์โทรศัพท์เป็นตัวเลขให้ครบ 10 หลัก";
+    return;
+  }
+
+  profileForm.value.phone = phone;
   isSavingProfile.value = true;
 
   try {
@@ -758,10 +800,12 @@ const savePassword = async () => {
     return;
   }
 
-  if (
-    !passwordForm.value.password ||
-    passwordForm.value.password !== passwordForm.value.confirmPassword
-  ) {
+  if (passwordForm.value.password.length < 6) {
+    passwordError.value = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+    return;
+  }
+
+  if (passwordForm.value.password !== passwordForm.value.confirmPassword) {
     passwordError.value = "รหัสผ่านและการยืนยันรหัสผ่านต้องตรงกัน";
     return;
   }

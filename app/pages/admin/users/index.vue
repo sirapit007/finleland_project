@@ -10,6 +10,10 @@
     <div class="modal-box max-w-sm">
       <h3 class="text-lg font-bold">Create User</h3>
 
+      <p v-if="formError" class="mt-3 text-sm text-error" role="alert">
+        {{ formError }}
+      </p>
+
       <div class="mt-4 space-y-3">
         <fieldset class="fieldset">
           <legend class="fieldset-legend">ชื่อ</legend>
@@ -32,10 +36,15 @@
         <fieldset class="fieldset">
           <legend class="fieldset-legend">เบอร์โทรศัพท์</legend>
           <input
-            type="text"
+            v-model.trim="base.form.phone"
+            type="tel"
+            inputmode="numeric"
+            autocomplete="tel"
+            pattern="[0-9]{10}"
+            minlength="10"
+            maxlength="10"
             class="input input-sm w-full"
-            placeholder="สูงสุด 100 ตัวอักษร..."
-            v-model="base.form.phone"
+            placeholder="กรอกเบอร์โทรศัพท์ 10 หลัก"
           />
         </fieldset>
         <fieldset class="fieldset">
@@ -50,10 +59,16 @@
         <fieldset class="fieldset">
           <legend class="fieldset-legend">รหัสผ่าน</legend>
           <input
-            type="password"
-            class="input input-sm w-full"
-            placeholder="สูงสุด 100 ตัวอักษร..."
             v-model="base.form.password"
+            type="password"
+            autocomplete="new-password"
+            minlength="6"
+            class="input input-sm w-full"
+            :placeholder="
+              base.method === 'post'
+                ? 'ตั้งรหัสผ่านอย่างน้อย 6 ตัวอักษร'
+                : 'เว้นว่างหากไม่เปลี่ยนรหัสผ่าน (ขั้นต่ำ 6 ตัวอักษร)'
+            "
           />
         </fieldset>
         <fieldset class="fieldset">
@@ -63,9 +78,9 @@
             v-model="base.form.role"
           >
             <option value="" disabled>- เลือกบทบาท -</option>
-            <option value="User">ผู้ใช้งาน</option>
-            <option value="Superuser">ผู้ดูแลระดับสูง</option>
-            <option value="Admin">ผู้ดูแลระบบ</option>
+            <option value="User">User</option>
+            <option value="Superuser">Superuser</option>
+            <option value="Admin">Admin</option>
           </select>
         </fieldset>
       </div>
@@ -77,9 +92,11 @@
         <button
           class="flex-1 btn btn-sm btn-primary"
           type="button"
+          :disabled="isSaving"
           @click="fnBase.onSubmit()"
         >
-          บันทึก
+          <span v-if="isSaving" class="loading loading-spinner loading-xs" />
+          <template v-else>บันทึก</template>
         </button>
       </div>
     </div>
@@ -120,14 +137,7 @@
     </div>
     <div
       class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
-      :class="pending ? 'backdrop-blur-sm' : ''"
     >
-      <p
-        v-if="pending"
-        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-primary/75 text-4xl font-bold z-20"
-      >
-        Loading...
-      </p>
       <p v-if="error" class="text-error">{{ error.message }}</p>
 
       <table
@@ -147,7 +157,9 @@
           </tr>
         </thead>
         <tbody>
+          <SkeletonTableRows v-if="pending" :columns="9" />
           <tr
+            v-else
             v-for="row in data?.rows"
             :key="row.id"
             class="hover:bg-primary/5"
@@ -217,6 +229,8 @@ const dayjs = useDayjs();
 
 const baseModal = ref<HTMLDialogElement | null>(null);
 const isRemoveConfirmOpen = ref(false);
+const formError = ref("");
+const isSaving = ref(false);
 
 const page = ref(1);
 const pageSize = ref(10);
@@ -242,32 +256,82 @@ const { data, pending, error, refresh } = await useFetch("/api/user", {
 
 const fnBase = {
   onCreate: async () => {
+    formError.value = "";
     base.value.form = { role: "" };
     base.value.method = "post";
     baseModal.value?.showModal();
   },
   onEdit: async (row: any) => {
+    formError.value = "";
     base.value.form = { ...row, password: "" };
     base.value.method = "put";
 
     baseModal.value?.showModal();
   },
   onSubmit: async () => {
-    const path =
-      base.value.method === "post"
-        ? "/api/user"
-        : `/api/user/${base.value.form.uuid}`;
+    if (isSaving.value) return;
 
-    const res = await $fetch(path, {
-      method: base.value.method,
-      body: {
-        ...base.value.form,
-      },
-    });
+    formError.value = "";
 
-    if (res) {
-      baseModal.value?.close();
-      refresh();
+    const firstname = String(base.value.form.firstname || "").trim();
+    const lastname = String(base.value.form.lastname || "").trim();
+    const phone = String(base.value.form.phone || "").trim();
+    const email = String(base.value.form.email || "").trim();
+    const password = String(base.value.form.password || "");
+    const role = String(base.value.form.role || "").trim();
+    const isCreate = base.value.method === "post";
+
+    if (
+      !firstname ||
+      !lastname ||
+      !phone ||
+      !email ||
+      !role ||
+      (isCreate && !password)
+    ) {
+      formError.value = "กรุณากรอกข้อมูลผู้ใช้ให้ครบถ้วน";
+      return;
+    }
+
+    if (!/^[0-9]{10}$/.test(phone)) {
+      formError.value = "กรุณากรอกเบอร์โทรศัพท์เป็นตัวเลขให้ครบ 10 หลัก";
+      return;
+    }
+
+    if ((isCreate || password) && password.length < 6) {
+      formError.value = "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร";
+      return;
+    }
+
+    const path = isCreate ? "/api/user" : `/api/user/${base.value.form.uuid}`;
+
+    isSaving.value = true;
+
+    try {
+      const res = await $fetch(path, {
+        method: base.value.method,
+        body: {
+          ...base.value.form,
+          firstname,
+          lastname,
+          phone,
+          email,
+          password,
+          role,
+        },
+      });
+
+      if (res) {
+        baseModal.value?.close();
+        await refresh();
+      }
+    } catch (error: any) {
+      formError.value =
+        error?.data?.statusMessage === "Email or phone already exists"
+          ? "อีเมลหรือเบอร์โทรศัพท์นี้มีผู้ใช้งานแล้ว"
+          : "ไม่สามารถบันทึกข้อมูลผู้ใช้ได้ กรุณาตรวจสอบข้อมูลอีกครั้ง";
+    } finally {
+      isSaving.value = false;
     }
   },
 };

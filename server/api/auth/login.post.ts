@@ -82,9 +82,10 @@ export default defineEventHandler(async (event) => {
 
   const db = useDb();
   const result = await db.query<UserRow>(
-    `SELECT *
+    `SELECT id, uuid, firstname, lastname, phone, email, password, role
      FROM tb_users
-     WHERE phone = $1 OR email = $1
+     WHERE deleted_at IS NULL
+       AND (phone = $1 OR LOWER(email) = LOWER($1))
      LIMIT 1`,
     [username],
   );
@@ -140,7 +141,13 @@ export default defineEventHandler(async (event) => {
   return {
     token,
     user: {
-      ...user,
+      id: user.id,
+      uuid: user.uuid,
+      firstname: user.firstname,
+      lastname: user.lastname,
+      phone: user.phone,
+      email: user.email,
+      role: user.role,
     },
   };
 });

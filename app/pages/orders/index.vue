@@ -22,8 +22,8 @@
       <span>{{ errorMessage }}</span>
     </div>
 
-    <div v-if="isLoading" class="flex min-h-64 items-center justify-center">
-      <span class="loading loading-spinner loading-lg text-primary" />
+    <div v-if="isLoading" class="space-y-4">
+      <SkeletonOrderCards />
     </div>
 
     <section v-else-if="!orders.length" class="rounded-2xl border border-dashed border-base-300 bg-base-200/30 px-6 py-16 text-center">
@@ -73,9 +73,7 @@
         </div>
 
         <div v-if="expandedOrderUuid === order.uuid" class="border-t border-base-300 bg-base-200/35 p-4 sm:p-5">
-          <div v-if="detailLoadingOrderUuid === order.uuid" class="flex justify-center py-8">
-            <span class="loading loading-spinner loading-md text-primary" />
-          </div>
+          <SkeletonOrderDetail v-if="detailLoadingOrderUuid === order.uuid" />
           <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <section>
               <h2 class="mb-3 text-base font-bold">รายการสินค้า</h2>
@@ -96,10 +94,16 @@
               </div>
             </section>
 
-            <section>
-              <h2 class="mb-3 text-base font-bold">สถานะคำสั่งซื้อ</h2>
-              <StepsOrderStatus :histories="historiesByOrder[order.uuid] || []" />
-            </section>
+            <div class="space-y-5">
+              <OrderSummary
+                :order="order"
+                :total-quantity="orderTotalQuantity(order)"
+              />
+              <section>
+                <h2 class="mb-3 text-base font-bold">สถานะคำสั่งซื้อ</h2>
+                <StepsOrderStatus :histories="historiesByOrder[order.uuid] || []" />
+              </section>
+            </div>
           </div>
         </div>
       </article>
@@ -155,6 +159,16 @@ const itemImage = (item: OrderRow) => {
   } catch {
     return image;
   }
+};
+
+const orderTotalQuantity = (order: OrderRow) => {
+  const items = itemsByOrder.value[order.uuid];
+  if (!items) return Number(order.order_item_count || 0);
+
+  return items.reduce(
+    (total, item) => total + Number(item.order_item_quantity || 0),
+    0,
+  );
 };
 
 const isDetailLoading = (orderUuid: string) => detailLoadingOrderUuid.value === orderUuid;

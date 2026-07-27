@@ -15,6 +15,9 @@ export function useDb() {
       password: config.dbPassword,
       database: config.dbName,
       ssl: config.dbSsl === "true" ? { rejectUnauthorized: false } : false,
+      max: 3,
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 5_000,
     });
   }
 

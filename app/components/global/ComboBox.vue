@@ -67,12 +67,13 @@
             }}</span>
           </li>
 
-          <!-- Loading indicator -->
-          <li
-            v-if="loading && filteredOptions.length > 0"
-            class="px-3 py-2 text-center"
-          >
-            <span class="text-xs text-base-content/60">กำลังโหลด...</span>
+          <template v-if="loading && !filteredOptions.length">
+            <li v-for="item in 4" :key="item" class="px-3 py-2">
+              <div class="skeleton h-4" :class="item % 2 ? 'w-4/5' : 'w-2/3'" />
+            </li>
+          </template>
+          <li v-else-if="loading" class="px-3 py-2">
+            <div class="skeleton h-3 w-1/2" />
           </li>
 
           <!-- No results -->
