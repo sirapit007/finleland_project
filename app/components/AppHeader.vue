@@ -24,13 +24,21 @@
           >Finleland Plaza</span
         >
 
-        <NuxtLink
-          v-if="isLoggedIn"
-          to="/contact"
-          class="text-xs text-primary-content/90 hover:underline inline"
-        >
-          ติดต่อเรา
-        </NuxtLink>
+        <div class="flex items-center gap-10" v-if="isLoggedIn">
+          <NuxtLink
+            v-if="user?.role === 'Admin'"
+            to="/admin/login"
+            class="text-xs text-secondary/90 hover:underline inline font-semibold"
+          >
+            เข้าใช้ Admin Panel
+          </NuxtLink>
+          <NuxtLink
+            to="/contact"
+            class="text-xs text-primary-content/90 hover:underline inline"
+          >
+            ติดต่อเรา
+          </NuxtLink>
+        </div>
         <div v-else class="flex items-center gap-1">
           <button
             class="btn btn-xs btn-link text-primary-content no-underline"
@@ -105,9 +113,16 @@
           title="โปรไฟล์"
         >
           <div
-            class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+            class="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10 text-primary"
           >
-            <Icon name="lucide:user-round" size="16" />
+            <img
+              v-if="lineProfileImageUrl && !hasLineProfileImageError"
+              :src="lineProfileImageUrl"
+              alt="รูปโปรไฟล์ LINE"
+              class="size-full object-cover"
+              @error="hasLineProfileImageError = true"
+            />
+            <Icon v-else name="lucide:user-round" size="16" />
           </div>
           <div class="min-w-0 text-left">
             <p class="max-w-24 truncate text-sm font-semibold sm:max-w-36">
@@ -187,10 +202,13 @@ type SignModalHandle = {
 
 const signModal = ref<SignModalHandle | null>(null);
 const isTopBarVisible = ref(true);
-const { itemCount, refreshBasket } = useBasket();
+const { itemCount } = useBasket();
+const lineAccounts = useLineAccountsState();
 const { clearCurrentUser, syncFromStorage, user } = useCurrentUser();
 const route = useRoute();
-let basketRefreshTimer: ReturnType<typeof setInterval> | null = null;
+const hasLineProfileImageError = ref(false);
+let isHeaderMounted = false;
+let loadedLineAccountUserUuid = "";
 let scrollContainer: HTMLElement | null = null;
 let scrollAnimationFrame: number | null = null;
 
@@ -206,6 +224,32 @@ const menus = [
 ];
 
 const isLoggedIn = computed(() => Boolean(user.value));
+const activeLineAccount = computed(
+  () => lineAccounts.value.find((account) => account.line_is_connected) || null,
+);
+const lineProfileImageUrl = computed(() => {
+  const url = String(activeLineAccount.value?.line_picture_url || "").trim();
+  return /^https?:\/\//i.test(url) ? url : "";
+});
+
+const loadHeaderLineAccount = async () => {
+  const userUuid = String(user.value?.uuid || "");
+  if (!userUuid) {
+    loadedLineAccountUserUuid = "";
+    lineAccounts.value = [];
+    return;
+  }
+  if (loadedLineAccountUserUuid === userUuid) return;
+
+  loadedLineAccountUserUuid = userUuid;
+
+  try {
+    await fetchLineAccounts();
+  } catch {
+    loadedLineAccountUserUuid = "";
+    // The header can continue using the default user icon if LINE is unavailable.
+  }
+};
 
 const updateTopBarVisibility = () => {
   if (scrollAnimationFrame) {
@@ -220,23 +264,29 @@ const updateTopBarVisibility = () => {
 
 onMounted(() => {
   syncFromStorage();
+  isHeaderMounted = true;
+  void loadHeaderLineAccount();
 
   scrollContainer = document.querySelector("main");
   scrollContainer?.addEventListener("scroll", updateTopBarVisibility, {
     passive: true,
   });
   updateTopBarVisibility();
+});
 
-  void refreshBasket().catch(() => undefined);
-  basketRefreshTimer = setInterval(() => {
-    void refreshBasket().catch(() => undefined);
-  }, 30_000);
+watch(
+  () => user.value?.uuid,
+  (userUuid, previousUserUuid) => {
+    if (!isHeaderMounted || userUuid === previousUserUuid) return;
+    void loadHeaderLineAccount();
+  },
+);
+
+watch(lineProfileImageUrl, () => {
+  hasLineProfileImageError.value = false;
 });
 
 onBeforeUnmount(() => {
-  if (basketRefreshTimer) {
-    clearInterval(basketRefreshTimer);
-  }
   scrollContainer?.removeEventListener("scroll", updateTopBarVisibility);
   if (scrollAnimationFrame) {
     cancelAnimationFrame(scrollAnimationFrame);
@@ -253,6 +303,7 @@ const onSignUp = () => {
 
 const onSignOut = async () => {
   await $fetch("/api/auth/logout", { method: "POST" });
+  lineAccounts.value = [];
   clearCurrentUser();
   await navigateTo("/");
 };

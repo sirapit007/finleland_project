@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
+import { hashPassword } from "@@/server/utils/password";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type UserBody = {
@@ -11,10 +11,6 @@ type UserBody = {
   role?: string;
   user?: object;
 };
-
-function hashPassword(password: string) {
-  return createHash("sha256").update(password).digest("hex");
-}
 
 export default defineEventHandler(async (event) => {
   const tableName = "tb_users";
@@ -66,7 +62,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const hashedPassword = hashPassword(password);
+  const hashedPassword = await hashPassword(password);
 
   const result = await db.query(
     `INSERT INTO ${tableName}

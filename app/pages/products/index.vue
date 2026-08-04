@@ -193,7 +193,6 @@
             </div>
           </div>
         </div>
-        <CardPagination v-model:page="page" :data="data" :disabled="pending" />
         <p v-if="error" class="text-error">{{ error.message }}</p>
 
         <div
@@ -204,7 +203,7 @@
         </div>
         <div
           v-else-if="data?.rows.length"
-          class="grid lg:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4 my-4"
+          class="grid sm:grid-cols-4 grid-cols-3 gap-4 my-4"
         >
           <template v-for="row in data?.rows">
             <CardProduct :object="row" />
@@ -213,7 +212,7 @@
         <div v-else class="text-center my-4 text-base-content/50">
           ไม่พบข้อมูล
         </div>
-        <CardPagination v-model:page="page" :data="data" :disabled="pending" />
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
     </div>
   </div>

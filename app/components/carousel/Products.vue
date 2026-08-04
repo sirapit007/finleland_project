@@ -10,7 +10,7 @@
         class="w-full shrink-0"
       >
         <div
-          class="grid grid-cols-2 gap-4 px-1 sm:px-12 md:grid-cols-4 lg:grid-cols-4"
+          class="grid grid-cols-4 lg:gap-4 sm:gap-2 gap-1 px-1 sm:px-12 md:grid-cols-4 lg:grid-cols-4"
         >
           <div v-for="item in slide" :key="item.product_name" class="my-2.5">
             <CardProduct :object="item" />
@@ -54,26 +54,42 @@
       />
     </div>
   </div>
+  <SkeletonHomeSections v-if="loading" type="products" />
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  data: any[];
-  deals?: true;
-}>();
-
 const currentSlide = ref(0);
 let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
 
+const fetchedProducts = ref<Record<string, any>[]>([]);
 const slides = computed(() => {
   const result = [];
 
-  for (let i = 0; i < props.data.length; i += 4) {
-    result.push(props.data.slice(i, i + 4));
+  for (let i = 0; i < fetchedProducts.value.length; i += 4) {
+    result.push(fetchedProducts.value.slice(i, i + 4));
   }
 
   return result;
 });
+const loading = ref(true);
+
+const loadProducts = async () => {
+  if (fetchedProducts.value.length) return;
+
+  try {
+    const response = await $fetch<{ rows?: Record<string, any>[] }>(
+      "/api/products",
+      {
+        params: { pageSize: 12, orderBy: "base.id DESC" },
+      },
+    );
+    fetchedProducts.value = response.rows || [];
+  } catch (error) {
+    console.error("Unable to load products", error);
+  } finally {
+    loading.value = false;
+  }
+};
 
 const prevSlide = () => {
   if (slides.value.length <= 1) return;
@@ -123,6 +139,9 @@ watch(
   },
 );
 
-onMounted(startAutoPlay);
+onMounted(() => {
+  void loadProducts();
+  startAutoPlay();
+});
 onBeforeUnmount(stopAutoPlay);
 </script>

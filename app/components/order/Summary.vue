@@ -1,6 +1,22 @@
 <template>
   <section class="rounded-xl border border-base-300 bg-base-100 p-4">
-    <h2 class="text-lg font-bold">สรุปคำสั่งซื้อ</h2>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h2 class="text-lg font-bold">สรุปคำสั่งซื้อ</h2>
+      <NuxtLink
+        v-if="order.uuid"
+        :to="{
+          path: '/orders/' + order.uuid + '/invoice',
+          query: { print: '1' },
+        }"
+        target="_blank"
+        rel="noopener"
+        class="btn btn-outline btn-primary btn-xs"
+        aria-label="พิมพ์เอกสารคำสั่งซื้อ"
+      >
+        <Icon name="lucide:printer" size="14" />
+        พิมพ์เอกสาร
+      </NuxtLink>
+    </div>
 
     <div class="mt-4 rounded-xl bg-base-200/80 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
@@ -58,6 +74,8 @@
       </template>
     </div>
 
+    <TaxOrderDetails v-if="taxDetail" class="mt-4" :detail="taxDetail" />
+
     <div class="mt-5 space-y-3 text-sm">
       <div class="flex justify-between gap-4 text-base-content/70">
         <span>ราคารวมสินค้า ({{ formattedQuantity }} ชิ้น)</span>
@@ -102,10 +120,16 @@ const props = withDefaults(
   defineProps<{
     order: OrderSummaryRow;
     totalQuantity?: number;
+    taxDetail?: OrderSummaryRow | null;
   }>(),
   {
     totalQuantity: 0,
+    taxDetail: null,
   },
+);
+
+const taxDetail = computed(
+  () => props.taxDetail || props.order.order_tax_detail || null,
 );
 
 const isPickup = computed(

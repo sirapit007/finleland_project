@@ -41,6 +41,12 @@
         {{ shippingError }}
       </p>
       <p
+        v-if="taxError"
+        class="rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning-content"
+      >
+        {{ taxError }}
+      </p>
+      <p
         v-if="lineError"
         class="rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning-content"
       >
@@ -388,6 +394,60 @@
           </div>
         </div>
       </section>
+
+      <section class="rounded-2xl border border-base-300 bg-base-100 p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-xl font-bold">ข้อมูลผู้เสียภาษี</h2>
+            <p class="mt-1 text-sm text-base-content/55">
+              เพิ่ม แก้ไข หรือลบข้อมูลสำหรับใช้ขอใบกำกับภาษี
+            </p>
+          </div>
+          <button class="btn btn-primary btn-sm" @click="openCreateTaxProfileModal">
+            <Icon name="lucide:receipt-text" size="16" /> เพิ่มข้อมูลภาษี
+          </button>
+        </div>
+
+        <div class="mt-5">
+          <div v-if="isTaxLoading" class="grid gap-3 md:grid-cols-2">
+            <SkeletonAddressCards :count="2" />
+          </div>
+          <div v-else-if="!taxProfiles.length" class="py-10 text-center">
+            <Icon name="lucide:receipt" size="34" class="mx-auto mb-3 text-base-content/30" />
+            <p class="font-semibold">ยังไม่มีข้อมูลผู้เสียภาษี</p>
+            <p class="mt-1 text-sm text-base-content/55">กดเพิ่มข้อมูลเพื่อสร้างรายการแรก</p>
+          </div>
+          <div v-else class="grid gap-3 md:grid-cols-2">
+            <article
+              v-for="taxProfile in taxProfiles"
+              :key="taxProfile.uuid"
+              class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow transition hover:ring-4 hover:ring-primary/20"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="truncate font-bold">{{ taxProfile.tax_profile_label }}</h3>
+                    <span v-if="taxProfile.tax_profile_is_default" class="badge badge-accent badge-xs">Default</span>
+                    <span class="badge badge-outline badge-xs">{{ taxProfile.taxpayer_type === "company" ? "นิติบุคคล" : "บุคคลธรรมดา" }}</span>
+                  </div>
+                  <p class="mt-1 text-sm font-semibold">{{ taxProfile.taxpayer_name }}</p>
+                  <p class="mt-1 text-sm text-base-content/65">เลขประจำตัวผู้เสียภาษี {{ taxProfile.taxpayer_id }}</p>
+                  <p v-if="taxProfile.taxpayer_type === 'company'" class="mt-1 text-xs text-base-content/55">
+                    {{ taxProfile.taxpayer_branch_type === "head_office" ? "สำนักงานใหญ่" : `สาขา ${taxProfile.taxpayer_branch_code}` }}
+                  </p>
+                </div>
+                <div class="flex shrink-0 flex-col gap-2">
+                  <button class="btn btn-outline btn-secondary btn-xs" @click="openEditTaxProfileModal(taxProfile)">แก้ไข</button>
+                  <button class="btn btn-outline btn-error btn-xs" @click="openRemoveTaxProfileModal(taxProfile)">ลบ</button>
+                </div>
+              </div>
+              <p class="mt-3 text-sm leading-6 text-base-content/65">{{ formatTaxProfileAddress(taxProfile) }}</p>
+              <p v-if="taxProfile.taxpayer_phone" class="mt-1 text-sm text-base-content/65">{{ taxProfile.taxpayer_phone }}</p>
+              <p v-if="taxProfile.taxpayer_email" class="mt-1 text-sm text-base-content/65">{{ taxProfile.taxpayer_email }}</p>
+            </article>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -397,6 +457,25 @@
     :form="addressForm"
     :loading="isSavingAddress"
     @submit="requestSaveAddress"
+  />
+
+  <TaxProfileFormModal
+    v-model="isTaxFormOpen"
+    :mode="taxFormMode"
+    :form="taxForm"
+    :loading="isSavingTaxProfile"
+    @submit="requestSaveTaxProfile"
+  />
+
+  <ModalConfirm
+    v-model="isTaxConfirmOpen"
+    :title="taxConfirmTitle"
+    :message="taxConfirmMessage"
+    :confirm-text="taxConfirmAction === 'remove' ? 'ลบข้อมูล' : 'บันทึก'"
+    :variant="taxConfirmAction === 'remove' ? 'error' : 'primary'"
+    :loading="isSavingTaxProfile || isRemovingTaxProfile"
+    @confirm="confirmTaxProfileAction"
+    @cancel="reopenTaxFormAfterCancel"
   />
 
   <ModalConfirm
@@ -451,12 +530,16 @@ const passwordForm = ref({
 const profileError = ref("");
 const passwordError = ref("");
 const shippingError = ref("");
+const taxError = ref("");
 const lineError = ref("");
 const isSavingProfile = ref(false);
 const isSavingPassword = ref(false);
 const isShippingLoading = ref(false);
 const isSavingAddress = ref(false);
 const isRemovingAddress = ref(false);
+const isTaxLoading = ref(false);
+const isSavingTaxProfile = ref(false);
+const isRemovingTaxProfile = ref(false);
 const isLineLoading = ref(false);
 const isLineConnectStarting = ref(false);
 const isLineDisconnecting = ref(false);
@@ -464,6 +547,7 @@ const isLineConfigured = ref(false);
 
 const currentUser = ref<any>(null);
 const shippingAddresses = ref<ShippingAddress[]>([]);
+const taxProfiles = ref<TaxProfile[]>([]);
 const lineAccounts = ref<LineAccount[]>([]);
 const removeAddressTarget = ref<ShippingAddress | null>(null);
 const editingAddressUuid = ref("");
@@ -473,6 +557,13 @@ const confirmAction = ref<"create" | "edit" | "remove" | "">("");
 const isAddressFormOpen = ref(false);
 const addressFormMode = ref<"create" | "edit">("create");
 const addressForm = ref(createShippingAddressForm());
+const isTaxFormOpen = ref(false);
+const taxFormMode = ref<"create" | "edit">("create");
+const taxForm = ref(createTaxProfileForm());
+const editingTaxProfileUuid = ref("");
+const removeTaxProfileTarget = ref<TaxProfile | null>(null);
+const isTaxConfirmOpen = ref(false);
+const taxConfirmAction = ref<"create" | "edit" | "remove" | "">("");
 
 const activeLineAccount = computed(
   () => lineAccounts.value.find((account) => account.line_is_connected) || null,
@@ -520,6 +611,18 @@ const confirmVariant = computed<"error" | "primary">(() =>
   confirmAction.value === "remove" ? "error" : "primary",
 );
 
+const taxConfirmTitle = computed(() => {
+  if (taxConfirmAction.value === "remove") return "ยืนยันการลบข้อมูลผู้เสียภาษี";
+  if (taxConfirmAction.value === "create") return "ยืนยันการบันทึกข้อมูลผู้เสียภาษี";
+  return "ยืนยันการแก้ไขข้อมูลผู้เสียภาษี";
+});
+const taxConfirmMessage = computed(() => {
+  if (taxConfirmAction.value === "remove") {
+    return `คุณต้องการลบ ${removeTaxProfileTarget.value?.tax_profile_label || "รายการนี้"} ใช่หรือไม่`;
+  }
+  return "กรุณาตรวจสอบชื่อ เลขประจำตัวผู้เสียภาษี และที่อยู่ก่อนบันทึก";
+});
+
 const loadCurrentUser = () => {
   syncFromStorage();
   currentUser.value = user.value;
@@ -558,6 +661,140 @@ const loadShippingAddresses = async () => {
   } finally {
     isShippingLoading.value = false;
   }
+};
+
+const loadTaxProfiles = async () => {
+  taxError.value = "";
+  if (!currentUser.value?.uuid) {
+    taxProfiles.value = [];
+    return;
+  }
+  isTaxLoading.value = true;
+  try {
+    taxProfiles.value = await fetchTaxProfiles(currentUser.value.uuid);
+  } catch {
+    taxError.value = "ไม่สามารถโหลดข้อมูลผู้เสียภาษีได้";
+  } finally {
+    isTaxLoading.value = false;
+  }
+};
+
+const openCreateTaxProfileModal = () => {
+  if (!currentUser.value?.uuid) {
+    taxError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มข้อมูลผู้เสียภาษี";
+    return;
+  }
+  taxConfirmAction.value = "create";
+  taxFormMode.value = "create";
+  taxForm.value = createTaxProfileForm({
+    tax_profile_user: currentUser.value.uuid,
+    taxpayer_name: `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
+    taxpayer_phone: currentUser.value.phone || "",
+    taxpayer_email: currentUser.value.email || "",
+    tax_profile_is_default:
+      taxProfiles.value.length === 0 ||
+      !taxProfiles.value.some((profile) => profile.tax_profile_is_default),
+  });
+  isTaxFormOpen.value = true;
+};
+
+const openEditTaxProfileModal = (profile: TaxProfile) => {
+  taxConfirmAction.value = "edit";
+  taxFormMode.value = "edit";
+  editingTaxProfileUuid.value = profile.uuid;
+  taxForm.value = toTaxProfileForm(profile);
+  isTaxFormOpen.value = true;
+};
+
+const openRemoveTaxProfileModal = (profile: TaxProfile) => {
+  taxConfirmAction.value = "remove";
+  removeTaxProfileTarget.value = profile;
+  isTaxConfirmOpen.value = true;
+};
+
+const requestSaveTaxProfile = async () => {
+  taxError.value = "";
+  if (!/^[0-9]{13}$/.test(String(taxForm.value.taxpayer_id || "").trim())) {
+    taxError.value = "กรุณากรอกเลขประจำตัวผู้เสียภาษีให้ครบ 13 หลัก";
+    return;
+  }
+  const phone = String(taxForm.value.taxpayer_phone || "").trim();
+  if (phone && !/^[0-9]{10}$/.test(phone)) {
+    taxError.value = "เบอร์โทรศัพท์ผู้เสียภาษีต้องเป็นตัวเลข 10 หลัก";
+    return;
+  }
+  isTaxFormOpen.value = false;
+  await nextTick();
+  isTaxConfirmOpen.value = true;
+};
+
+const reopenTaxFormAfterCancel = async () => {
+  if (!["create", "edit"].includes(taxConfirmAction.value)) return;
+  await nextTick();
+  isTaxFormOpen.value = true;
+};
+
+const saveCreateTaxProfile = async () => {
+  if (!currentUser.value?.uuid) return false;
+  isSavingTaxProfile.value = true;
+  taxError.value = "";
+  try {
+    await createTaxProfile(createTaxProfileForm({
+      ...taxForm.value,
+      tax_profile_user: currentUser.value.uuid,
+    }));
+    showToast("เพิ่มข้อมูลผู้เสียภาษีเรียบร้อยแล้ว");
+    await loadTaxProfiles();
+    return true;
+  } catch (error: any) {
+    taxError.value = error?.data?.statusMessage || "ไม่สามารถเพิ่มข้อมูลผู้เสียภาษีได้";
+    return false;
+  } finally {
+    isSavingTaxProfile.value = false;
+  }
+};
+
+const saveEditTaxProfile = async () => {
+  if (!editingTaxProfileUuid.value) return false;
+  isSavingTaxProfile.value = true;
+  taxError.value = "";
+  try {
+    await updateTaxProfile(editingTaxProfileUuid.value, taxForm.value);
+    showToast("บันทึกข้อมูลผู้เสียภาษีเรียบร้อยแล้ว");
+    await loadTaxProfiles();
+    return true;
+  } catch (error: any) {
+    taxError.value = error?.data?.statusMessage || "ไม่สามารถแก้ไขข้อมูลผู้เสียภาษีได้";
+    return false;
+  } finally {
+    isSavingTaxProfile.value = false;
+  }
+};
+
+const saveRemoveTaxProfile = async () => {
+  if (!removeTaxProfileTarget.value) return false;
+  isRemovingTaxProfile.value = true;
+  taxError.value = "";
+  try {
+    await deleteTaxProfile(removeTaxProfileTarget.value.uuid);
+    removeTaxProfileTarget.value = null;
+    showToast("ลบข้อมูลผู้เสียภาษีเรียบร้อยแล้ว");
+    await loadTaxProfiles();
+    return true;
+  } catch (error: any) {
+    taxError.value = error?.data?.statusMessage || "ไม่สามารถลบข้อมูลผู้เสียภาษีได้";
+    return false;
+  } finally {
+    isRemovingTaxProfile.value = false;
+  }
+};
+
+const confirmTaxProfileAction = async () => {
+  let succeeded = false;
+  if (taxConfirmAction.value === "create") succeeded = await saveCreateTaxProfile();
+  else if (taxConfirmAction.value === "edit") succeeded = await saveEditTaxProfile();
+  else if (taxConfirmAction.value === "remove") succeeded = await saveRemoveTaxProfile();
+  if (succeeded) isTaxConfirmOpen.value = false;
 };
 
 const loadLineAccounts = async () => {
@@ -886,6 +1123,7 @@ onMounted(async () => {
 
   await Promise.all([
     loadShippingAddresses(),
+    loadTaxProfiles(),
     loadLineAccounts(),
     loadLineStatus(),
   ]);

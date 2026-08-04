@@ -1,5 +1,8 @@
 <template>
-  <div class="w-full grid lg:grid-cols-10 sm:grid-cols-5 grid-cols-3">
+  <div
+    v-if="items.length"
+    class="w-full grid lg:grid-cols-10 sm:grid-cols-5 grid-cols-4"
+  >
     <div
       v-for="item in items"
       :key="item.demo_name"
@@ -13,11 +16,8 @@
       >
         <div
           class="avatar flex justify-center transition-transform duration-100 ease-in-out hover:scale-105"
-          :style="{
-            transform: `translateX(-${currentSlide * 100}%)`,
-          }"
         >
-          <div class="w-28 rounded-full border ring-2 ring-primary">
+          <div class="lg:w-28 sm:w-26 w-24 rounded-full border ring-2 ring-accent">
             <img
               v-if="item.image_url"
               :src="item.image_url"
@@ -31,17 +31,40 @@
           </div>
         </div>
       </NuxtLink>
-      <p class="text-accent text-sm font-extrabold mt-2">
+      <p class="text-accent sm:text-[13.5px]! text-[11.5px] font-extrabold mt-2">
         {{ item.category_name }}
       </p>
     </div>
   </div>
+  <SkeletonHomeSections v-if="loading" type="categories" />
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  items: any[];
-}>();
+const fetchedCategories = ref<Record<string, any>[]>([]);
+const items = computed(() => fetchedCategories.value);
+const loading = ref(true);
 
-const currentSlide = ref(0);
+const loadCategories = async () => {
+  if (fetchedCategories.value.length) return;
+
+  try {
+    const response = await $fetch<{ rows?: Record<string, any>[] }>(
+      "/api/categories",
+      {
+        params: {
+          pageSize: 999,
+        },
+      },
+    );
+    fetchedCategories.value = response.rows || [];
+  } catch (error) {
+    console.error("Unable to load categories", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  void loadCategories();
+});
 </script>

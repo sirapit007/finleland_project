@@ -8,6 +8,7 @@ type DeliveryMethod = "pickup" | "normal" | "express";
 
 type OrderBody = {
   order_shipping_address_uuid?: string;
+  order_tax_profile_uuid?: string;
   order_delivery_method?: string;
   order_customer_note?: string;
 };
@@ -55,6 +56,7 @@ export default defineEventHandler(async (event) => {
   const shippingAddressUuid = String(
     body.order_shipping_address_uuid || "",
   ).trim();
+  const taxProfileUuid = String(body.order_tax_profile_uuid || "").trim();
   const customerNote = String(body.order_customer_note || "").trim() || null;
 
   if (!Object.hasOwn(deliveryOptions, deliveryMethod)) {
@@ -86,6 +88,7 @@ export default defineEventHandler(async (event) => {
     }
 
     let shippingAddress: Record<string, any> | null = null;
+    let taxProfile: Record<string, any> | null = null;
 
     if (deliveryMethod !== "pickup") {
       if (!shippingAddressUuid) {
@@ -119,6 +122,38 @@ export default defineEventHandler(async (event) => {
         throw createError({
           statusCode: 404,
           statusMessage: "Shipping address was not found",
+        });
+      }
+    }
+
+    if (taxProfileUuid) {
+      const taxProfileResult = await client.query(
+        `SELECT uuid::text AS uuid,
+                taxpayer_type,
+                taxpayer_name,
+                taxpayer_id,
+                taxpayer_branch_type,
+                taxpayer_branch_code,
+                taxpayer_address,
+                taxpayer_subdistrict,
+                taxpayer_district,
+                taxpayer_province,
+                taxpayer_postcode,
+                taxpayer_phone,
+                taxpayer_email
+         FROM tb_user_tax_profiles
+         WHERE uuid::text = $1
+           AND tax_profile_user = $2
+           AND deleted_at IS NULL
+         LIMIT 1`,
+        [taxProfileUuid, userUuid],
+      );
+      taxProfile = taxProfileResult.rows[0] || null;
+
+      if (!taxProfile) {
+        throw createError({
+          statusCode: 404,
+          statusMessage: "Tax profile was not found",
         });
       }
     }
@@ -281,6 +316,50 @@ export default defineEventHandler(async (event) => {
     );
     const order = orderResult.rows[0];
 
+    let taxDetail: Record<string, any> | null = null;
+    if (taxProfile) {
+      const taxDetailResult = await client.query(
+        `INSERT INTO tb_shopping_order_tax_details (
+          order_tax_order,
+          order_tax_profile_uuid,
+          order_taxpayer_type,
+          order_taxpayer_name,
+          order_taxpayer_id,
+          order_taxpayer_branch_type,
+          order_taxpayer_branch_code,
+          order_taxpayer_address,
+          order_taxpayer_subdistrict,
+          order_taxpayer_district,
+          order_taxpayer_province,
+          order_taxpayer_postcode,
+          order_taxpayer_phone,
+          order_taxpayer_email,
+          created_by
+        ) VALUES (
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+        )
+        RETURNING *`,
+        [
+          order.uuid,
+          taxProfile.uuid,
+          taxProfile.taxpayer_type,
+          taxProfile.taxpayer_name,
+          taxProfile.taxpayer_id,
+          taxProfile.taxpayer_branch_type,
+          taxProfile.taxpayer_branch_code,
+          taxProfile.taxpayer_address,
+          taxProfile.taxpayer_subdistrict,
+          taxProfile.taxpayer_district,
+          taxProfile.taxpayer_province,
+          taxProfile.taxpayer_postcode,
+          taxProfile.taxpayer_phone,
+          taxProfile.taxpayer_email,
+          userUuid,
+        ],
+      );
+      taxDetail = taxDetailResult.rows[0];
+    }
+
     await client.query(
       `INSERT INTO tb_shopping_order_status_histories (
         order_status_history_order,
@@ -377,7 +456,7 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    return { row: order, items: createdItems, lineNotification };
+    return { row: order, items: createdItems, taxDetail, lineNotification };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

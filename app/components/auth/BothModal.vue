@@ -2,16 +2,16 @@
   <dialog ref="signInModal" class="modal">
     <div class="modal-box max-w-md">
       <form method="dialog">
-        <button class="btn btn-sm btn-circle absolute right-4 top-4">×</button>
+        <button class="btn btn-sm btn-circle absolute right-4 top-4">X</button>
       </form>
       <AuthSignInForm :key="signInKey" @update:leaving="onSignUp" />
     </div>
   </dialog>
 
   <dialog ref="signUpModal" class="modal">
-    <div class="modal-box max-w-md">
+    <div class="modal-box max-w-lg">
       <form method="dialog">
-        <button class="btn btn-sm btn-circle absolute right-4 top-4">×</button>
+        <button class="btn btn-sm btn-circle absolute right-4 top-4">X</button>
       </form>
       <AuthSignUpForm :key="signUpKey" @update:leaving="onSignIn" />
     </div>

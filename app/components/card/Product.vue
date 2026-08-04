@@ -10,13 +10,13 @@
           v-if="imageSrc"
           :src="imageSrc"
           :alt="props.object.product_name || 'สินค้า'"
-          class="size-full object-contain p-3 transition duration-300 group-hover:scale-105"
+          class="size-full object-contain p-0 transition duration-300 group-hover:scale-105"
         />
         <img
           v-else
           src="@/assets/images/blank.png"
           alt="ยังไม่มีรูปสินค้า"
-          class="size-full object-contain p-5 opacity-70"
+          class="size-full object-contain opacity-70"
         />
         <span
           v-if="user && hasDiscount"
@@ -34,13 +34,13 @@
           {{ props.object.product_category_name }}
         </span>
         <h2
-          class="min-h-12 line-clamp-2 text-sm font-semibold leading-6 text-base-content sm:text-base"
+          class="min-h-12 line-clamp-2 sm:text-sm text-xs font-semibold leading-6 text-base-content sm:text-base"
         >
           {{ props.object.product_name }}
         </h2>
         <p
           v-if="props.object.product_code"
-          class="truncate text-xs text-base-content/50"
+          class="truncate text-xs text-base-content/50 sm:block hidden"
         >
           รหัสสินค้า {{ props.object.product_code }}
         </p>
@@ -113,7 +113,7 @@
     </div>
 
     <div v-else class="mt-auto border-t border-base-300 px-4 py-4">
-      <p class="text-sm font-semibold text-primary cursor-pointer" @click="onSignIn">
+      <p class="sm:text-sm text-xs font-semibold text-primary cursor-pointer" @click="onSignIn">
         เข้าสู่ระบบเพื่อดูราคา
       </p>
     </div>
