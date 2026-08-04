@@ -77,6 +77,7 @@ export default defineEventHandler(async (event) => {
               WHERE item.order_item_order = base.uuid::text
                 AND item.deleted_at IS NULL
             ) AS order_item_count,
+            tax_snapshot.order_tax_detail,
             concat_ws(' ', user_c.firstname, user_c.lastname) AS created_username,
             concat_ws(' ', user_u.firstname, user_u.lastname) AS updated_username,
             concat_ws(' ', user_d.firstname, user_d.lastname) AS deleted_username
@@ -85,6 +86,12 @@ export default defineEventHandler(async (event) => {
      LEFT JOIN tb_users AS user_c ON user_c.uuid::text = base.created_by
      LEFT JOIN tb_users AS user_u ON user_u.uuid::text = base.updated_by
      LEFT JOIN tb_users AS user_d ON user_d.uuid::text = base.deleted_by
+     LEFT JOIN LATERAL (
+       SELECT to_jsonb(tax_detail) - 'id' AS order_tax_detail
+       FROM tb_shopping_order_tax_details AS tax_detail
+       WHERE tax_detail.order_tax_order = base.uuid::text
+       LIMIT 1
+     ) AS tax_snapshot ON TRUE
      WHERE ${condition}
      ORDER BY ${orderBy}
      LIMIT $${params.length - 1} OFFSET $${params.length}`,

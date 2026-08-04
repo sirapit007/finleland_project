@@ -62,28 +62,19 @@
       />
     </div>
   </div>
+  <SkeletonHomeSections v-if="loading" type="promotion" />
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    data?: Record<string, any>[];
-  }>(),
-  {
-    data: () => [],
-  },
-);
-
 const currentSlide = ref(0);
-const fetchedPromotions = ref<Record<string, any>[]>([]);
 let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
 
-const slides = computed(() =>
-  props.data.length ? props.data : fetchedPromotions.value,
-);
+const fetchedPromotions = ref<Record<string, any>[]>([]);
+const slides = computed(() => fetchedPromotions.value);
+const loading = ref(true);
 
 const loadPromotions = async () => {
-  if (props.data.length) return;
+  if (fetchedPromotions.value.length) return;
 
   try {
     const response = await $fetch<{ rows?: Record<string, any>[] }>(
@@ -91,14 +82,33 @@ const loadPromotions = async () => {
       {
         params: {
           now: true,
-          pageSize: 100,
         },
       },
     );
     fetchedPromotions.value = response.rows || [];
   } catch (error) {
     console.error("Unable to load promotions", error);
+  } finally {
+    loading.value = false;
   }
+};
+
+const prevSlide = () => {
+  if (slides.value.length <= 1) return;
+  currentSlide.value =
+    (currentSlide.value - 1 + slides.value.length) % slides.value.length;
+  restartAutoPlay();
+};
+
+const nextSlide = () => {
+  if (slides.value.length <= 1) return;
+  currentSlide.value = (currentSlide.value + 1) % slides.value.length;
+  restartAutoPlay();
+};
+
+const goToSlide = (index: number) => {
+  currentSlide.value = index;
+  restartAutoPlay();
 };
 
 const promotionImage = (promotion: Record<string, any>) => {
@@ -132,24 +142,6 @@ const startAutoPlay = () => {
 
 const restartAutoPlay = () => {
   startAutoPlay();
-};
-
-const prevSlide = () => {
-  if (slides.value.length <= 1) return;
-  currentSlide.value =
-    (currentSlide.value - 1 + slides.value.length) % slides.value.length;
-  restartAutoPlay();
-};
-
-const nextSlide = () => {
-  if (slides.value.length <= 1) return;
-  currentSlide.value = (currentSlide.value + 1) % slides.value.length;
-  restartAutoPlay();
-};
-
-const goToSlide = (index: number) => {
-  currentSlide.value = index;
-  restartAutoPlay();
 };
 
 watch(

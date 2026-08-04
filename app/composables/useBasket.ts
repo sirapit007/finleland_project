@@ -50,7 +50,7 @@ export function useBasket() {
   const isLoading = useState<boolean>("basket-loading", () => false);
   const updatingItemUuids = useState<string[]>("basket-updating-items", () => []);
 
-  // This mirrors the API condition so an item is hidden even if it expires between polls.
+  // Hide an expired item locally without requiring a polling request.
   const activeItems = computed(() =>
     items.value.filter((item) => {
       const expiry = new Date(item.basket_expire).getTime();

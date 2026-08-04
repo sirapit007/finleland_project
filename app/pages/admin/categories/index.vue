@@ -40,121 +40,119 @@
 
   <ModalImagePreview v-model="isImagePreviewOpen" :src="imageSrc" />
 
-  <div class="p-4 bg-base-100">
-    <div
-      class="flex flex-col justify-between gap-3 md:flex-row md:items-center"
-    >
-      <div
-        class="flex flex-row items-center gap-3 md:flex-col md:items-start md:gap-0"
-      >
-        <span class="font-bold text-xl text-primary">Manage Categories</span
-        ><span class="font-semibold text-base text-secondary"
+  <div class="min-h-full p-4 pb-6">
+    <div class="flex justify-between gap-3 md:flex-row md:items-center">
+      <div class="space-x-3 flex flex-col items-start">
+        <span class="font-bold sm:text-xl text-lg text-primary"
+          >Manage Categories</span
+        ><span class="font-semibold sm:text-base text-sm text-secondary"
           >จัดการรายการหมวดหมู่</span
         >
       </div>
-      <div class="flex w-full gap-2 sm:items-center md:w-auto">
-        <label
-          class="flex-1 input input-xs w-full shadow-sm sm:input-sm md:w-80"
+      <button
+        class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
+        v-on:click="fnBase.onCreate()"
+      >
+        <Icon name="lucide:plus" size="16" />
+        เพิ่มหมวดหมู่
+      </button>
+    </div>
+
+    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm mt-2">
+      <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
+        <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
+        <TableSearch
+          v-model="q"
+          placeholder="ค้นหาชื่อหมวดหมู่ หรือคำค้นหา..."
+        />
+      </div>
+      <div class="relative my-1 overflow-auto">
+        <p v-if="error" class="text-error">{{ error.message }}</p>
+
+        <table
+          class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-xs table-pin-rows table-pin-cols"
         >
-          <span class="label"><Icon name="lucide:search" size="16" /></span>
-          <input
-            type="text"
-            placeholder="ค้นหาชื่อหมวดหมู่ หรือคำค้นหา..."
-            v-model="q"
-          />
-        </label>
-        <button
-          class="sm:flex-none flex-1 btn btn-xs w-full shadow-sm sm:btn-sm sm:w-auto btn-primary"
-          v-on:click="fnBase.onCreate()"
-        >
-          <Icon name="lucide:plus" size="16" />
-          เพิ่มหมวดหมู่
-        </button>
+          <thead class="text-xs">
+            <tr>
+              <td>#</td>
+              <td>รูปภาพ</td>
+              <td>ชื่อหมวดหมู่</td>
+              <td>สร้างโดย / เมื่อ</td>
+              <td>แก้ไขโดย / เมื่อ</td>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <SkeletonTableRows v-if="pending" :columns="6" :image-column="1" />
+            <tr
+              v-else
+              v-for="row in data?.rows"
+              :key="row.id"
+              class="hover:bg-primary/5"
+            >
+              <td>{{ row.id }}</td>
+              <td>
+                <div
+                  v-if="row.image_url"
+                  class="h-12 w-12 cursor-pointer"
+                  v-on:click="fnImage.onOpen(row.image_url)"
+                >
+                  <img
+                    :src="row.image_url"
+                    class="h-full w-full object-cover"
+                  />
+                </div>
+                <div v-else class="h-12 w-12 cursor-not-allowed">
+                  <img
+                    src="@/assets/images/blank.png"
+                    class="h-full w-full object-cover"
+                  />
+                </div>
+              </td>
+              <td>{{ row.category_name }}</td>
+              <td>
+                <div>{{ row.created_username ?? row.created_by }}</div>
+                <div>
+                  {{ dayjs(row.created_at).format("YYYY-MM-DD HH:mm:ss") }}
+                </div>
+              </td>
+              <td>
+                <div>{{ row.updated_username ?? row.updated_by }}</div>
+                <div>
+                  {{
+                    row.updated_at
+                      ? dayjs(row.updated_at).format("YYYY-MM-DD HH:mm:ss")
+                      : ""
+                  }}
+                </div>
+              </td>
+              <th class="text-end">
+                <button
+                  class="btn btn-xs btn-link"
+                  v-on:click="fnBase.onEdit(row)"
+                >
+                  แก้ไข
+                </button>
+                <button
+                  class="btn btn-xs btn-link btn-error no-underline"
+                  v-on:click="fnBase.onRemove(row)"
+                >
+                  ลบ
+                </button>
+              </th>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
+        <TablePageSize
+          v-model:page-size="pageSize"
+          :disabled="pending"
+          @update:page-size="page = 1"
+        />
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
     </div>
-    <div
-      class="relative my-1 min-h-[calc(100dvh-16.5rem)] max-h-[calc(100dvh-16.5rem)] overflow-auto rounded-2xl border border-base-300 bg-base-100 shadow-sm sm:my-2 md:my-4 md:min-h-[calc(100dvh-16rem)] md:max-h-[calc(100dvh-16rem)]"
-    >
-      <p v-if="error" class="text-error">{{ error.message }}</p>
-
-      <table
-        class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-pin-rows table-pin-cols"
-      >
-        <thead class="text-xs">
-          <tr>
-            <td>#</td>
-            <td>รูปภาพ</td>
-            <td>ชื่อหมวดหมู่</td>
-            <td>สร้างโดย / เมื่อ</td>
-            <td>แก้ไขโดย / เมื่อ</td>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <SkeletonTableRows v-if="pending" :columns="6" :image-column="1" />
-          <tr
-            v-else
-            v-for="row in data?.rows"
-            :key="row.id"
-            class="hover:bg-primary/5"
-          >
-            <td>{{ row.id }}</td>
-            <td>
-              <div
-                v-if="row.image_url"
-                class="h-12 w-12 cursor-pointer"
-                v-on:click="fnImage.onOpen(row.image_url)"
-              >
-                <img :src="row.image_url" class="h-full w-full object-cover" />
-              </div>
-              <div v-else class="h-12 w-12 cursor-not-allowed">
-                <img
-                  src="@/assets/images/blank.png"
-                  class="h-full w-full object-cover"
-                />
-              </div>
-            </td>
-            <td>{{ row.category_name }}</td>
-            <td>
-              <div>{{ row.created_username ?? row.created_by }}</div>
-              <div>
-                {{ dayjs(row.created_at).format("YYYY-MM-DD HH:mm:ss") }}
-              </div>
-            </td>
-            <td>
-              <div>{{ row.updated_username ?? row.updated_by }}</div>
-              <div>
-                {{
-                  row.updated_at
-                    ? dayjs(row.updated_at).format("YYYY-MM-DD HH:mm:ss")
-                    : ""
-                }}
-              </div>
-            </td>
-            <th class="text-end">
-              <button
-                class="btn btn-xs btn-link"
-                v-on:click="fnBase.onEdit(row)"
-              >
-                แก้ไข
-              </button>
-              <button
-                class="btn btn-xs btn-link btn-error no-underline"
-                v-on:click="fnBase.onRemove(row)"
-              >
-                ลบ
-              </button>
-            </th>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <TablePagination
-      v-model:page="page"
-      v-model:page-size="pageSize"
-      :disabled="pending"
-      :data="data"
-    />
   </div>
 </template>
 

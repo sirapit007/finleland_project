@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
+import { hashPassword } from "@@/server/utils/password";
 import { requireCurrentActor } from "@@/server/utils/session";
 
 type UserBody = {
@@ -11,10 +11,6 @@ type UserBody = {
   role?: string;
   user?: object;
 };
-
-function hashPassword(password: string) {
-  return createHash("sha256").update(password).digest("hex");
-}
 
 export default defineEventHandler(async (event) => {
   const tableName = "tb_users";
@@ -89,7 +85,7 @@ export default defineEventHandler(async (event) => {
 
   // ถ้ามีการส่ง password มาให้ update password ด้วย
   if (password) {
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     result = await db.query(
       `UPDATE ${tableName}

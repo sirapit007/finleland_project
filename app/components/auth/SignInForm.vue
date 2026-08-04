@@ -1,7 +1,9 @@
 <template>
   <div class="mb-6">
-    <h1 class="mt-2 text-3xl font-bold text-primary">เข้าสู่ระบบ</h1>
-    <p class="mt-2 text-sm text-base-content/60 font-semibold">
+    <h1 class="mt-2 sm:text-3xl text-2xl font-bold text-primary">
+      เข้าสู่ระบบ
+    </h1>
+    <p class="mt-2 sm:text-sm text-xs text-base-content/60 font-semibold">
       เข้าสู่ระบบ
       {{
         props.admin ? "เพื่อเข้าถึง Admin Panel" : "เพื่อช้อปปิ้งอย่างต่อเนื่อง"
@@ -15,8 +17,12 @@
       <span>{{ errorMessage }}</span>
     </div>
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">อีเมลหรือเบอร์โทรศัพท์</legend>
-      <label class="input space-x-2 w-full validator shadow-xs">
+      <legend class="fieldset-legend sm:text-sm text-xs">
+        อีเมลหรือเบอร์โทรศัพท์
+      </legend>
+      <label
+        class="input sm:input-md input-sm space-x-2 w-full validator shadow-xs"
+      >
         <Icon name="lucide:user-round" size="16" />
         <input
           type="text"
@@ -28,8 +34,10 @@
     </fieldset>
 
     <fieldset class="fieldset">
-      <legend class="fieldset-legend">รหัสผ่าน</legend>
-      <label class="input space-x-2 w-full validator shadow-xs">
+      <legend class="fieldset-legend sm:text-sm text-xs">รหัสผ่าน</legend>
+      <label
+        class="input sm:input-md input-sm space-x-2 w-full validator shadow-xs"
+      >
         <Icon name="lucide:lock-keyhole" size="16" />
         <input
           :type="show ? 'text' : 'password'"
@@ -49,32 +57,42 @@
       </label>
     </fieldset>
 
-    <div class="flex items-center justify-between text-sm">
+    <div class="flex items-center justify-between sm:text-sm text-xs">
       <label class="label cursor-pointer gap-2">
         <input
           v-model="base.rememberMe"
           type="checkbox"
           name="rememberMe"
-          class="checkbox checkbox-primary checkbox-sm"
+          class="checkbox checkbox-primary sm:checkbox-sm checkbox-xs"
         />
-        <span class="label-text text-xs font-semibold">จำฉันไว้ในระบบ</span>
+        <span class="label-text font-semibold">จำฉันไว้ในระบบ</span>
       </label>
 
-      <NuxtLink v-if="!props.admin" class="text-primary text-xs font-semibold">
+      <NuxtLink
+        v-if="!props.admin"
+        class="text-primary sm:text-sm text-xs font-semibold"
+      >
         <!-- to="/admin/forgot-password" -->
         ลืมรหัสผ่าน?
       </NuxtLink>
     </div>
 
-    <button class="btn btn-primary w-full" type="submit" :disabled="loading">
+    <button
+      class="btn sm:btn-md btn-sm btn-primary w-full"
+      type="submit"
+      :disabled="loading"
+    >
       {{ loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ" }}
     </button>
 
-    <div v-if="!props.admin" class="text-sm text-center">
+    <div
+      v-if="!props.admin"
+      class="sm:text-sm text-xs text-center flex items-center justify-center gap-1"
+    >
       ยังไม่มีบัญชี?
       <button
         type="button"
-        class="btn btn-xs text-sm btn-link no-underline relative z-10"
+        class="btn sm:btn-md btn-sm btn-link no-underline relative z-10"
         v-on:click="onLeave()"
       >
         สมัครสมาชิก
@@ -109,6 +127,12 @@ const onSubmit = async () => {
 
     if (res.token) {
       localStorage.setItem("web-user", JSON.stringify(res.user));
+
+      if (props.admin) {
+        await navigateTo("/admin", { replace: true });
+        return;
+      }
+
       await window.location.reload();
     }
   } catch (error: any) {

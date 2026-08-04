@@ -1,5 +1,6 @@
-import { createHmac, createHash, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
+import { hashPassword, verifyPassword } from "@@/server/utils/password";
 
 const USERS_TABLE = "tb_users";
 const ID_COLUMN = "id";
@@ -52,21 +53,6 @@ function signJwt(
   return `${unsignedToken}.${base64Url(signature)}`;
 }
 
-function hashPassword(password: string) {
-  return createHash("sha256").update(password).digest("hex");
-}
-
-function safeCompare(left: string, right: string) {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(leftBuffer, rightBuffer);
-}
-
 export default defineEventHandler(async (event) => {
   const body = await readBody<LoginBody>(event);
   const username = String(body.username || "").trim();
@@ -91,13 +77,32 @@ export default defineEventHandler(async (event) => {
   );
 
   const user = result.rows[0];
-  const hashedPassword = hashPassword(password);
 
-  if (!user || !safeCompare(hashedPassword, user.password.trim())) {
+  if (!user) {
     throw createError({
       statusCode: 401,
       statusMessage: `Invalid username or password`,
     });
+  }
+
+  const passwordResult = await verifyPassword(password, user.password);
+
+  if (!passwordResult.valid) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: `Invalid username or password`,
+    });
+  }
+
+  if (passwordResult.needsUpgrade) {
+    const upgradedHash = await hashPassword(password);
+    await db.query(
+      `UPDATE ${USERS_TABLE}
+       SET password = $1,
+           updated_at = NOW()
+       WHERE id = $2`,
+      [upgradedHash, user.id],
+    );
   }
 
   if (admin && user.role !== "Admin") {

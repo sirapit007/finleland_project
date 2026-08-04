@@ -1,6 +1,6 @@
 <template>
   <div class="overflow-x-hidden">
-    <section class="bg-base-300">
+    <section class="bg-base-300 border-b border-base-content/10">
       <div
         class="space-y-3 mx-auto w-full max-w-3xl px-4 py-12 text-center sm:px-6 sm:py-16 lg:px-8 lg:py-20"
       >
@@ -36,7 +36,7 @@
           </NuxtLink>
           <NuxtLink
             to="/how-to-order"
-            class="btn btn-outline btn-secondary sm:btn-md btn-sm w-fit"
+            class="btn btn-outline btn-secondary btn-soft sm:btn-md btn-sm w-fit"
           >
             วิธีการสั่งซื้อ
             <Icon name="lucide:circle-arrow-right" size="18" />
@@ -45,10 +45,11 @@
       </div>
     </section>
 
-    <section class="mx-auto w-full max-w-7xl  px-4 sm:px-2 lg:px-1 py-6 sm:py-8 lg:py-10">
+    <section
+      class="mx-auto w-full max-w-7xl px-4 sm:px-2 lg:px-1 py-6 sm:py-8 lg:py-10"
+    >
       <div class="relative overflow-hidden">
-        <SkeletonHomeSections v-if="loading.promotion" type="promotion" />
-        <CarouselPromotions v-else :data="rows.promotion" />
+        <CarouselPromotions />
       </div>
     </section>
 
@@ -60,8 +61,7 @@
           หมวดหมู่สินค้า
         </h2>
         <div class="relative overflow-hidden">
-          <SkeletonHomeSections v-if="loading.categories" type="categories" />
-          <AvatarCategories v-else :items="rows.categories" />
+          <AvatarCategories />
         </div>
       </div>
     </section>
@@ -103,13 +103,12 @@
           </NuxtLink>
         </div>
         <div class="relative overflow-hidden">
-          <SkeletonHomeSections v-if="loading.products" type="products" />
-          <CarouselProducts v-else :data="rows.products" />
+          <CarouselProducts />
         </div>
       </div>
     </section>
 
-    <section class="bg-base-200 border border-base-300">
+    <section class="bg-base-200 border-t border-base-300">
       <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <div
           class="relative space-y-4 text-sm italic leading-7 text-base-content/75 sm:text-base sm:leading-8"
@@ -143,49 +142,7 @@
 </template>
 
 <script setup lang="ts">
-const rows = ref<any>({
-  categories: [],
-  promotion: [],
-  products: [],
-});
-const loading = reactive({ categories: true, promotion: true, products: true });
-
 const openMap = () => {
   window.open("https://maps.app.goo.gl/QLdLX6w2srqyPVzM8", "_blank");
 };
-
-onMounted(async () => {
-  await Promise.all([
-    (async () => {
-      try {
-        const categories: any = await $fetch("/api/categories", {
-          params: { pageSize: 999 },
-        });
-        rows.value.categories = categories.rows || [];
-      } finally {
-        loading.categories = false;
-      }
-    })(),
-    (async () => {
-      try {
-        const promotion: any = await $fetch("/api/promotion", {
-          params: { now: true },
-        });
-        rows.value.promotion = promotion.rows || [];
-      } finally {
-        loading.promotion = false;
-      }
-    })(),
-    (async () => {
-      try {
-        const products: any = await $fetch("/api/products", {
-          params: { pageSize: 12, orderBy: "base.id DESC" },
-        });
-        rows.value.products = products.rows || [];
-      } finally {
-        loading.products = false;
-      }
-    })(),
-  ]);
-});
 </script>

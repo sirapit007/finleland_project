@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import { requireCurrentUser } from "@@/server/utils/session";
 import { useDb } from "@@/server/utils/db";
+import { hashPassword } from "@@/server/utils/password";
 
 type PasswordBody = {
   password?: string;
@@ -29,10 +29,14 @@ export default defineEventHandler(async (event) => {
   }
 
   if (password !== confirmPassword) {
-    throw createError({ statusCode: 400, statusMessage: "Passwords do not match" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Passwords do not match",
+    });
   }
 
   const db = useDb();
+  const hashedPassword = await hashPassword(password);
   const result = await db.query(
     `UPDATE tb_users
      SET password = $1,
@@ -41,7 +45,7 @@ export default defineEventHandler(async (event) => {
      WHERE uuid = $3
        AND deleted_at IS NULL
      RETURNING uuid, updated_at`,
-    [createHash("sha256").update(password).digest("hex"), currentUser.uuid, uuid],
+    [hashedPassword, currentUser.uuid, uuid],
   );
 
   if (!result.rows[0]) {

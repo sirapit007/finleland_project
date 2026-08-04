@@ -131,6 +131,12 @@
       >
         {{ shippingError }}
       </p>
+      <p
+        v-if="taxError"
+        class="rounded-lg bg-warning/10 px-4 py-3 text-sm text-warning-content"
+      >
+        {{ taxError }}
+      </p>
       <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <section class="min-w-0 space-y-4">
           <div class="overflow-x-auto rounded-xl border border-base-300">
@@ -413,6 +419,63 @@
 
           <div class="my-5 border-t border-base-300" />
 
+          <label class="w-full flex cursor-pointer items-start gap-3">
+            <input
+              v-model="requestTaxInvoice"
+              type="checkbox"
+              class="checkbox checkbox-primary md:checkbox-md checkbox-sm sm:mt-1 mt-2"
+            />
+            <div class="w-full">
+              <div class="flex items-center justify-between gap-2">
+                <h2 class="font-bold sm:text-base text-sm">ขอใบกำกับภาษี</h2>
+
+                <button
+                  v-if="requestTaxInvoice"
+                  class="btn btn-link sm:btn-xs btn-sm"
+                  type="button"
+                  :disabled="isTaxLoading"
+                  @click="openSelectTaxProfileModal"
+                >
+                  <Icon name="lucide:receipt-text" size="16" />
+                  เลือกข้อมูลภาษี
+                </button>
+              </div>
+              <p
+                v-if="!requestTaxInvoice"
+                class="mt-1 text-[13px] text-base-content/55"
+              >
+                เลือกเมื่อต้องการระบุข้อมูลผู้เสียภาษีสำหรับคำสั่งซื้อนี้
+              </p>
+              <div
+                v-else-if="selectedTaxProfile"
+                class="mt-2 px-2 border border-dashed border-base-content/45 rounded-sm"
+              >
+                <p class="mt-2 sm:text-sm text-xs font-semibold">
+                  {{ selectedTaxProfile.tax_profile_label }}:
+                  {{ selectedTaxProfile.taxpayer_name }}
+                </p>
+                <p class="mt-1 sm:text-sm text-xs text-base-content/65">
+                  เลขประจำตัวผู้เสียภาษี {{ selectedTaxProfile.taxpayer_id }}
+                </p>
+                <p
+                  class="mt-1 max-w-3xl text-xs leading-6 text-base-content/65"
+                >
+                  {{ formatTaxProfileAddress(selectedTaxProfile) }}
+                </p>
+              </div>
+              <template v-else>
+                <p class="mt-2 text-[13px] font-semibold text-error">
+                  ยังไม่ได้เลือกข้อมูลผู้เสียภาษี
+                </p>
+                <p class="mt-1 text-[12px] text-base-content/55">
+                  เพิ่มหรือเลือกข้อมูลก่อนดำเนินการสั่งซื้อ
+                </p>
+              </template>
+            </div>
+          </label>
+
+          <div class="my-5 border-t border-base-300" />
+
           <h3 class="mb-3 text-sm font-bold">ตัวเลือกการจัดส่ง</h3>
           <div class="space-y-2">
             <label
@@ -520,6 +583,7 @@
             :disabled="
               subtotal < 1500 ||
               (delivery !== 'pickup' && !selectedShippingAddress) ||
+              (requestTaxInvoice && !selectedTaxProfile) ||
               isShippingDistanceLoading ||
               isCheckingOut
             "
@@ -539,6 +603,12 @@
             class="mt-2 text-center text-xs text-base-content/55"
           >
             กรุณาเลือกที่อยู่จัดส่งก่อน
+          </p>
+          <p
+            v-else-if="requestTaxInvoice && !selectedTaxProfile"
+            class="mt-2 text-center text-xs text-base-content/55"
+          >
+            กรุณาเลือกข้อมูลผู้เสียภาษีก่อน
           </p>
           <button
             class="btn btn-outline btn-primary btn-sm mt-3 w-full"
@@ -688,12 +758,139 @@
     </form>
   </dialog>
 
+  <dialog ref="selectTaxProfileModal" class="modal">
+    <div class="modal-box max-w-3xl p-0">
+      <div
+        class="flex items-center justify-between border-b border-base-300 px-5 py-4 sm:px-6"
+      >
+        <div>
+          <h2 class="text-xl font-bold">เลือกข้อมูลผู้เสียภาษี</h2>
+          <p class="mt-1 text-sm text-base-content/60">
+            ข้อมูลที่เลือกจะถูกบันทึกเป็นสำเนาในคำสั่งซื้อนี้
+          </p>
+        </div>
+        <button
+          class="btn btn-circle btn-ghost btn-sm"
+          type="button"
+          @click="selectTaxProfileModal?.close()"
+        >
+          <Icon name="lucide:x" size="18" />
+        </button>
+      </div>
+      <div class="max-h-[78vh] space-y-5 overflow-y-auto p-5 sm:p-6">
+        <div class="flex flex-wrap justify-between gap-2">
+          <button
+            class="btn btn-primary btn-sm"
+            type="button"
+            @click="openCreateTaxProfileModal"
+          >
+            <Icon name="lucide:plus" size="16" /> เพิ่มข้อมูลใหม่
+          </button>
+          <button
+            class="btn btn-outline btn-sm"
+            type="button"
+            @click="loadTaxProfiles"
+          >
+            <Icon name="lucide:refresh-cw" size="16" /> โหลดข้อมูลใหม่
+          </button>
+        </div>
+        <div v-if="isTaxLoading" class="space-y-3">
+          <SkeletonAddressCards />
+        </div>
+        <div v-else-if="!taxProfiles.length" class="py-8 text-center">
+          <Icon
+            name="lucide:receipt"
+            size="32"
+            class="mx-auto mb-3 text-base-content/30"
+          />
+          <p class="font-semibold">ยังไม่มีข้อมูลผู้เสียภาษี</p>
+          <p class="mt-1 text-sm text-base-content/55">
+            กดเพิ่มข้อมูลใหม่เพื่อสร้างรายการแรก
+          </p>
+        </div>
+        <div v-else class="space-y-3">
+          <div
+            v-for="taxProfile in taxProfiles"
+            :key="taxProfile.uuid"
+            class="relative w-full rounded-xl border text-left transition"
+            :class="
+              selectedTaxProfileId === taxProfile.uuid
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-base-300 hover:border-primary/50'
+            "
+          >
+            <button
+              class="flex w-full items-start gap-3 p-4 pr-20 text-left"
+              type="button"
+              @click="selectTaxProfile(taxProfile.uuid)"
+            >
+              <Icon
+                name="lucide:receipt-text"
+                size="18"
+                class="mt-0.5 text-primary"
+              />
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="font-bold">
+                    {{ taxProfile.tax_profile_label }}:
+                    {{ taxProfile.taxpayer_name }}
+                  </p>
+                  <span
+                    v-if="taxProfile.tax_profile_is_default"
+                    class="badge badge-sm badge-accent"
+                    >Default</span
+                  >
+                </div>
+                <p class="mt-1 text-sm text-base-content/65">
+                  เลขประจำตัวผู้เสียภาษี {{ taxProfile.taxpayer_id }}
+                </p>
+                <p class="mt-1 text-sm text-base-content/65">
+                  {{ formatTaxProfileAddress(taxProfile) }}
+                </p>
+              </div>
+            </button>
+            <button
+              class="btn btn-ghost btn-xs absolute right-4 top-4"
+              type="button"
+              @click="openEditTaxProfileModal(taxProfile)"
+            >
+              แก้ไข
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
+  </dialog>
+
   <ShippingAddressFormModal
     v-model="isAddressFormOpen"
     :mode="addressFormMode"
     :form="addressForm"
     :loading="isSavingAddress"
     @submit="requestSaveAddress"
+  />
+
+  <TaxProfileFormModal
+    v-model="isTaxFormOpen"
+    :mode="taxFormMode"
+    :form="taxForm"
+    :loading="isSavingTaxProfile"
+    @submit="requestSaveTaxProfile"
+  />
+
+  <ModalConfirm
+    v-model="isTaxConfirmOpen"
+    :title="
+      taxFormMode === 'create'
+        ? 'ยืนยันการบันทึกข้อมูลผู้เสียภาษี'
+        : 'ยืนยันการแก้ไขข้อมูลผู้เสียภาษี'
+    "
+    message="กรุณาตรวจสอบชื่อ เลขประจำตัวผู้เสียภาษี และที่อยู่ก่อนบันทึก"
+    confirm-text="บันทึก"
+    :loading="isSavingTaxProfile"
+    @confirm="confirmTaxProfileSave"
+    @cancel="reopenTaxProfileFormAfterCancel"
   />
 
   <ModalConfirm
@@ -728,13 +925,17 @@ type ShippingDistanceQuote = {
 };
 
 const delivery = ref("normal");
+const requestTaxInvoice = ref(false);
 const errorMessage = ref("");
 const shippingError = ref("");
+const taxError = ref("");
 const isClearing = ref(false);
 const isCheckingOut = ref(false);
 const currentUser = ref<any>(null);
 const shippingAddresses = ref<ShippingAddress[]>([]);
 const selectedShippingAddressId = ref("");
+const taxProfiles = ref<TaxProfile[]>([]);
+const selectedTaxProfileId = ref("");
 const shippingDistanceQuote = ref<ShippingDistanceQuote | null>(null);
 const isShippingDistanceLoading = ref(false);
 const shippingDistanceError = ref("");
@@ -742,6 +943,8 @@ const shippingDistanceQuoteCache = new Map<string, ShippingDistanceQuote>();
 let shippingDistanceAbortController: AbortController | null = null;
 const isShippingLoading = ref(false);
 const isSavingAddress = ref(false);
+const isTaxLoading = ref(false);
+const isSavingTaxProfile = ref(false);
 const editingAddressUuid = ref("");
 const isConfirmModalOpen = ref(false);
 const confirmAction = ref<
@@ -750,11 +953,17 @@ const confirmAction = ref<
 const confirmBasketTarget = ref<any>(null);
 
 const selectAddressModal = ref<HTMLDialogElement | null>(null);
+const selectTaxProfileModal = ref<HTMLDialogElement | null>(null);
 const isAddressFormOpen = ref(false);
 const addressFormMode = ref<"create" | "edit">("create");
 const addressForm = ref(
   createShippingAddressForm({ shipping_is_default: false }),
 );
+const isTaxFormOpen = ref(false);
+const isTaxConfirmOpen = ref(false);
+const taxFormMode = ref<"create" | "edit">("create");
+const taxForm = ref(createTaxProfileForm({ tax_profile_is_default: false }));
+const editingTaxProfileUuid = ref("");
 
 const benefits = [
   {
@@ -985,6 +1194,18 @@ const selectedShippingAddress = computed(() => {
   );
 });
 
+const selectedTaxProfile = computed(() => {
+  if (!taxProfiles.value.length) return null;
+  return (
+    taxProfiles.value.find(
+      (profile) => profile.uuid === selectedTaxProfileId.value,
+    ) ||
+    taxProfiles.value.find((profile) => profile.tax_profile_is_default) ||
+    taxProfiles.value[0] ||
+    null
+  );
+});
+
 const selectedShippingAddressQuoteKey = computed(() => {
   const address = selectedShippingAddress.value;
   if (!address) return "";
@@ -1200,6 +1421,136 @@ const loadShippingAddresses = async () => {
   }
 };
 
+const pickSelectedTaxProfile = () => {
+  if (!taxProfiles.value.length) {
+    selectedTaxProfileId.value = "";
+    return;
+  }
+  if (
+    taxProfiles.value.some(
+      (profile) => profile.uuid === selectedTaxProfileId.value,
+    )
+  )
+    return;
+  selectedTaxProfileId.value =
+    taxProfiles.value.find((profile) => profile.tax_profile_is_default)?.uuid ||
+    taxProfiles.value[0]?.uuid ||
+    "";
+};
+
+const loadTaxProfiles = async () => {
+  taxError.value = "";
+  if (!currentUser.value?.uuid) {
+    taxProfiles.value = [];
+    selectedTaxProfileId.value = "";
+    return;
+  }
+  isTaxLoading.value = true;
+  try {
+    taxProfiles.value = await fetchTaxProfiles(currentUser.value.uuid);
+    pickSelectedTaxProfile();
+  } catch {
+    taxError.value = "ไม่สามารถโหลดข้อมูลผู้เสียภาษีได้";
+  } finally {
+    isTaxLoading.value = false;
+  }
+};
+
+const openSelectTaxProfileModal = async () => {
+  await loadTaxProfiles();
+  if (!selectTaxProfileModal.value?.open)
+    selectTaxProfileModal.value?.showModal();
+};
+
+const openCreateTaxProfileModal = async () => {
+  if (!currentUser.value?.uuid) {
+    taxError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มข้อมูลผู้เสียภาษี";
+    return;
+  }
+  taxFormMode.value = "create";
+  taxForm.value = createTaxProfileForm({
+    tax_profile_user: currentUser.value.uuid,
+    taxpayer_name:
+      `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
+    taxpayer_phone: currentUser.value.phone || "",
+    taxpayer_email: currentUser.value.email || "",
+    tax_profile_is_default:
+      taxProfiles.value.length === 0 ||
+      !taxProfiles.value.some((profile) => profile.tax_profile_is_default),
+  });
+  selectTaxProfileModal.value?.close();
+  await nextTick();
+  isTaxFormOpen.value = true;
+};
+
+const openEditTaxProfileModal = async (profile: TaxProfile) => {
+  taxFormMode.value = "edit";
+  editingTaxProfileUuid.value = profile.uuid;
+  taxForm.value = toTaxProfileForm(profile);
+  selectTaxProfileModal.value?.close();
+  await nextTick();
+  isTaxFormOpen.value = true;
+};
+
+const selectTaxProfile = (uuid: string) => {
+  selectedTaxProfileId.value = uuid;
+  requestTaxInvoice.value = true;
+  selectTaxProfileModal.value?.close();
+  showToast("เลือกข้อมูลผู้เสียภาษีเรียบร้อยแล้ว");
+};
+
+const requestSaveTaxProfile = async () => {
+  taxError.value = "";
+  if (!/^[0-9]{13}$/.test(String(taxForm.value.taxpayer_id || "").trim())) {
+    taxError.value = "กรุณากรอกเลขประจำตัวผู้เสียภาษีให้ครบ 13 หลัก";
+    return;
+  }
+  const phone = String(taxForm.value.taxpayer_phone || "").trim();
+  if (phone && !/^[0-9]{10}$/.test(phone)) {
+    taxError.value = "เบอร์โทรศัพท์ผู้เสียภาษีต้องเป็นตัวเลข 10 หลัก";
+    return;
+  }
+  isTaxFormOpen.value = false;
+  await nextTick();
+  isTaxConfirmOpen.value = true;
+};
+
+const reopenTaxProfileFormAfterCancel = async () => {
+  await nextTick();
+  isTaxFormOpen.value = true;
+};
+
+const confirmTaxProfileSave = async () => {
+  if (!currentUser.value?.uuid) return;
+  isSavingTaxProfile.value = true;
+  taxError.value = "";
+  try {
+    const response =
+      taxFormMode.value === "create"
+        ? await createTaxProfile(
+            createTaxProfileForm({
+              ...taxForm.value,
+              tax_profile_user: currentUser.value.uuid,
+            }),
+          )
+        : await updateTaxProfile(editingTaxProfileUuid.value, taxForm.value);
+    await loadTaxProfiles();
+    if (response?.row?.uuid) selectedTaxProfileId.value = response.row.uuid;
+    requestTaxInvoice.value = true;
+    isTaxConfirmOpen.value = false;
+    showToast(
+      taxFormMode.value === "create"
+        ? "เพิ่มข้อมูลผู้เสียภาษีเรียบร้อยแล้ว"
+        : "บันทึกข้อมูลผู้เสียภาษีเรียบร้อยแล้ว",
+    );
+  } catch (error: any) {
+    taxError.value =
+      error?.data?.statusMessage || "ไม่สามารถบันทึกข้อมูลผู้เสียภาษีได้";
+  } finally {
+    isSavingTaxProfile.value = false;
+  }
+};
+
 const openSelectAddressModal = async () => {
   await loadShippingAddresses();
   if (!selectAddressModal.value?.open) {
@@ -1389,6 +1740,11 @@ const requestClearBasket = () => {
 const requestCheckout = () => {
   if (isShippingDistanceLoading.value) return;
 
+  if (requestTaxInvoice.value && !selectedTaxProfile.value) {
+    taxError.value = "กรุณาเลือกข้อมูลผู้เสียภาษีก่อนดำเนินการสั่งซื้อ";
+    return;
+  }
+
   confirmAction.value = "checkout";
   isConfirmModalOpen.value = true;
 };
@@ -1396,6 +1752,7 @@ const requestCheckout = () => {
 const onCheckout = async () => {
   errorMessage.value = "";
   shippingError.value = "";
+  taxError.value = "";
 
   if (!currentUser.value?.uuid) {
     errorMessage.value = "กรุณาเข้าสู่ระบบก่อนดำเนินการสั่งซื้อ";
@@ -1412,6 +1769,11 @@ const onCheckout = async () => {
     return;
   }
 
+  if (requestTaxInvoice.value && !selectedTaxProfile.value) {
+    taxError.value = "กรุณาเลือกข้อมูลผู้เสียภาษีก่อนดำเนินการสั่งซื้อ";
+    return;
+  }
+
   isCheckingOut.value = true;
 
   try {
@@ -1423,15 +1785,21 @@ const onCheckout = async () => {
           delivery.value === "pickup"
             ? undefined
             : selectedShippingAddress.value?.uuid,
+        order_tax_profile_uuid: requestTaxInvoice.value
+          ? selectedTaxProfile.value?.uuid
+          : undefined,
       },
     });
+    const orderUuid = String(response?.row?.uuid || "").trim();
+    if (!orderUuid) {
+      throw new Error("Created order did not return a uuid");
+    }
 
     await refreshBasket();
     showToast(
       `สร้างคำสั่งซื้อ ${response?.row?.order_number || ""} เรียบร้อยแล้ว`,
       "success",
       3500,
-      { label: "ดูคำสั่งซื้อ", to: "/orders" },
     );
     if (response?.lineNotification?.sent) {
       showToast("แจ้งเตือนคำสั่งซื้อไปยัง LINE กลุ่มแอดมินแล้ว");
@@ -1441,6 +1809,7 @@ const onCheckout = async () => {
         "warning",
       );
     }
+    await navigateTo(`/orders/${orderUuid}`);
   } catch (error: any) {
     console.error("Unable to create order", error);
     errorMessage.value =
@@ -1466,7 +1835,8 @@ const confirmBasketAction = async () => {
     actionSucceeded = await saveEditAddress();
   } else if (confirmAction.value === "checkout") {
     await onCheckout();
-    actionSucceeded = !errorMessage.value && !shippingError.value;
+    actionSucceeded =
+      !errorMessage.value && !shippingError.value && !taxError.value;
   }
 
   if (actionSucceeded) {
@@ -1489,6 +1859,6 @@ onBeforeUnmount(() => {
 
 onMounted(async () => {
   loadCurrentUser();
-  await Promise.all([onRefreshBasket(), loadShippingAddresses()]);
+  await Promise.all([loadShippingAddresses(), loadTaxProfiles()]);
 });
 </script>

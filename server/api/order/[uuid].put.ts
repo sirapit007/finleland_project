@@ -11,7 +11,13 @@ type OrderBody = {
   user?: { uuid?: string };
 };
 
-const paymentStatuses = new Set(["unpaid", "pending", "paid", "failed", "refunded"]);
+const paymentStatuses = new Set([
+  "unpaid",
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+]);
 
 export default defineEventHandler(async (event) => {
   const uuid = getRouterParam(event, "uuid");
@@ -35,8 +41,21 @@ export default defineEventHandler(async (event) => {
         "Use /api/order/status-histories to change an order status",
     });
   }
+  if (
+    body.order_payment_method !== undefined ||
+    body.order_payment_status !== undefined
+  ) {
+    throw createError({
+      statusCode: 400,
+      statusMessage:
+        "Use /api/order/payments to submit or review payment information",
+    });
+  }
   if (paymentStatus && !paymentStatuses.has(paymentStatus)) {
-    throw createError({ statusCode: 400, statusMessage: "Payment status is invalid" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Payment status is invalid",
+    });
   }
 
   const db = useDb();
@@ -53,10 +72,14 @@ export default defineEventHandler(async (event) => {
        AND deleted_at IS NULL
      RETURNING *`,
     [
-      body.order_payment_method ? String(body.order_payment_method).trim() : null,
+      body.order_payment_method
+        ? String(body.order_payment_method).trim()
+        : null,
       paymentStatus,
       body.order_carrier ? String(body.order_carrier).trim() : null,
-      body.order_tracking_number ? String(body.order_tracking_number).trim() : null,
+      body.order_tracking_number
+        ? String(body.order_tracking_number).trim()
+        : null,
       body.order_cancel_reason ? String(body.order_cancel_reason).trim() : null,
       userUuid,
       uuid,

@@ -15,6 +15,14 @@ type LineCustomerOrderStatusNotification = {
   status: string;
 };
 
+type LineAdminPaymentNotification = {
+  customerName: string;
+  orderNumber: string;
+  total: number;
+  transactionRef: string;
+  paidAt: string | Date;
+};
+
 const statusLabels: Record<string, string> = {
   pending: "รอตรวจสอบ",
   confirmed: "ยืนยันคำสั่งซื้อแล้ว",
@@ -27,7 +35,9 @@ const statusLabels: Record<string, string> = {
 
 async function pushLineText(recipientId: string, text: string) {
   const config = useRuntimeConfig();
-  const accessToken = String(config.lineMessagingChannelAccessToken || "").trim();
+  const accessToken = String(
+    config.lineMessagingChannelAccessToken || "",
+  ).trim();
 
   if (!accessToken) {
     return {
@@ -51,7 +61,9 @@ async function pushLineText(recipientId: string, text: string) {
 
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 300);
-    throw new Error(`LINE push notification failed (${response.status}): ${detail}`);
+    throw new Error(
+      `LINE push notification failed (${response.status}): ${detail}`,
+    );
   }
 
   return { sent: true, skipped: false, reason: null };
@@ -129,5 +141,39 @@ export async function notifyLineCustomerOfOrderStatus(
     ]
       .filter(Boolean)
       .join("\n"),
+  );
+}
+
+export async function notifyLineAdminGroupOfVerifiedPayment(
+  payment: LineAdminPaymentNotification,
+) {
+  const config = useRuntimeConfig();
+  const groupId = String(config.lineAdminGroupId || "").trim();
+  if (!groupId) {
+    return {
+      sent: false,
+      skipped: true,
+      reason: "LINE_ADMIN_GROUP_ID has not been configured",
+    };
+  }
+
+  const total = new Intl.NumberFormat("th-TH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(payment.total);
+  const paidAt = new Intl.DateTimeFormat("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(payment.paidAt));
+  return pushLineText(
+    groupId,
+    [
+      "ยืนยันการชำระเงินแล้ว",
+      `เลขที่: ${payment.orderNumber}`,
+      `ลูกค้า: ${payment.customerName || "-"}`,
+      `ยอดชำระ: ฿${total}`,
+      `เวลาชำระ: ${paidAt}`,
+      `อ้างอิง: ${payment.transactionRef || "-"}`,
+    ].join("\n"),
   );
 }

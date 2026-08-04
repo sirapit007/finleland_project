@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-[calc(100dvh-4rem)] max-h-[calc(100dvh-4rem)] overflow-auto space-y-5 p-4 md:p-6">
+  <div class="space-y-5 p-4 md:p-6">
     <section
       class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm md:p-5"
     >
@@ -51,7 +51,11 @@
         class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         aria-hidden="true"
       >
-        <article v-for="item in 4" :key="item" class="rounded-xl border border-base-300 p-4">
+        <article
+          v-for="item in 4"
+          :key="item"
+          class="rounded-xl border border-base-300 p-4"
+        >
           <div class="skeleton h-4 w-2/3" />
           <div class="mt-3 skeleton h-8 w-1/2" />
           <div class="mt-3 skeleton h-3 w-4/5" />
@@ -62,7 +66,11 @@
         class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         aria-hidden="true"
       >
-        <article v-for="item in 4" :key="item" class="rounded-xl bg-base-200 p-4">
+        <article
+          v-for="item in 4"
+          :key="item"
+          class="rounded-xl bg-base-200 p-4"
+        >
           <div class="skeleton h-4 w-2/3" />
           <div class="mt-3 skeleton h-8 w-1/2" />
           <div class="mt-3 skeleton h-3 w-4/5" />
@@ -264,7 +272,9 @@
             แสดงเฉพาะคำสั่งซื้อที่ปิดงานแล้ว และยึดต้นทุน ณ วันที่ปิดงาน
           </p>
         </div>
-        <div class="flex sm:flex-row flex-col gap-3 sm:items-center items-start">
+        <div
+          class="flex sm:flex-row flex-col gap-3 sm:items-center items-start"
+        >
           <div class="join">
             <button
               class="join-item btn btn-sm rounded-l-s, cursor-not-allowed disabled:text-primary"
