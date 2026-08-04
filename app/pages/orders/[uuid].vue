@@ -270,7 +270,7 @@
           </section>
         </div>
 
-        <div class="space-y-5 lg:sticky lg:top-24">
+        <div class="space-y-5">
           <OrderSummary
             :order="order"
             :total-quantity="totalQuantity"
