@@ -44,6 +44,17 @@ const comparableName = (value: unknown) =>
 const matchesExpectedValue = (expected: string, values: unknown[]) =>
   values.some((value) => comparableValue(value) === expected);
 
+const matchesExpectedName = (expected: string, value: unknown) => {
+  const actual = comparableName(value);
+  if (!expected || !actual) return false;
+  if (actual === expected) return true;
+
+  // Slip providers can mask or truncate the receiver surname.
+  const [shorter, longer] =
+    actual.length < expected.length ? [actual, expected] : [expected, actual];
+  return shorter.length >= 6 && longer.startsWith(shorter);
+};
+
 const displayName = (party?: SlipOkTransaction["sender"]) =>
   String(party?.displayName || party?.name || "").trim() || null;
 
@@ -164,7 +175,7 @@ export default defineEventHandler(async (event) => {
     [orderUuid, currentUser.uuid, rateWindowMinutes],
   );
   if (Number(rateResult.rows[0]?.total || 0) >= rateLimit) {
-    setHeader(event, "Retry-After", String(rateWindowMinutes * 60));
+    setHeader(event, "Retry-After", rateWindowMinutes * 60);
     throw createError({
       statusCode: 429,
       statusMessage: `อัปโหลดสลิปบ่อยเกินไป กรุณารอ ${rateWindowMinutes} นาทีแล้วลองใหม่`,
@@ -302,11 +313,30 @@ export default defineEventHandler(async (event) => {
   });
   let rejectionReason =
     String(providerBody.message || transaction.message || "").trim() || null;
+  const expectedAccount = comparableValue(config.paymentReceiverAccount);
+
+  if (import.meta.dev || process.env.PAYMENT_DEBUG === "true") {
+    console.log("[payment-slip:receiver-account-check]", {
+      providerHttpStatus,
+      providerCode: providerBody.code ?? null,
+      providerMessage: providerBody.message ?? null,
+      attemptStatus,
+      expectedAccountRaw: String(config.paymentReceiverAccount || ""),
+      expectedAccount,
+      receiverName,
+      receiverAccount,
+      receiverAccountNormalized: comparableValue(receiverAccount),
+      receiverProxyType,
+      receiverProxyValue,
+      receiverProxyValueNormalized: comparableValue(receiverProxyValue),
+      receivingBank,
+      merchantId,
+    });
+  }
 
   if (attemptStatus === "verified") {
     const expectedAmount = toPaymentMoney(order.order_grand_total);
     const expectedBank = String(config.paymentReceiverBankCode || "").trim();
-    const expectedAccount = comparableValue(config.paymentReceiverAccount);
     const expectedReceiverName = comparableName(config.paymentReceiverName);
     const expectedMerchantId = comparableValue(
       config.paymentReceiverMerchantId,
@@ -323,7 +353,11 @@ export default defineEventHandler(async (event) => {
     } else if (transactionAt < earliestAcceptedAt) {
       attemptStatus = "rejected";
       rejectionReason = "เวลาธุรกรรมเกิดก่อนสร้างคำสั่งซื้อ";
-    } else if (expectedBank && receivingBank !== expectedBank) {
+    } else if (
+      expectedBank &&
+      receivingBank &&
+      receivingBank !== expectedBank
+    ) {
       attemptStatus = "rejected";
       rejectionReason = "ธนาคารผู้รับไม่ตรงกับบัญชีร้านค้า";
     } else if (
@@ -337,7 +371,7 @@ export default defineEventHandler(async (event) => {
       rejectionReason = "บัญชีผู้รับไม่ตรงกับบัญชีร้านค้า";
     } else if (
       expectedReceiverName &&
-      comparableName(receiverName) !== expectedReceiverName
+      !matchesExpectedName(expectedReceiverName, receiverName)
     ) {
       attemptStatus = "rejected";
       rejectionReason = "ชื่อผู้รับไม่ตรงกับชื่อร้านค้า";
@@ -521,7 +555,7 @@ export default defineEventHandler(async (event) => {
   if (attemptStatus === "manual_review") {
     setResponseStatus(event, 202);
   }
-  let lineNotification = {
+  let lineNotification: any = {
     sent: false,
     skipped: true,
     reason: "Payment was not verified",
