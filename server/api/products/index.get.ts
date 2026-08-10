@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
   const page = Math.max(Number(query.page || 1), 1);
-  const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 100);
+  const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 1000);
   const orderBy = String(query.orderBy || "base.id DESC");
   const allowedOrderBy = new Set([
     "base.id DESC",

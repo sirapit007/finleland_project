@@ -106,7 +106,7 @@ const itemsPerPage = 10;
 const sellerName = computed(
   () =>
     String(runtimeConfig.public.taxInvoiceSellerName || "").trim() ||
-    "ฟินส์แลนด์ พลาซ่า",
+    "ฟินลี่แลนด์ พลาซ่า",
 );
 
 const itemPages = computed(() => {

@@ -343,7 +343,7 @@ const totalQuantity = computed(() =>
 const publicConfig = runtimeConfig.public as Record<string, any>;
 const merchant = computed(() => ({
   qrUrl: String(publicConfig.paymentMerchantQrUrl || "").trim(),
-  name: String(publicConfig.paymentMerchantName || "ฟินส์แลนด์ พลาซ่า"),
+  name: String(publicConfig.paymentMerchantName || "ฟินลี่แลนด์ พลาซ่า"),
   bank: String(publicConfig.paymentMerchantBank || "").trim(),
   account: String(publicConfig.paymentMerchantAccount || "").trim(),
   maxSlipMb: Math.max(Number(publicConfig.paymentSlipMaxMb || 5), 1),

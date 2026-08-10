@@ -2,7 +2,7 @@
   <article class="invoice-sheet">
     <header class="invoice-header">
       <div class="seller-heading">
-        <img src="~/assets/images/logo.png" alt="ฟินส์แลนด์ พลาซ่า" />
+        <img src="~/assets/images/logo.png" alt="ฟินลี่แลนด์ พลาซ่า" />
         <div>
           <p class="seller-name">{{ seller.name }}</p>
           <p>{{ seller.address || "ยังไม่ได้ตั้งค่าที่อยู่ร้านค้า" }}</p>
@@ -210,7 +210,7 @@ const taxDetail = computed<InvoiceRow | null>(() =>
 );
 
 const seller = computed(() => ({
-  name: text(publicConfig.taxInvoiceSellerName, "ฟินส์แลนด์ พลาซ่า"),
+  name: text(publicConfig.taxInvoiceSellerName, "ฟินลี่แลนด์ พลาซ่า"),
   taxId: text(publicConfig.taxInvoiceSellerTaxId, "").replace(/\D/g, ""),
   branch: text(publicConfig.taxInvoiceSellerBranch, "สำนักงานใหญ่"),
   address: text(publicConfig.taxInvoiceSellerAddress, ""),
