@@ -1,9 +1,5 @@
 <template>
   <article class="invoice-sheet">
-    <div v-if="isDemo" class="demo-watermark" aria-hidden="true">
-      เอกสารตัวอย่าง
-    </div>
-
     <header class="invoice-header">
       <div class="seller-heading">
         <img src="~/assets/images/logo.png" alt="ฟินส์แลนด์ พลาซ่า" />
@@ -24,18 +20,14 @@
       <div class="document-heading">
         <p class="document-title">ใบเสร็จรับเงิน / ใบกำกับภาษี</p>
         <p class="document-subtitle">RECEIPT / TAX INVOICE</p>
-        <span class="document-badge" :class="{ valid: !isDemo }">
-          {{ isDemo ? "เอกสารตัวอย่าง" : "ต้นฉบับ" }}
+        <span class="document-badge">
+          {{ "ต้นฉบับ" }}
         </span>
       </div>
     </header>
 
     <section class="document-meta">
       <dl>
-        <div>
-          <dt>เลขที่เอกสาร</dt>
-          <dd>{{ documentNumber }}</dd>
-        </div>
         <div>
           <dt>เลขที่คำสั่งซื้อ</dt>
           <dd>{{ text(order.order_number) }}</dd>
@@ -176,12 +168,7 @@
     </section>
 
     <footer class="invoice-footer">
-      <p v-if="isDemo" class="demo-notice">
-        เอกสารนี้เป็นตัวอย่างจากข้อมูลคำสั่งซื้อ ไม่ใช่ใบกำกับภาษีที่สมบูรณ์
-        จนกว่าจะตั้งค่าข้อมูลผู้ขาย ยืนยันการชำระเงิน
-        และออกเลขที่เอกสารเรียบร้อย
-      </p>
-      <p v-else>
+      <p>
         เอกสารฉบับนี้จัดทำจากระบบอิเล็กทรอนิกส์ กรุณาเก็บไว้เป็นหลักฐาน
       </p>
     </footer>
@@ -344,23 +331,6 @@ const orderStatusLabel = computed(
   () =>
     orderStatusMap[text(order.value.order_status, "pending")] ||
     text(order.value.order_status),
-);
-
-const isIssued = computed(
-  () =>
-    taxDetail.value?.order_tax_status === "issued" &&
-    Boolean(text(taxDetail.value?.order_tax_invoice_number, "")),
-);
-const hasValidSellerTaxId = computed(() => /^\d{13}$/.test(seller.value.taxId));
-const isPaid = computed(() => order.value.order_payment_status === "paid");
-const isDemo = computed(
-  () => !hasValidSellerTaxId.value || !isPaid.value || !isIssued.value,
-);
-const documentNumber = computed(() =>
-  text(
-    taxDetail.value?.order_tax_invoice_number,
-    `DEMO-${text(order.value.order_number, text(order.value.uuid))}`,
-  ),
 );
 const documentDate = computed(
   () =>

@@ -38,6 +38,14 @@
             />
           </fieldset>
           <fieldset class="fieldset">
+            <legend class="fieldset-legend">รายละเอียดสินค้า</legend>
+            <textarea
+              v-model="base.form.product_description"
+              class="textarea textarea-sm min-h-24 w-full"
+              placeholder="กรอกรายละเอียดสินค้า..."
+            ></textarea>
+          </fieldset>
+          <fieldset class="fieldset">
             <legend class="fieldset-legend">หมวดหมู่สินค้า</legend>
             <ComboBox
               v-model="base.form.product_category"
@@ -79,6 +87,13 @@
           </fieldset>
         </div>
       </div>
+      <p
+        v-if="base.errorMessage"
+        class="mt-4 rounded-lg bg-error/10 px-4 py-3 text-sm text-error"
+        role="alert"
+      >
+        {{ base.errorMessage }}
+      </p>
       <div class="max-h-[40vh]" v-if="base.method === 'put'">
         <button
           class="btn btn-xs btn-secondary m-2"
@@ -376,24 +391,24 @@
   <ModalImagePreview v-model="isImagePreviewOpen" :src="imageSrc" />
 
   <div class="min-h-full p-4 pb-6">
-    <div class="flex justify-between gap-3 md:flex-row md:items-center">
-      <div class="space-x-3 flex flex-col items-start">
-        <span class="font-bold sm:text-xl text-lg text-primary"
-          >Manage Products</span
-        ><span class="font-semibold sm:text-base text-sm text-secondary"
-          >จัดการรายการสินค้า</span
+    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
+        <div class="space-x-3 flex flex-col items-start">
+          <span class="font-bold sm:text-xl text-lg text-primary"
+            >Manage Products</span
+          ><span class="font-semibold sm:text-base text-sm text-secondary"
+            >จัดการรายการสินค้า</span
+          >
+        </div>
+        <button
+          class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
+          v-on:click="fnBase.onCreate()"
         >
+          <Icon name="lucide:plus" size="16" />
+          เพิ่มสินค้า
+        </button>
       </div>
-      <button
-        class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
-        v-on:click="fnBase.onCreate()"
-      >
-        <Icon name="lucide:plus" size="16" />
-        เพิ่มสินค้า
-      </button>
-    </div>
-
-    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm mt-2">
+  
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch
@@ -527,6 +542,7 @@ const base = ref<any>({
   form: {},
   method: "",
   modal: false,
+  errorMessage: "",
 });
 const detail = ref<any>({
   rows: [],
@@ -566,32 +582,41 @@ const fnBase = {
   onCreate: async () => {
     base.value.form = {};
     base.value.method = "post";
-    console.log(baseModal.value);
+    base.value.errorMessage = "";
     baseModal.value?.showModal();
   },
   onEdit: async (row: any) => {
     base.value.form = { ...row };
     base.value.method = "put";
+    base.value.errorMessage = "";
     detail.value.rows = await fnDetail.onGet();
 
     baseModal.value?.showModal();
   },
   onSubmit: async () => {
+    base.value.errorMessage = "";
+
     const path =
       base.value.method === "post"
         ? "/api/products"
         : `/api/products/${base.value.form.uuid}`;
 
-    const res = await $fetch(path, {
-      method: base.value.method,
-      body: {
-        ...base.value.form,
-      },
-    });
+    try {
+      const res = await $fetch(path, {
+        method: base.value.method,
+        body: {
+          ...base.value.form,
+        },
+      });
 
-    if (res) {
-      baseModal.value?.close();
-      refresh();
+      if (res) {
+        baseModal.value?.close();
+        refresh();
+      }
+    } catch (error: any) {
+      base.value.errorMessage =
+        error?.data?.statusMessage ||
+        "ไม่สามารถบันทึกสินค้าได้ กรุณาลองใหม่อีกครั้ง";
     }
   },
 };

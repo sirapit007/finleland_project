@@ -1,8 +1,8 @@
 <template>
-  <main class="invoice-preview">
+  <main class="product-list-preview">
     <div class="print-toolbar">
       <div>
-        <p class="toolbar-title">เอกสารคำสั่งซื้อ</p>
+        <p class="toolbar-title">รายการสินค้า</p>
         <p class="toolbar-description">
           ตรวจสอบข้อมูลก่อนพิมพ์หรือบันทึกเป็น PDF
         </p>
@@ -18,36 +18,42 @@
         <button
           type="button"
           class="btn btn-primary btn-sm"
-          :disabled="!invoiceData"
+          :disabled="!productListData"
           @click="printDocument"
         >
-          <Icon name="lucide:printer" size="16" /> พิมพ์เอกสาร
+          <Icon name="lucide:printer" size="16" /> พิมพ์รายการสินค้า
         </button>
       </div>
     </div>
 
-    <div v-if="status === 'pending'" class="invoice-loading" aria-live="polite">
+    <div v-if="status === 'pending'" class="document-loading" aria-live="polite">
       <span class="loading loading-spinner loading-lg text-primary" />
-      <p>กำลังเตรียมเอกสาร...</p>
+      <p>กำลังเตรียมรายการสินค้า...</p>
     </div>
 
-    <div v-else-if="error || !invoiceData" class="invoice-error" role="alert">
+    <div
+      v-else-if="error || !productListData"
+      class="document-error"
+      role="alert"
+    >
       <Icon name="lucide:file-warning" size="42" class="text-error" />
-      <h1>ไม่สามารถเปิดเอกสารได้</h1>
+      <h1>ไม่สามารถเปิดรายการสินค้าได้</h1>
       <p>{{ errorMessage }}</p>
       <button
         type="button"
         class="btn btn-outline btn-sm"
         @click="closePreview"
       >
-        กลับไปหน้าคำสั่งซื้อ
+        กลับไปหน้าจัดการคำสั่งซื้อ
       </button>
     </div>
 
-    <OrderInvoiceDocument
+    <OrderProductListDocument
       v-else
-      :order="invoiceData.order"
-      :items="invoiceData.items"
+      :order="productListData.order"
+      :items="productListData.items"
+      :printed-by="productListData.printedBy"
+      :printed-at="productListData.printedAt"
     />
   </main>
 </template>
@@ -57,18 +63,20 @@ definePageMeta({
   layout: false,
 });
 
-type InvoiceRow = Record<string, any>;
-type InvoiceData = {
-  order: InvoiceRow;
-  items: InvoiceRow[];
+type ProductListRow = Record<string, any>;
+type ProductListData = {
+  order: ProductListRow;
+  items: ProductListRow[];
+  printedBy: string;
+  printedAt: string;
 };
 
 const route = useRoute();
 const requestFetch = useRequestFetch();
 const orderUuid = computed(() => String(route.params.uuid || "").trim());
 
-const { data, status, error } = await useAsyncData<InvoiceData>(
-  () => `order-invoice-${orderUuid.value}`,
+const { data, status, error } = await useAsyncData<ProductListData>(
+  () => `admin-order-product-list-${orderUuid.value}`,
   async () => {
     if (!orderUuid.value) {
       throw createError({
@@ -77,49 +85,44 @@ const { data, status, error } = await useAsyncData<InvoiceData>(
       });
     }
 
-    const [orderResponse, itemResponse] = await Promise.all([
-      requestFetch<{ row: InvoiceRow | null }>(`/api/order/${orderUuid.value}`),
-      requestFetch<{ rows: InvoiceRow[] }>("/api/order/items", {
-        query: {
-          order_item_order: orderUuid.value,
-          pageSize: 100,
-          orderBy: "base.id ASC",
-        },
-      }),
-    ]);
-
-    if (!orderResponse.row) {
-      throw createError({
-        statusCode: 404,
-        statusMessage: "ไม่พบคำสั่งซื้อ หรือคุณไม่มีสิทธิ์ดูเอกสารนี้",
-      });
-    }
-
-    return {
-      order: orderResponse.row,
-      items: itemResponse.rows || [],
-    };
+    return requestFetch<ProductListData>("/api/admin/order-product-list", {
+      query: { orderUuid: orderUuid.value },
+    });
   },
 );
 
-const invoiceData = computed(() => data.value || null);
+const productListData = computed(() => data.value || null);
 const errorMessage = computed(
   () =>
     (error.value as any)?.data?.statusMessage ||
     (error.value as any)?.statusMessage ||
-    "กรุณาตรวจสอบสิทธิ์การใช้งานแล้วลองใหม่อีกครั้ง",
+    "กรุณาตรวจสอบสิทธิ์ผู้ดูแลระบบแล้วลองใหม่อีกครั้ง",
 );
 
 useHead(() => ({
-  title: invoiceData.value?.order?.order_number
-    ? `เอกสาร ${invoiceData.value.order.order_number}`
-    : "เอกสารคำสั่งซื้อ",
+  title: productListData.value?.order?.order_number
+    ? `รายการสินค้า ${productListData.value.order.order_number}`
+    : "รายการสินค้าคำสั่งซื้อ",
 }));
 
+const waitForImages = async () => {
+  const images = Array.from(document.images).filter((image) => !image.complete);
+  await Promise.all(
+    images.map(
+      (image) =>
+        new Promise<void>((resolve) => {
+          image.addEventListener("load", () => resolve(), { once: true });
+          image.addEventListener("error", () => resolve(), { once: true });
+        }),
+    ),
+  );
+};
+
 const printDocument = async () => {
-  if (!import.meta.client || !invoiceData.value) return;
+  if (!import.meta.client || !productListData.value) return;
   await nextTick();
   if (document.fonts?.ready) await document.fonts.ready;
+  await waitForImages();
   window.print();
 };
 
@@ -132,7 +135,7 @@ const closePreview = () => {
 };
 
 onMounted(() => {
-  if (route.query.print === "1" && invoiceData.value) {
+  if (route.query.print === "1" && productListData.value) {
     window.setTimeout(() => void printDocument(), 300);
   }
 });
@@ -149,7 +152,7 @@ body {
   background: #e8edf4;
 }
 
-.invoice-preview {
+.product-list-preview {
   min-height: 100vh;
   padding: 78px 20px 36px;
 }
@@ -190,8 +193,8 @@ body {
   gap: 8px;
 }
 
-.invoice-loading,
-.invoice-error {
+.document-loading,
+.document-error {
   display: flex;
   min-height: 65vh;
   flex-direction: column;
@@ -202,19 +205,19 @@ body {
   text-align: center;
 }
 
-.invoice-error h1,
-.invoice-error p {
+.document-error h1,
+.document-error p {
   margin: 0;
 }
 
-.invoice-error h1 {
+.document-error h1 {
   color: #172033;
   font-size: 20px;
   font-weight: 700;
 }
 
 @media (max-width: 760px) {
-  .invoice-preview {
+  .product-list-preview {
     min-width: 210mm;
     padding-right: 0;
     padding-left: 0;
@@ -239,7 +242,7 @@ body {
     background: #fff !important;
   }
 
-  .invoice-preview {
+  .product-list-preview {
     width: 210mm;
     min-width: 210mm;
     min-height: 297mm;
@@ -248,8 +251,8 @@ body {
   }
 
   .print-toolbar,
-  .invoice-loading,
-  .invoice-error {
+  .document-loading,
+  .document-error {
     display: none !important;
   }
 }

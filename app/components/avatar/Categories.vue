@@ -1,70 +1,36 @@
 <template>
-  <div
-    v-if="items.length"
-    class="w-full grid lg:grid-cols-10 sm:grid-cols-5 grid-cols-4"
-  >
-    <div
-      v-for="item in items"
-      :key="item.demo_name"
-      class="flex-1 my-2.5 text-center"
+  <div class="flex flex-col justify-center items-center mx-1">
+    <NuxtLink
+      :to="{
+        path: '/products',
+        query: { category: props.object.category_name },
+      }"
     >
-      <NuxtLink
-        :to="{
-          path: '/products',
-          query: { category: item.category_name },
-        }"
+      <div
+        class="avatar flex justify-center transition-transform duration-100 ease-in-out hover:scale-105"
       >
         <div
-          class="avatar flex justify-center transition-transform duration-100 ease-in-out hover:scale-105"
+          class="rounded-full border ring-2 ring-accent"
         >
-          <div class="lg:w-28 sm:w-26 w-24 rounded-full border ring-2 ring-accent">
-            <img
-              v-if="item.image_url"
-              :src="item.image_url"
-              class="rounded-2xl bg-base-100 object-contain"
-            />
-            <img
-              v-else
-              src="@/assets/images/blank.png"
-              class="rounded-2xl bg-base-200 object-contain"
-            />
-          </div>
+          <img
+            v-if="props.object.image_url"
+            :src="props.object.image_url"
+            class="rounded-2xl bg-base-100 object-contain"
+          />
+          <img
+            v-else
+            src="@/assets/images/blank.png"
+            class="rounded-2xl bg-base-200 object-contain"
+          />
         </div>
-      </NuxtLink>
-      <p class="text-accent sm:text-[13.5px]! text-[11.5px] font-extrabold mt-2">
-        {{ item.category_name }}
-      </p>
-    </div>
+      </div>
+    </NuxtLink>
+    <p class="text-center text-accent sm:text-[13.5px]! text-[11.5px] font-extrabold mt-2">
+      {{ props.object.category_name }}
+    </p>
   </div>
-  <SkeletonHomeSections v-if="loading" type="categories" />
 </template>
 
 <script setup lang="ts">
-const fetchedCategories = ref<Record<string, any>[]>([]);
-const items = computed(() => fetchedCategories.value);
-const loading = ref(true);
-
-const loadCategories = async () => {
-  if (fetchedCategories.value.length) return;
-
-  try {
-    const response = await $fetch<{ rows?: Record<string, any>[] }>(
-      "/api/categories",
-      {
-        params: {
-          pageSize: 999,
-        },
-      },
-    );
-    fetchedCategories.value = response.rows || [];
-  } catch (error) {
-    console.error("Unable to load categories", error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-onMounted(() => {
-  void loadCategories();
-});
+const props = defineProps<{ object: Record<string, any> }>();
 </script>

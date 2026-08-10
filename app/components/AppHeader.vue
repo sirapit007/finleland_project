@@ -13,16 +13,7 @@
       <div
         class="mx-auto flex h-9 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
       >
-        <NuxtLink
-          v-if="isLoggedIn"
-          to="/orders"
-          class="text-xs text-primary-content/90 hover:underline inline"
-        >
-          เช็คสถานะการจัดซื้อ/จัดส่ง
-        </NuxtLink>
-        <span v-else class="text-xs text-primary-content/80"
-          >Finleland Plaza</span
-        >
+        <span class="text-xs text-primary-content/80">Finleland Plaza</span>
 
         <div class="flex items-center gap-10" v-if="isLoggedIn">
           <NuxtLink
@@ -31,12 +22,6 @@
             class="text-xs text-secondary/90 hover:underline inline font-semibold"
           >
             เข้าใช้ Admin Panel
-          </NuxtLink>
-          <NuxtLink
-            to="/contact"
-            class="text-xs text-primary-content/90 hover:underline inline"
-          >
-            ติดต่อเรา
           </NuxtLink>
         </div>
         <div v-else class="flex items-center gap-1">
@@ -67,7 +52,7 @@
         />
       </NuxtLink>
 
-      <nav class="md:flex hidden items-center gap-5" aria-label="เมนูหลัก">
+      <nav class="lg:flex hidden items-center gap-5" aria-label="เมนูหลัก">
         <NuxtLink
           v-for="menu in menus"
           :key="menu.path"
@@ -77,29 +62,52 @@
         >
           {{ menu.title }}
         </NuxtLink>
-        <NuxtLink
-          v-if="isLoggedIn"
-          to="/shopping-basket"
-          class="flex items-center gap-1 text-sm transition-colors hover:text-primary"
-          :class="
-            route.path === '/shopping-basket'
-              ? 'font-semibold text-primary'
-              : ''
-          "
-        >
-          <Icon name="lucide:shopping-cart" size="16" />
-          ตะกร้าสินค้า
-          <span
-            class="badge badge-sm rounded-full text-xs"
+        <template v-if="isLoggedIn">
+          <NuxtLink
+            to="/shopping-basket"
+            class="flex items-center gap-1 text-sm transition-colors hover:text-primary"
             :class="
               route.path === '/shopping-basket'
-                ? 'badge-primary'
-                : 'badge-secondary'
+                ? 'font-semibold text-primary'
+                : ''
             "
           >
-            {{ itemCount }}
-          </span>
-        </NuxtLink>
+            <Icon name="lucide:shopping-cart" size="16" />
+            ตะกร้าสินค้า
+            <span
+              class="badge badge-sm rounded-full text-xs"
+              :class="
+                route.path === '/shopping-basket'
+                  ? 'badge-primary'
+                  : 'badge-secondary'
+              "
+            >
+              {{ itemCount }}
+            </span>
+          </NuxtLink>
+          <NuxtLink
+            to="/orders"
+            class="flex items-center gap-1 text-sm transition-colors hover:text-primary"
+            :class="
+              route.path === '/orders'
+                ? 'font-semibold text-primary'
+                : ''
+            "
+          >
+            เช็คสถานะการจัดซื้อ/จัดส่ง
+          </NuxtLink>
+          <NuxtLink
+            to="/contact"
+            class="flex items-center gap-1 text-sm transition-colors hover:text-primary"
+            :class="
+              route.path === '/contact'
+                ? 'font-semibold text-primary'
+                : ''
+            "
+          >
+            ติดต่อเรา
+          </NuxtLink>
+        </template>
       </nav>
 
       <div
@@ -147,7 +155,7 @@
     </div>
   </header>
 
-  <div class="fab fab-flower fixed bottom-5 right-5 z-50 md:hidden">
+  <div class="fab fixed bottom-5 right-5 z-50 lg:hidden">
     <div
       tabindex="0"
       role="button"
@@ -176,7 +184,8 @@
         <Icon :name="menu.icon" size="20" />
       </NuxtLink>
     </div>
-    <div v-if="isLoggedIn" class="tooltip tooltip-left" data-tip="ตะกร้าสินค้า">
+    <template v-if="isLoggedIn"> </template>
+    <div class="tooltip tooltip-left" data-tip="ตะกร้าสินค้า">
       <NuxtLink
         to="/shopping-basket"
         class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
@@ -189,6 +198,26 @@
         >
           {{ itemCount }}
         </span>
+      </NuxtLink>
+    </div>
+    <div class="tooltip tooltip-left" data-tip="เช็คสถานะการจัดซื้อ/จัดส่ง">
+      <NuxtLink
+        to="/orders"
+        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
+        title="เช็คสถานะการจัดซื้อ/จัดส่ง"
+        aria-label="เช็คสถานะการจัดซื้อ/จัดส่ง"
+      >
+        <Icon name="lucide:truck" size="20" />
+      </NuxtLink>
+    </div>
+    <div class="tooltip tooltip-left" data-tip="ติดต่อเรา">
+      <NuxtLink
+        to="/contact"
+        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
+        title="ติดต่อเรา"
+        aria-label="ติดต่อเรา"
+      >
+        <Icon name="lucide:message-square-text" size="20" />
       </NuxtLink>
     </div>
   </div>
@@ -220,7 +249,6 @@ const menus = [
     title: "วิธีการสั่งซื้อ",
     icon: "lucide:circle-help",
   },
-  // { path: "/contact", title: "ติดต่อเรา", icon: "lucide:message-square-text" },
 ];
 
 const isLoggedIn = computed(() => Boolean(user.value));

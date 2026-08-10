@@ -20,7 +20,7 @@
       </div>
       <NuxtLink
         to="/products"
-        class="btn btn-outline btn-primary btn-sm self-start sm:self-auto"
+        class="btn btn-primary btn-sm self-start sm:self-auto"
       >
         <Icon name="lucide:shopping-bag" size="16" /> เลือกซื้อสินค้า
       </NuxtLink>
@@ -62,37 +62,37 @@
       >
         <div class="flex flex-col gap-4 p-4 sm:p-5">
           <div
-            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            class="flex gap-4 flex-row sm:items-start justify-between"
           >
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <p
-                  class="font-mono text-sm font-bold text-primary sm:text-base"
+                  class="font-mono text-base font-bold text-primary sm:text-lg"
                 >
                   {{ order.order_number }}
                 </p>
                 <span
-                  class="badge badge-sm font-semibold"
+                  class="badge sm:badge-md badge-sm font-semibold"
                   :class="statusMeta(order.order_status).badge"
                 >
                   <Icon :name="statusMeta(order.order_status).icon" size="13" />
                   {{ statusMeta(order.order_status).label }}
                 </span>
               </div>
-              <p class="mt-2 text-sm text-base-content/60">
+              <p class="mt-2 sm:text-sm text-xs text-base-content/60">
                 สั่งซื้อเมื่อ
                 {{ formatDate(order.order_placed_at || order.created_at) }}
               </p>
-              <p class="mt-1 text-sm text-base-content/60">
+              <p class="mt-1 sm:text-sm text-xs text-base-content/60">
                 {{ order.order_delivery_label || "-" }}
                 <template v-if="order.order_tracking_number">
                   · เลขพัสดุ {{ order.order_tracking_number }}</template
                 >
               </p>
             </div>
-            <div class="sm:text-right">
+            <div class="text-right">
               <p class="text-xs text-base-content/55">ยอดชำระทั้งหมด</p>
-              <p class="text-2xl font-bold text-primary">
+              <p class="sm:text-2xl text-xl font-bold text-primary">
                 ฿{{ formatMoney(order.order_grand_total) }}
               </p>
               <p class="mt-1 text-xs text-base-content/55">
@@ -102,38 +102,42 @@
           </div>
 
           <div
-            class="flex flex-col-reverse gap-2 border-t border-base-300 pt-4 sm:flex-row sm:items-center sm:justify-between"
+            class="flex gap-2 border-t border-base-300 pt-4 sm:flex-row items-center justify-between"
           >
-            <p class="text-sm text-base-content/65">
+            <p class="sm:text-sm text-xs text-base-content/65">
               {{ statusMeta(order.order_status).description }}
             </p>
-            <NuxtLink
-              v-if="!['paid', 'refunded'].includes(order.order_payment_status)"
-              :to="'/orders/' + order.uuid"
-              class="btn btn-primary btn-sm"
-            >
-              <Icon name="lucide:scan-qr-code" size="16" />
-              ชำระเงิน
-            </NuxtLink>
-            <button
-              class="btn btn-outline btn-primary btn-sm"
-              :disabled="isDetailLoading(order.uuid)"
-              @click="toggleOrder(order)"
-            >
-              <Icon
-                :name="
-                  expandedOrderUuid === order.uuid
-                    ? 'lucide:chevron-up'
-                    : 'lucide:chevron-down'
+            <div class="flex items-center gap-2 sm:justify-end">
+              <NuxtLink
+                v-if="
+                  !['paid', 'refunded'].includes(order.order_payment_status)
                 "
-                size="16"
-              />
-              {{
-                expandedOrderUuid === order.uuid
-                  ? "ซ่อนรายละเอียด"
-                  : "ดูรายการและสถานะ"
-              }}
-            </button>
+                :to="'/orders/' + order.uuid"
+                class="btn btn-neutral btn-soft sm:btn-sm btn-xs"
+              >
+                <Icon name="lucide:scan-qr-code" size="16" />
+                ชำระเงิน
+              </NuxtLink>
+              <button
+                class="btn btn-outline btn-primary sm:btn-sm btn-xs"
+                :disabled="isDetailLoading(order.uuid)"
+                @click="toggleOrder(order)"
+              >
+                <Icon
+                  :name="
+                    expandedOrderUuid === order.uuid
+                      ? 'lucide:chevron-up'
+                      : 'lucide:chevron-down'
+                  "
+                  size="16"
+                />
+                {{
+                  expandedOrderUuid === order.uuid
+                    ? "ซ่อนรายละเอียด"
+                    : "ดูรายการและสถานะ"
+                }}
+              </button>
+            </div>
           </div>
         </div>
 

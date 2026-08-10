@@ -1,7 +1,7 @@
 <template>
   <section class="rounded-xl border border-base-300 bg-base-100 p-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 class="text-lg font-bold">สรุปคำสั่งซื้อ</h2>
+      <h2 class="lg:text-lg sm:text-base text-sm font-bold">สรุปคำสั่งซื้อ</h2>
       <NuxtLink
         v-if="order.uuid"
         :to="{
@@ -10,7 +10,7 @@
         }"
         target="_blank"
         rel="noopener"
-        class="btn btn-outline btn-primary btn-xs"
+        class="btn btn-outline btn-xs"
         aria-label="พิมพ์เอกสารคำสั่งซื้อ"
       >
         <Icon name="lucide:printer" size="14" />
@@ -39,10 +39,10 @@
       </div>
 
       <template v-if="isPickup">
-        <p class="mt-3 text-sm font-semibold">{{ deliveryLabel }}</p>
+        <p class="mt-3 sm:text-sm text:xs font-semibold">{{ deliveryLabel }}</p>
         <p
           v-if="order.order_delivery_description"
-          class="mt-1 text-xs leading-5 text-base-content/60"
+          class="mt-1 sm:text-xs text:xs leading-5 text-base-content/60"
         >
           {{ order.order_delivery_description }}
         </p>
@@ -51,17 +51,17 @@
       <template v-else>
         <p
           v-if="order.order_delivery_description"
-          class="mt-2 text-xs text-base-content/55"
+          class="mt-2 sm:text-sm text:xs text-base-content/55"
         >
           {{ order.order_delivery_description }}
         </p>
-        <p class="mt-3 text-sm font-semibold">{{ recipientLine }}</p>
-        <p class="mt-1 text-sm leading-6 text-base-content/65">
+        <p class="mt-3 sm:text-sm text:xs font-semibold">{{ recipientLine }}</p>
+        <p class="mt-1 sm:text-sm text:xs leading-6 text-base-content/65">
           {{ shippingAddressLine || "ไม่มีข้อมูลที่อยู่จัดส่ง" }}
         </p>
         <p
           v-if="order.order_shipping_phone"
-          class="mt-1 text-sm text-base-content/65"
+          class="mt-1 sm:text-sm text:xs text-base-content/65"
         >
           {{ order.order_shipping_phone }}
         </p>

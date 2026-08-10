@@ -61,7 +61,7 @@
           หมวดหมู่สินค้า
         </h2>
         <div class="relative overflow-hidden">
-          <AvatarCategories />
+          <CarouselCategories />
         </div>
       </div>
     </section>

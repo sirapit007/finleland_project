@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <Icon name="lucide:badge-dollar-sign" size="18" class="text-primary" />
-        <h2 class="font-bold">การชำระเงิน</h2>
+        <h2 class="lg:text-lg sm:text-base text-sm font-bold">การชำระเงิน</h2>
       </div>
       <span v-if="payment" class="badge badge-sm" :class="statusMeta?.badge">
         {{ statusMeta?.label }}
@@ -18,10 +18,10 @@
 
     <div
       v-else-if="!payment"
-      class="py-8 text-center text-sm text-base-content/55"
+      class="py-8 text-center text-sm text-base-content/55 align-middle flex flex-col items-center justify-center gap-2"
     >
-      <Icon name="lucide:receipt" size="30" class="mx-auto mb-2 opacity-50" />
-      ยังไม่มีการแนบสลิปสำหรับคำสั่งซื้อนี้
+      <Icon name="lucide:receipt" size="30" class="mx-auto opacity-50" />
+      <span>ยังไม่มีการแนบสลิปสำหรับคำสั่งซื้อนี้</span>
     </div>
 
     <template v-else>
