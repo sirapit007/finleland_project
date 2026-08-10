@@ -25,17 +25,17 @@
   </dialog>
 
   <div class="min-h-full p-4 pb-6">
-    <div class="flex justify-between gap-3 md:flex-row md:items-center">
-      <div class="space-x-3 flex flex-col items-start">
-        <span class="font-bold sm:text-xl text-lg text-primary"
-          >Restore Suppliers</span
-        ><span class="font-semibold sm:text-base text-sm text-secondary"
-          >กู้คืนรายการผู้จัดจำหน่าย</span
-        >
+    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
+        <div class="space-x-3 flex flex-col items-start">
+          <span class="font-bold sm:text-xl text-lg text-primary"
+            >Restore Suppliers</span
+          ><span class="font-semibold sm:text-base text-sm text-secondary"
+            >กู้คืนรายการผู้จัดจำหน่าย</span
+          >
+        </div>
       </div>
-    </div>
-
-    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm mt-2">
+  
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch

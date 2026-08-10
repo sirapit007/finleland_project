@@ -3,6 +3,7 @@ import { normalizeProductImageUrls } from "@@/server/utils/productImages";
 
 export default defineEventHandler(async (event) => {
   const tableName = "vw_master_products";
+  const productTableName = "tb_master_products";
 
   const db = useDb();
 
@@ -63,9 +64,10 @@ export default defineEventHandler(async (event) => {
   if (current) {
     const currentResult = await db.query(
       `
-    SELECT *
-    FROM ${tableName}
-    WHERE uuid = $1::uuid
+    SELECT base.*, product.product_description
+    FROM ${tableName} AS base
+    LEFT JOIN ${productTableName} AS product ON product.uuid = base.uuid
+    WHERE base.uuid = $1::uuid
     `,
       [current],
     );
@@ -82,8 +84,10 @@ export default defineEventHandler(async (event) => {
 
   const result = await db.query(
     `SELECT 
-      base.*
+      base.*,
+      product.product_description
     FROM ${tableName} AS base
+    LEFT JOIN ${productTableName} AS product ON product.uuid = base.uuid
     WHERE ${condition} 
     ORDER BY ${safeOrderBy} 
     LIMIT $${limitParam} OFFSET $${offsetParam}`,

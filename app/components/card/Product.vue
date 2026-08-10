@@ -4,7 +4,70 @@
   <article
     class="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
   >
-    <NuxtLink :to="`/products/${props.object.product_name}`" class="block">
+    <button
+      type="button"
+      class="block w-full text-left sm:hidden"
+      :aria-label="`ดูรายละเอียด ${props.object.product_name || 'สินค้า'}`"
+      @click="openMobileSheet"
+    >
+      <div class="relative aspect-square overflow-hidden bg-base-200">
+        <img
+          v-if="imageSrc"
+          :src="imageSrc"
+          :alt="props.object.product_name || 'สินค้า'"
+          class="size-full object-contain transition duration-300"
+        />
+        <img
+          v-else
+          src="@/assets/images/blank.png"
+          alt="ยังไม่มีรูปสินค้า"
+          class="size-full object-contain opacity-70"
+        />
+        <span
+          v-if="user && hasDiscount"
+          class="badge badge-error absolute left-2 top-2 border-0 text-xs font-bold text-error-content"
+        >
+          ลด {{ discountLabel }}
+        </span>
+      </div>
+
+      <div class="space-y-2 p-3">
+        <span
+          v-if="props.object.product_category_name"
+          class="badge badge-xs badge-warning badge-outline max-w-full truncate"
+        >
+          {{ props.object.product_category_name }}
+        </span>
+        <h2 class="line-clamp-2 min-h-10 text-xs font-semibold leading-5">
+          {{ props.object.product_name }}
+        </h2>
+        <p
+          v-if="props.object.product_code"
+          class="truncate text-[11px] text-base-content/50"
+        >
+          รหัสสินค้า {{ props.object.product_code }}
+        </p>
+        <div v-if="user" class="pt-1">
+          <p
+            v-if="hasDiscount"
+            class="text-[11px] text-base-content/45 line-through"
+          >
+            ฿{{ formatPrice(originalPrice) }}
+          </p>
+          <p
+            class="text-base font-bold"
+            :class="hasDiscount ? 'text-error' : 'text-primary'"
+          >
+            ฿{{ formatPrice(displayPrice) }}
+          </p>
+        </div>
+        <p v-else class="pt-1 text-xs font-semibold text-primary">
+          แตะเพื่อดูรายละเอียดสินค้า
+        </p>
+      </div>
+    </button>
+
+    <NuxtLink :to="`/products/${props.object.product_name}`" class="sm:block hidden">
       <div class="relative aspect-square overflow-hidden bg-base-200">
         <img
           v-if="imageSrc"
@@ -49,7 +112,7 @@
 
     <div
       v-if="user"
-      class="mt-auto space-y-3 border-t border-base-300 px-4 pb-4 pt-3"
+      class="mt-auto hidden space-y-3 border-t border-base-300 px-4 pb-4 pt-3 sm:block"
     >
       <div class="flex flex-wrap items-end justify-between gap-2">
         <div>
@@ -60,7 +123,7 @@
             ฿{{ formatPrice(originalPrice) }}
           </p>
           <p
-            class="text-xl font-bold"
+            class="lg:text-xl sm:text-lg text-base font-bold"
             :class="hasDiscount ? 'text-error' : 'text-primary'"
           >
             ฿{{ formatPrice(displayPrice) }}
@@ -73,7 +136,7 @@
             {{ promotionRequirement }}
           </p>
         </div>
-        <div class="join">
+        <div class="md:join hidden">
           <button
             class="btn btn-xs join-item"
             type="button"
@@ -98,7 +161,7 @@
         </div>
       </div>
       <button
-        class="btn btn-primary btn-sm w-full"
+        class="btn btn-primary btn-sm w-full md:block hidden"
         type="button"
         :disabled="quantity <= 0 || isAdding"
         @click="onAddToCart"
@@ -112,21 +175,201 @@
       </button>
     </div>
 
-    <div v-else class="mt-auto border-t border-base-300 px-4 py-4">
+    <div v-else class="mt-auto hidden border-t border-base-300 px-4 py-4 sm:block">
       <p class="sm:text-sm text-xs font-semibold text-primary cursor-pointer" @click="onSignIn">
         เข้าสู่ระบบเพื่อดูราคา
       </p>
     </div>
+    <dialog ref="mobileSheet" class="modal modal-bottom sm:hidden">
+      <div class="modal-box max-h-[92dvh] rounded-t-3xl p-0">
+        <div
+          class="sticky top-0 z-20 flex items-center justify-between border-b border-base-300 bg-base-100 px-4 pb-3 pt-5"
+        >
+          <span
+            class="absolute left-1/2 top-2 h-1 w-12 -translate-x-1/2 rounded-full bg-base-content/20"
+          />
+          <h3 class="font-semibold">รายละเอียดสินค้า</h3>
+          <button
+            type="button"
+            class="btn btn-circle btn-ghost btn-sm"
+            aria-label="ปิดรายละเอียดสินค้า"
+            @click="closeMobileSheet"
+          >
+            <Icon name="lucide:x" size="18" />
+          </button>
+        </div>
+
+        <div class="space-y-5 overflow-y-auto p-4 pb-6">
+          <div class="space-y-3">
+            <img
+              v-if="selectedProductImage"
+              :src="selectedProductImage"
+              :alt="props.object.product_name || 'สินค้า'"
+              class="h-64 w-full rounded-xl border border-base-300 object-contain"
+            />
+            <img
+              v-else
+              src="@/assets/images/blank.png"
+              alt="ยังไม่มีรูปสินค้า"
+              class="h-64 w-full rounded-xl border border-base-300 object-contain opacity-70"
+            />
+            <div
+              v-if="productImages.length > 1"
+              class="flex gap-2 overflow-x-auto pb-1"
+            >
+              <button
+                v-for="image in productImages"
+                :key="image"
+                type="button"
+                class="shrink-0 rounded-lg border bg-base-100 p-1 transition"
+                :class="
+                  selectedProductImage === image
+                    ? 'border-primary ring-2 ring-primary/20'
+                    : 'border-base-300'
+                "
+                @click="activeProductImage = image"
+              >
+                <img :src="image" class="size-14 object-contain" />
+              </button>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <span
+              v-if="props.object.product_category_name"
+              class="badge badge-sm badge-warning font-semibold"
+            >
+              {{ props.object.product_category_name }}
+            </span>
+            <h2 class="text-xl font-semibold leading-7">
+              {{ props.object.product_name }}
+            </h2>
+          </div>
+
+          <div v-if="user" class="space-y-4">
+            <div>
+              <p class="text-xs text-base-content/60">ราคาต่อหน่วย</p>
+              <p
+                v-if="hasDiscount"
+                class="text-xs text-base-content/45 line-through"
+              >
+                ฿{{ formatPrice(originalPrice) }}
+              </p>
+              <p
+                class="text-2xl font-bold"
+                :class="hasDiscount ? 'text-error' : 'text-primary'"
+              >
+                ฿{{ formatPrice(displayPrice) }}
+              </p>
+              <p
+                v-if="hasDiscount && promotionRequirement"
+                class="mt-1 flex items-start gap-1 text-xs leading-5 text-warning"
+              >
+                <Icon
+                  name="lucide:circle-info"
+                  class="mt-0.5 shrink-0"
+                  size="13"
+                />
+                {{ promotionRequirement }}
+              </p>
+            </div>
+
+            <div class="grid grid-cols-[auto_1fr] gap-3">
+              <div class="join">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline btn-primary join-item"
+                  aria-label="ลดจำนวนสินค้า"
+                  @click="onReduceQuantity"
+                >
+                  <Icon name="lucide:minus" size="16" />
+                </button>
+                <input
+                  v-model.number="quantity"
+                  type="number"
+                  min="0"
+                  class="input input-sm join-item w-12 text-center"
+                  aria-label="จำนวนสินค้า"
+                />
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline btn-primary join-item"
+                  aria-label="เพิ่มจำนวนสินค้า"
+                  @click="onIncreaseQuantity"
+                >
+                  <Icon name="lucide:plus" size="16" />
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary btn-sm"
+                :disabled="quantity <= 0 || isAdding"
+                @click="onAddToCart"
+              >
+                <Icon
+                  :name="
+                    isAdding ? 'lucide:loader-circle' : 'lucide:shopping-cart'
+                  "
+                  :class="isAdding ? 'animate-spin' : ''"
+                  size="16"
+                />
+                เพิ่มลงตะกร้า
+              </button>
+            </div>
+          </div>
+          <button
+            v-else
+            type="button"
+            class="btn btn-primary btn-sm w-full"
+            @click="onMobileSignIn"
+          >
+            เข้าสู่ระบบเพื่อดูราคา
+          </button>
+
+          <div class="space-y-3 border-t border-base-300 pt-4 text-sm">
+            <div>
+              <span class="font-semibold">รหัสสินค้า: </span>
+              {{ props.object.product_code || "-" }}
+            </div>
+            <div>
+              <span class="font-semibold">รายละเอียดสินค้า:</span>
+              <p
+                v-if="props.object.product_description"
+                class="mt-1 whitespace-pre-line leading-6 text-base-content/80"
+              >
+                {{ props.object.product_description }}
+              </p>
+              <p v-else class="mt-1 text-base-content/50">-</p>
+            </div>
+          </div>
+
+          <NuxtLink
+            :to="`/products/${props.object.product_name}`"
+            class="btn btn-ghost btn-sm w-full"
+          >
+            เปิดหน้ารายละเอียดสินค้า
+            <Icon name="lucide:arrow-right" size="16" />
+          </NuxtLink>
+        </div>
+      </div>
+      <form method="dialog" class="modal-backdrop">
+        <button aria-label="ปิดรายละเอียดสินค้า">ปิด</button>
+      </form>
+    </dialog>
   </article>
 </template>
 
 <script setup lang="ts">
+import { normalizeProductImageUrls } from "~/utils/productImages";
+
 const props = defineProps<{ object: Record<string, any> }>();
 type SignModalHandle = {
   onSignIn: () => void;
 };
 
 const signModal = ref<SignModalHandle | null>(null);
+const mobileSheet = ref<HTMLDialogElement | null>(null);
+const activeProductImage = ref("");
 
 const quantity = ref(0);
 const isAdding = ref(false);
@@ -134,18 +377,15 @@ const { addToBasket } = useBasket();
 const { syncFromStorage, user } = useCurrentUser();
 const { showToast } = useToast();
 
-const imageSrc = computed(() => {
-  const image = props.object.image_url;
-  if (Array.isArray(image)) return image[0] || "";
-  if (typeof image !== "string" || !image) return "";
-
-  try {
-    const parsed = JSON.parse(image);
-    return Array.isArray(parsed) ? parsed[0] || "" : image;
-  } catch {
-    return image;
-  }
-});
+const productImages = computed(() =>
+  normalizeProductImageUrls(props.object.image_url),
+);
+const imageSrc = computed(() => productImages.value[0] || "");
+const selectedProductImage = computed(() =>
+  productImages.value.includes(activeProductImage.value)
+    ? activeProductImage.value
+    : imageSrc.value,
+);
 
 const originalPrice = computed(() =>
   Number(props.object.product_selling_price || 0),
@@ -230,6 +470,7 @@ const onAddToCart = async () => {
       },
     );
     quantity.value = 0;
+    mobileSheet.value?.close();
   } catch (error) {
     console.error("Unable to add product to basket", error);
     showToast("ไม่สามารถเพิ่มสินค้าในตะกร้าได้", "error");
@@ -240,6 +481,20 @@ const onAddToCart = async () => {
 
 const onSignIn = () => {
   signModal.value?.onSignIn();
+};
+
+const openMobileSheet = () => {
+  activeProductImage.value = imageSrc.value;
+  mobileSheet.value?.showModal();
+};
+
+const closeMobileSheet = () => {
+  mobileSheet.value?.close();
+};
+
+const onMobileSignIn = () => {
+  closeMobileSheet();
+  nextTick(onSignIn);
 };
 
 onMounted(syncFromStorage);

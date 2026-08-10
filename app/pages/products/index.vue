@@ -28,13 +28,11 @@
   <div
     class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10"
   >
-    <div class="flex flex-col gap-5 p-4 sm:p-6 lg:flex-row lg:gap-4 lg:p-8">
+    <div class="flex flex-row gap-5 p-4 sm:p-6 lg:gap-4 lg:p-8">
       <div
-        class="grid w-full grid-cols-2 gap-1 pt-2 sm:grid-cols-3 lg:block lg:w-50 lg:space-y-1"
+        class="flex flex-col gap-1 pt-2 lg:w-52 w-36 lg:space-y-1"
       >
-        <div class="col-span-full text-sm sm:text-base">
-          หมวดหมู่สินค้า
-        </div>
+        <div class="col-span-full text-sm sm:text-base">หมวดหมู่สินค้า</div>
         <template v-if="isCategoriesLoading">
           <div
             v-for="item in 7"
@@ -48,51 +46,51 @@
         </template>
         <template v-else>
           <NuxtLink
-          to="/products"
-          class="group flex cursor-pointer items-center justify-between rounded-lg p-2 text-xs sm:text-sm"
-          :class="
-            !selectedCategory
-              ? 'text-base-content font-semibold bg-primary/20'
-              : 'text-base-content/50 hover:text-base-content'
-          "
-        >
-          <span class="text-xs lg:text-sm">ทั้งหมด</span>
-          <div
-            class="badge lg:badge-md badge-sm group-hover:bg-primary group-hover:text-primary-content border-base-content/50 text-xs"
+            to="/products"
+            class="group flex cursor-pointer items-center justify-between rounded-lg sm:p-2 p-1 text-xs sm:text-sm"
             :class="
               !selectedCategory
-                ? 'badge-primary'
-                : 'badge-outline text-base-content/50'
+                ? 'text-base-content font-semibold bg-primary/20'
+                : 'text-base-content/50 hover:text-base-content'
             "
           >
-            {{ totalOwnerCount }}
-          </div>
+            <span class="text-xs lg:text-sm">ทั้งหมด</span>
+            <div
+              class="badge lg:badge-md badge-sm group-hover:bg-primary group-hover:text-primary-content border-base-content/50 text-xs"
+              :class="
+                !selectedCategory
+                  ? 'badge-primary'
+                  : 'badge-outline text-base-content/50'
+              "
+            >
+              {{ totalOwnerCount }}
+            </div>
           </NuxtLink>
           <NuxtLink
-          class="group flex cursor-pointer items-center justify-between rounded-lg p-2 text-xs sm:text-sm"
-          v-for="value in base?.rows"
-          :key="value.demo_owner"
-          :to="{
-            path: '/products',
-            query: { category: value.category_name },
-          }"
-          :class="
-            selectedCategory === value.category_name
-              ? 'text-base-content font-semibold bg-primary/20'
-              : 'text-base-content/50 hover:text-base-content'
-          "
-        >
-          <span class="text-xs lg:text-sm">{{ value.category_name }}</span>
-          <div
-            class="badge lg:badge-md badge-sm group-hover:bg-primary group-hover:text-primary-content border-base-content/50 text-xs"
+            class="group flex cursor-pointer items-center justify-between rounded-lg sm:p-2 p-1 text-xs sm:text-sm gap-2"
+            v-for="value in base?.rows"
+            :key="value.demo_owner"
+            :to="{
+              path: '/products',
+              query: { category: value.category_name },
+            }"
             :class="
               selectedCategory === value.category_name
-                ? 'badge-primary'
-                : 'badge-outline text-base-content/50'
+                ? 'text-base-content font-semibold bg-primary/20'
+                : 'text-base-content/50 hover:text-base-content'
             "
           >
-            {{ value.qty_count }}
-          </div>
+            <span class="text-xs lg:text-sm">{{ value.category_name }}</span>
+            <div
+              class="badge lg:badge-md badge-sm group-hover:bg-primary group-hover:text-primary-content border-base-content/50 text-xs"
+              :class="
+                selectedCategory === value.category_name
+                  ? 'badge-primary'
+                  : 'badge-outline text-base-content/50'
+              "
+            >
+              {{ value.qty_count }}
+            </div>
           </NuxtLink>
         </template>
       </div>
@@ -132,62 +130,20 @@
                 </span>
               </template>
             </div>
-            <!-- <div class="space-x-1 whitespace-nowrap">
-              <Icon
-                name="lucide:square"
-                size="18"
-                class="cursor-pointer"
-                :class="gridValue !== 1 ? 'opacity-50' : ''"
-                @click="
-                  () => {
-                    gridValue = 1;
-                  }
-                "
-              />
-              <Icon
-                name="lucide:columns-2"
-                size="18"
-                class="cursor-pointer"
-                :class="gridValue !== 2 ? 'opacity-50' : ''"
-                @click="
-                  () => {
-                    gridValue = 2;
-                  }
-                "
-              />
-              <Icon
-                name="lucide:columns-3"
-                size="18"
-                class="cursor-pointer"
-                :class="gridValue !== 3 ? 'opacity-50' : ''"
-                @click="
-                  () => {
-                    gridValue = 3;
-                  }
-                "
-              />
-              <Icon
-                name="lucide:columns-4"
-                size="18"
-                class="cursor-pointer"
-                :class="gridValue !== 4 ? 'opacity-50' : ''"
-                @click="
-                  () => {
-                    gridValue = 4;
-                  }
-                "
-              />
-            </div> -->
             <div>
               <select
                 class="select select-xs w-full cursor-pointer bg-base-100 sm:select-sm sm:w-fit lg:select-base"
                 v-model="orderBy"
               >
-                <option value="product.id DESC" selected>
+                <option value="base.id DESC" selected>
                   เรียงตามลำดับ: หลังไปก่อน
                 </option>
-                <option value="product.id ASC">
-                  เรียงตามลำดับ: ก่อนไปหลัง
+                <option value="base.id ASC">เรียงตามลำดับ: ก่อนไปหลัง</option>
+                <option value="base.product_selling_price DESC">
+                  เรียงตามลำดับ: แพงไปถูก
+                </option>
+                <option value="base.product_selling_price ASC">
+                  เรียงตามลำดับ: ถูกไปแพง
                 </option>
               </select>
             </div>
@@ -195,15 +151,16 @@
         </div>
         <p v-if="error" class="text-error">{{ error.message }}</p>
 
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
         <div
           v-if="pending"
-          class="my-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+          class="my-4 grid lg:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4"
         >
           <SkeletonProductCards :count="pageSize" />
         </div>
         <div
           v-else-if="data?.rows.length"
-          class="grid sm:grid-cols-4 grid-cols-3 gap-4 my-4"
+          class="grid lg:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4 my-4"
         >
           <template v-for="row in data?.rows">
             <CardProduct :object="row" />
@@ -221,11 +178,10 @@
 <script setup lang="ts">
 const route = useRoute();
 const pageSizeData = ref([9, 12, 18, 24]);
-const gridValue = ref(4);
 const page = ref(1);
 const pageSize = ref(12);
 const q = ref("");
-const orderBy = ref("product.id DESC");
+const orderBy = ref("base.id DESC");
 const selectedCategory = computed(() => String(route.query.category || ""));
 const productQuery = computed(() => ({
   page: page.value,

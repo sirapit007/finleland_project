@@ -106,7 +106,7 @@ export default defineEventHandler(async (event) => {
     );
 
     if (latestRequest && retryAfter > 0) {
-      setResponseHeader(event, "Retry-After", String(retryAfter));
+      setResponseHeader(event, "Retry-After", retryAfter);
       throw createError({
         statusCode: 429,
         statusMessage: `กรุณารอ ${retryAfter} วินาทีก่อนขอรหัสใหม่`,
@@ -122,7 +122,7 @@ export default defineEventHandler(async (event) => {
       setResponseHeader(
         event,
         "Retry-After",
-        String(settings.rateLimitWindowSeconds),
+        settings.rateLimitWindowSeconds,
       );
       throw createError({
         statusCode: 429,

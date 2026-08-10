@@ -15,14 +15,14 @@
         </div>
         <h1 class="text-3xl font-bold sm:text-4xl">ชำระเงินคำสั่งซื้อ</h1>
       </div>
-      <NuxtLink
+      <!-- <NuxtLink
         v-if="order?.uuid"
         :to="`/orders/${order.uuid}/invoice`"
         target="_blank"
         class="btn btn-outline btn-sm"
       >
         <Icon name="lucide:receipt-text" size="16" /> พิมพ์เอกสาร
-      </NuxtLink>
+      </NuxtLink> -->
     </div>
 
     <div v-if="status === 'pending'" class="space-y-5">

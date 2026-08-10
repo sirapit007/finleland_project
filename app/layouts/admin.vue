@@ -7,7 +7,7 @@
     />
 
     <aside
-      class="fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col border-r border-base-300 bg-base-100 transition-transform duration-300 sm:static sm:z-auto sm:w-60 sm:translate-x-0"
+      class="fixed inset-y-0 left-0 z-40 flex h-dvh w-64 shrink-0 flex-col border-r border-base-300 bg-base-100 transition-transform duration-300 sm:static sm:z-auto sm:w-60 sm:translate-x-0 shadow-sm"
       :class="isSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
       <!-- Logo -->

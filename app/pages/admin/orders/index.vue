@@ -133,17 +133,17 @@
   </dialog>
 
   <div class="min-h-full p-4 pb-6">
-    <div class="flex justify-between gap-3 md:flex-row md:items-center">
-      <div class="space-x-3 flex flex-col items-start">
-        <span class="font-bold sm:text-xl text-lg text-primary"
-          >Order Management</span
-        ><span class="font-semibold sm:text-base text-sm text-secondary"
-          >จัดการคำสั่งซื้อและการจัดส่ง</span
-        >
+    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+      <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
+        <div class="space-x-3 flex flex-col items-start">
+          <span class="font-bold sm:text-xl text-lg text-primary"
+            >Order Management</span
+          ><span class="font-semibold sm:text-base text-sm text-secondary"
+            >จัดการคำสั่งซื้อและการจัดส่ง</span
+          >
+        </div>
       </div>
-    </div>
 
-    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm mt-2">
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch
@@ -282,28 +282,48 @@
                         class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div>
-                          <h2 class="font-bold">รายการสินค้า</h2>
+                          <h2 class="lg:text-lg sm:text-base text-sm font-bold">
+                            รายการสินค้า
+                          </h2>
                           <p class="text-xs text-base-content/55">
                             การแก้ไขทุกครั้งจะถูกบันทึกในประวัติด้านขวา
                           </p>
                         </div>
-                        <button
-                          v-if="!isTerminal(order)"
-                          class="btn btn-primary btn-xs"
-                          :disabled="isTerminal(order)"
-                          @click="openAddItem(order)"
-                        >
-                          <Icon name="lucide:plus" size="15" /> เพิ่มสินค้า
-                        </button>
+                        <div class="flex flex-wrap items-center gap-2">
+                          <NuxtLink
+                            v-if="order.uuid"
+                            :to="{
+                              path: `/admin/orders/${order.uuid}/product-list`,
+                              query: { print: '1' },
+                            }"
+                            target="_blank"
+                            rel="noopener"
+                            class="btn btn-outline btn-xs"
+                            aria-label="พิมพ์รายการสินค้าในคำสั่งซื้อ"
+                          >
+                            <Icon name="lucide:printer" size="15" />
+                            พิมพ์รายการสินค้า
+                          </NuxtLink>
+                          <button
+                            v-if="!isTerminal(order)"
+                            class="btn btn-primary btn-xs"
+                            :disabled="isTerminal(order)"
+                            @click="openAddItem(order)"
+                          >
+                            <Icon name="lucide:plus" size="15" /> เพิ่มสินค้า
+                          </button>
+                        </div>
                       </div>
                       <div class="overflow-x-auto">
                         <table class="table sm:table-sm table-xs">
                           <thead>
                             <tr class="sm:text-sm text-xs">
                               <th>สินค้า</th>
-                              <th>ราคา</th>
+                              <th class="sm:table-cell hidden">ราคา</th>
                               <th class="text-center">จำนวน</th>
-                              <th class="text-right">รวม</th>
+                              <th class="sm:table-cell hidden text-right">
+                                รวม
+                              </th>
                               <th v-if="!isTerminal(order)"></th>
                             </tr>
                           </thead>
@@ -320,8 +340,24 @@
                                 <p class="text-xs text-base-content/50">
                                   {{ item.order_item_product_code }}
                                 </p>
+                                <div class="sm:hidden block mt-1">
+                                  ฿{{ formatMoney(item.order_item_unit_price) }}
+                                  <p
+                                    v-if="Number(item.order_item_discount) > 0"
+                                    class="text-xs text-success"
+                                  >
+                                    ลด ฿{{
+                                      formatMoney(item.order_item_discount)
+                                    }}
+                                  </p>
+                                </div>
+                                <div
+                                  class="sm:hidden block mt-1 font-bold text-[11.5px]"
+                                >
+                                  ฿{{ formatMoney(item.order_item_total) }}
+                                </div>
                               </td>
-                              <td>
+                              <td class="sm:table-cell hidden">
                                 ฿{{ formatMoney(item.order_item_unit_price) }}
                                 <p
                                   v-if="Number(item.order_item_discount) > 0"
@@ -361,7 +397,9 @@
                                   {{ item.order_item_quantity }}
                                 </div>
                               </td>
-                              <td class="text-right font-bold">
+                              <td
+                                class="text-right font-bold sm:table-cell hidden"
+                              >
                                 ฿{{ formatMoney(item.order_item_total) }}
                               </td>
                               <td class="text-right" v-if="!isTerminal(order)">
@@ -390,23 +428,15 @@
                         </table>
                       </div>
                     </section>
+
                     <div class="space-y-5">
-                      <OrderSummary
-                        :order="order"
-                        :total-quantity="orderTotalQuantity(order)"
-                      />
-                      <OrderPaymentDetails
-                        admin
-                        :payment="
-                          detailByOrder[order.uuid]?.payments?.[0] || null
-                        "
-                        @refreshed="reloadOrder(order.uuid)"
-                      />
                       <section
                         class="rounded-xl border border-base-300 bg-base-100 p-4"
                       >
                         <div class="mb-3 flex items-center justify-between">
-                          <h2 class="font-bold">สถานะคำสั่งซื้อ</h2>
+                          <h2 class="lg:text-lg sm:text-base text-sm font-bold">
+                            สถานะคำสั่งซื้อ
+                          </h2>
                           <button
                             v-if="!isTerminal(order)"
                             class="btn btn-outline btn-primary btn-xs"
@@ -422,11 +452,26 @@
                           show-actor
                         />
                       </section>
+                      <OrderSummary
+                        :order="order"
+                        :total-quantity="orderTotalQuantity(order)"
+                      />
+                      <OrderPaymentDetails
+                        admin
+                        :payment="
+                          detailByOrder[order.uuid]?.payments?.[0] || null
+                        "
+                        @refreshed="reloadOrder(order.uuid)"
+                      />
                       <section
                         class="rounded-xl border border-base-300 bg-base-100 p-4"
                       >
-                        <h2 class="mb-3 font-bold">ประวัติการปรับสินค้า</h2>
-                        <ol class="space-y-3">
+                        <h2
+                          class="mb-3 lg:text-lg sm:text-base text-sm font-bold"
+                        >
+                          ประวัติการปรับสินค้า
+                        </h2>
+                        <ol class="space-y-3 max-h-60 overflow-auto pr-1">
                           <li
                             v-for="adjustment in detailByOrder[order.uuid]
                               ?.adjustments || []"

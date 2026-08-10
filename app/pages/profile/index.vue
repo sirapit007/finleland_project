@@ -54,7 +54,7 @@
       </p>
 
       <div class="grid gap-6 lg:grid-cols-3 grid-cols-1">
-        <section class="rounded-2xl border border-base-300 bg-base-100 p-5">
+        <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
           <div class="flex items-center justify-between gap-3">
             <div>
               <h2 class="text-xl font-bold">ข้อมูลผู้ใช้</h2>
@@ -131,7 +131,7 @@
           </form>
         </section>
 
-        <section class="rounded-2xl border border-base-300 bg-base-100 p-5">
+        <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
           <div>
             <h2 class="text-xl font-bold">เปลี่ยนรหัสผ่าน</h2>
             <p class="mt-1 text-sm text-base-content/55">
@@ -206,7 +206,7 @@
           </form>
         </section>
 
-        <section class="rounded-2xl border border-base-300 bg-base-100 p-5">
+        <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
           <div class="flex items-start justify-between gap-3">
             <div>
               <h2 class="text-xl font-bold">เชื่อมต่อ LINE</h2>
@@ -303,7 +303,8 @@
           </div>
         </section>
       </div>
-      <section class="rounded-2xl border border-base-300 bg-base-100 p-5">
+
+      <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
         <div
           class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
@@ -395,7 +396,7 @@
         </div>
       </section>
 
-      <section class="rounded-2xl border border-base-300 bg-base-100 p-5">
+      <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md trasnsition">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 class="text-xl font-bold">ข้อมูลผู้เสียภาษี</h2>

@@ -29,11 +29,11 @@
           <button
             type="button"
             class="btn btn-primary btn-sm"
-            :disabled="overviewPending"
+            :disabled="isOverviewLoading"
             @click="refreshOverview()"
           >
             <span
-              v-if="overviewPending"
+              v-if="isOverviewLoading"
               class="loading loading-spinner loading-xs"
             />
             <Icon v-else name="lucide:refresh-cw" size="15" />
@@ -47,7 +47,7 @@
       </p>
 
       <div
-        v-else-if="overviewPending"
+        v-else-if="isOverviewLoading"
         class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
         aria-hidden="true"
       >
@@ -61,21 +61,7 @@
           <div class="mt-3 skeleton h-3 w-4/5" />
         </article>
       </div>
-      <div
-        v-else-if="reportPending"
-        class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-        aria-hidden="true"
-      >
-        <article
-          v-for="item in 4"
-          :key="item"
-          class="rounded-xl bg-base-200 p-4"
-        >
-          <div class="skeleton h-4 w-2/3" />
-          <div class="mt-3 skeleton h-8 w-1/2" />
-          <div class="mt-3 skeleton h-3 w-4/5" />
-        </article>
-      </div>
+
       <div v-else class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <article class="rounded-xl border border-primary/20 bg-primary/5 p-4">
           <div class="flex items-start justify-between gap-3">
@@ -159,7 +145,7 @@
           </div>
 
           <div
-            v-if="overviewPending"
+            v-if="isOverviewLoading"
             class="mt-5 grid h-56 grid-cols-7 items-end gap-3"
             aria-hidden="true"
           >
@@ -212,7 +198,7 @@
           </div>
           <ol class="mt-3 divide-y divide-base-200">
             <li
-              v-for="item in overviewPending ? 5 : 0"
+              v-for="item in isOverviewLoading ? 5 : 0"
               :key="`overview-skeleton-${item}`"
               class="flex items-center gap-3 py-3"
               aria-hidden="true"
@@ -225,7 +211,7 @@
               <div class="skeleton h-4 w-20" />
             </li>
             <li
-              v-if="!overviewPending"
+              v-if="!isOverviewLoading"
               v-for="(product, index) in overview?.topProducts || []"
               :key="`${product.order_item_transaction_product_code}-${index}`"
               class="flex items-center gap-3 py-3"
@@ -248,7 +234,7 @@
               </p>
             </li>
             <li
-              v-if="!overviewPending && !(overview?.topProducts || []).length"
+              v-if="!isOverviewLoading && !(overview?.topProducts || []).length"
               class="grid min-h-48 place-items-center text-sm text-base-content/50"
             >
               ยังไม่มีข้อมูลสินค้าสำหรับวันนี้
@@ -303,11 +289,11 @@
           </div>
           <button
             class="btn btn-primary btn-sm"
-            :disabled="reportPending"
+            :disabled="isReportLoading"
             @click="refreshReport()"
           >
             <span
-              v-if="reportPending"
+              v-if="isReportLoading"
               class="loading loading-spinner loading-xs"
             />
             <Icon v-else name="lucide:filter" size="15" />
@@ -377,7 +363,7 @@
         </div>
         <div class="mt-4 space-y-3">
           <div
-            v-for="item in reportPending ? 7 : 0"
+            v-for="item in isReportLoading ? 7 : 0"
             :key="`day-skeleton-${item}`"
             class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3"
             aria-hidden="true"
@@ -387,7 +373,7 @@
             <div class="skeleton h-4 w-20" />
           </div>
           <div
-            v-if="!reportPending"
+            v-if="!isReportLoading"
             v-for="day in report?.byDay || []"
             :key="day.sale_date"
             class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 text-sm"
@@ -406,7 +392,7 @@
             >
           </div>
           <p
-            v-if="!reportPending && !(report?.byDay || []).length"
+            v-if="!isReportLoading && !(report?.byDay || []).length"
             class="py-8 text-center text-sm text-base-content/50"
           >
             ยังไม่มีรายการขายในช่วงวันที่เลือก
@@ -426,7 +412,7 @@
         </div>
         <ol class="mt-3 divide-y divide-base-200">
           <li
-            v-for="item in reportPending ? 5 : 0"
+            v-for="item in isReportLoading ? 5 : 0"
             :key="`report-product-skeleton-${item}`"
             class="flex items-center gap-3 py-3"
             aria-hidden="true"
@@ -439,7 +425,7 @@
             <div class="skeleton h-4 w-20" />
           </li>
           <li
-            v-if="!reportPending"
+            v-if="!isReportLoading"
             v-for="(product, index) in report?.topProducts || []"
             :key="`${product.order_item_transaction_product_code}-${index}`"
             class="flex items-center gap-3 py-3"
@@ -463,7 +449,7 @@
             </p>
           </li>
           <li
-            v-if="!reportPending && !(report?.topProducts || []).length"
+            v-if="!isReportLoading && !(report?.topProducts || []).length"
             class="py-8 text-center text-sm text-base-content/50"
           >
             ยังไม่มีข้อมูลสินค้า
@@ -614,8 +600,9 @@ const {
   pending: overviewPending,
   error: overviewError,
   refresh: refreshOverview,
-} = await useFetch<any>("/api/admin/dashboard", {
+} = useFetch<any>("/api/admin/dashboard", {
   server: false,
+  immediate: false,
   query: { date: overviewDate },
   watch: false,
 });
@@ -625,11 +612,19 @@ const {
   pending: reportPending,
   error: reportError,
   refresh: refreshReport,
-} = await useFetch<any>("/api/order/item-transactions", {
+} = useFetch<any>("/api/order/item-transactions", {
   server: false,
+  immediate: false,
   query: { dateFrom, dateTo },
   watch: false,
 });
+
+const isOverviewLoading = computed(
+  () => overviewPending.value || (!overview.value && !overviewError.value),
+);
+const isReportLoading = computed(
+  () => reportPending.value || (!report.value && !reportError.value),
+);
 
 const overviewSummary = computed(() => overview.value?.summary || {});
 const overviewProfitMargin = computed(() => {
@@ -694,6 +689,9 @@ const salesBarWidth = (value: number | string) =>
   Math.max(4, (Number(value || 0) / maxDailySales.value) * 100);
 
 onMounted(async () => {
+  void refreshOverview();
+  void refreshReport();
+
   try {
     const [users, products, categories, suppliers, types, promotion] =
       await Promise.all([
