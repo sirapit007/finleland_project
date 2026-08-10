@@ -91,7 +91,7 @@ export default defineNuxtConfig({
     paymentReceiverMerchantId: process.env.PAYMENT_RECEIVER_MERCHANT_ID || "",
     public: {
       taxInvoiceSellerName:
-        process.env.NUXT_PUBLIC_TAX_INVOICE_SELLER_NAME || "ฟินส์แลนด์ พลาซ่า",
+        process.env.NUXT_PUBLIC_TAX_INVOICE_SELLER_NAME || "ฟินลี่แลนด์ พลาซ่า",
       taxInvoiceSellerTaxId:
         process.env.NUXT_PUBLIC_TAX_INVOICE_SELLER_TAX_ID || "",
       taxInvoiceSellerBranch:
@@ -106,7 +106,7 @@ export default defineNuxtConfig({
       paymentMerchantQrUrl:
         process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_QR_URL || "",
       paymentMerchantName:
-        process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_NAME || "ฟินส์แลนด์ พลาซ่า",
+        process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_NAME || "ฟินลี่แลนด์ พลาซ่า",
       paymentMerchantBank: process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_BANK || "",
       paymentMerchantAccount:
         process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_ACCOUNT || "",

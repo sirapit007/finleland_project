@@ -9,7 +9,7 @@
   <ModalImagePreview v-model="isImagePreviewOpen" :src="imageSrc" />
 
   <dialog ref="baseModal" class="modal">
-    <div class="modal-box max-w-2xl">
+    <div class="modal-box max-w-4xl">
       <form method="dialog">
         <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
           ✕
@@ -17,8 +17,9 @@
       </form>
       <h3 class="text-lg font-bold">Create Promotion</h3>
 
-      <div class="mt-2 grid sm:grid-cols-2 grid-cols-1 gap-4">
+      <div class="mt-2 grid sm:grid-cols-3 grid-cols-1 gap-4">
         <!-- {{ base.form.promotion_type }} -->
+        <ImageUpload v-model="base.form.image_url" />
         <div>
           <fieldset class="fieldset">
             <legend class="fieldset-legend">สินค้าที่ร่วมโปรโมชั่น</legend>
@@ -242,7 +243,7 @@
           เพิ่มโปรโมชั่น
         </button>
       </div>
-  
+
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch

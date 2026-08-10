@@ -117,7 +117,7 @@ const props = withDefaults(defineProps<ComboBoxProps>(), {
   value: "",
   disabled: false,
   clearOnSelect: false,
-  pageSize: 50,
+  pageSize: 999,
 });
 
 const emit = defineEmits<{
