@@ -35,23 +35,13 @@ export default defineEventHandler(async (event) => {
               item.order_item_quantity,
               product.image_url AS product_image_url,
               COALESCE(
-                posted.order_item_transaction_unit_cost,
-                product.product_cost_price,
+                product.product_selling_price,
+                item.order_item_unit_price,
                 0
-              ) AS order_item_unit_cost
+              ) AS product_selling_price
        FROM tb_shopping_order_items AS item
        LEFT JOIN vw_master_products AS product
          ON product.uuid::text = item.order_item_product
-       LEFT JOIN LATERAL (
-         SELECT posted_transaction.order_item_transaction_unit_cost
-         FROM tb_shopping_order_item_transactions AS posted_transaction
-         WHERE posted_transaction.order_item_transaction_order_item = item.uuid::text
-           AND posted_transaction.order_item_transaction_status = 'posted'
-           AND posted_transaction.deleted_at IS NULL
-         ORDER BY posted_transaction.order_item_transaction_recognized_at DESC,
-                  posted_transaction.id DESC
-         LIMIT 1
-       ) AS posted ON TRUE
        WHERE item.order_item_order = $1
          AND item.deleted_at IS NULL
        ORDER BY item.id ASC`,

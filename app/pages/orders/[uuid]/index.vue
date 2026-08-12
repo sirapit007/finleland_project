@@ -111,13 +111,12 @@
             </div>
 
             <div
-              v-if="merchant.qrUrl"
+              v-if="merchant.promptPayId"
               class="mx-auto mt-5 max-w-sm rounded-2xl border border-base-300 bg-white p-5 text-center text-slate-900"
             >
-              <img
-                :src="merchant.qrUrl"
-                alt="Merchant QR สำหรับชำระเงิน"
-                class="mx-auto aspect-square w-full max-w-72 object-contain"
+              <PaymentPromptPayQr
+                :recipient="merchant.promptPayId"
+                :amount="Number(order.order_grand_total || 0)"
               />
               <p class="mt-4 font-bold">{{ merchant.name }}</p>
               <p v-if="merchant.bank" class="mt-1 text-sm text-slate-600">
@@ -144,7 +143,7 @@
             <div v-else role="alert" class="alert alert-warning mt-5 text-sm">
               <Icon name="lucide:triangle-alert" size="18" />
               <span>
-                ร้านค้ายังไม่ได้ตั้งค่า Merchant QR
+                ร้านค้ายังไม่ได้ตั้งค่า PromptPay ID
                 กรุณาติดต่อร้านค้าก่อนชำระเงิน
               </span>
             </div>
@@ -271,12 +270,12 @@
         </div>
 
         <div class="space-y-5">
-          <OrderSummary
+          <OrderSummarySection
             :order="order"
             :total-quantity="totalQuantity"
             :tax-detail="order.order_tax_detail"
           />
-          <OrderPaymentDetails :payment="latestPayment" />
+          <OrderPaymentDetailsSection :payment="latestPayment" />
         </div>
       </div>
     </template>
@@ -342,7 +341,7 @@ const totalQuantity = computed(() =>
 );
 const publicConfig = runtimeConfig.public as Record<string, any>;
 const merchant = computed(() => ({
-  qrUrl: String(publicConfig.paymentMerchantQrUrl || "").trim(),
+  promptPayId: String(publicConfig.paymentMerchantPromptPayId || "").trim(),
   name: String(publicConfig.paymentMerchantName || "ฟินลี่แลนด์ พลาซ่า"),
   bank: String(publicConfig.paymentMerchantBank || "").trim(),
   account: String(publicConfig.paymentMerchantAccount || "").trim(),
@@ -363,7 +362,7 @@ const paymentStatusMeta = computed(
 );
 const canUploadSlip = computed(
   () =>
-    Boolean(merchant.value.qrUrl) &&
+    Boolean(merchant.value.promptPayId) &&
     !["paid", "refunded"].includes(
       String(order.value?.order_payment_status || ""),
     ) &&

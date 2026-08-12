@@ -1,235 +1,9 @@
 <template>
-  <ModalConfirm
-    v-model="isRemoveConfirmOpen"
-    title="ยืนยันการลบรายการนี้"
-    confirm-text="ยืนยัน"
-    @confirm="fnRemove.onSubmit()"
-  />
-
-  <ModalImagePreview v-model="isImagePreviewOpen" :src="imageSrc" />
-
-  <dialog ref="baseModal" class="modal">
-    <div class="modal-box max-w-4xl">
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">
-          ✕
-        </button>
-      </form>
-      <h3 class="text-lg font-bold">Create Promotion</h3>
-
-      <div class="mt-2 grid sm:grid-cols-3 grid-cols-1 gap-4">
-        <!-- {{ base.form.promotion_type }} -->
-        <ImageUpload v-model="base.form.image_url" />
-        <div>
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">สินค้าที่ร่วมโปรโมชั่น</legend>
-            <ComboBox
-              v-model="base.form.promotion_product"
-              fetchUrl="/api/products"
-              placeholder="เลือกสินค้า..."
-              label="product_name"
-              value="uuid"
-            />
-          </fieldset>
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">ประเภทโปรโมชั่น</legend>
-            <ComboBox
-              v-model="base.form.promotion_type"
-              fetchUrl="/api/promotion/types"
-              placeholder="เลือกประเภทโปรโมชั่น..."
-              label="promotion_type_name"
-              value="uuid"
-            />
-          </fieldset>
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">ชื่อโปรโมชั่น</legend>
-            <input
-              type="text"
-              class="input input-sm w-full"
-              placeholder="สูงสุด 100 ตัวอักษร..."
-              v-model="base.form.promotion_name"
-            />
-          </fieldset>
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend">รายละเอียดโปรโมชั่น</legend>
-            <textarea
-              class="textarea textarea-sm w-full"
-              placeholder="กี่ตัวตัวอักษรก็ได้..."
-              v-model="base.form.promotion_description"
-            ></textarea>
-          </fieldset>
-          <div class="grid grid-cols-2 gap-2">
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">วันที่เริ่มโปรโมชั่น</legend>
-              <input
-                type="date"
-                class="input input-sm w-full"
-                placeholder="..."
-                v-model="base.form.promotion_start_date"
-              />
-            </fieldset>
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">วันที่สิ้นสุดโปรโมชั่น</legend>
-              <input
-                type="date"
-                class="input input-sm w-full"
-                placeholder="..."
-                v-model="base.form.promotion_end_date"
-              />
-            </fieldset>
-          </div>
-        </div>
-        <div>
-          <div
-            v-if="
-              base.form.promotion_type !==
-              '70977b66-e3d8-45f2-bdfb-b9776f959027'
-            "
-          >
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">ราคาหลังส่วนลด</legend>
-              <input
-                type="number"
-                min="1"
-                class="input input-sm w-full"
-                placeholder="ตัวเลข มากกว่า 1 เท่านั้น..."
-                v-model="base.form.promotion_discounted_price"
-              />
-            </fieldset>
-          </div>
-          <div
-            v-if="
-              base.form.promotion_type ===
-              '3d13b772-9442-48d8-90a0-f35d825d390a'
-            "
-          >
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">จำนวนขั้นต่ำ</legend>
-              <input
-                type="number"
-                min="1"
-                class="input input-sm w-full"
-                placeholder="ตัวเลข มากกว่า 1 เท่านั้น..."
-                v-model="base.form.promotion_min_quantity"
-              />
-            </fieldset>
-          </div>
-          <div
-            v-if="
-              base.form.promotion_type ===
-              'be08aae7-30ef-46d1-a415-e581cd71a903'
-            "
-          >
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">ยอดซื้อขั้นต่ำ</legend>
-              <input
-                type="number"
-                min="1"
-                class="input input-sm w-full"
-                placeholder="ตัวเลข มากกว่า 1 เท่านั้น..."
-                v-model="base.form.promotion_min_purchase_amount"
-              />
-            </fieldset>
-          </div>
-          <div
-            v-if="
-              base.form.promotion_type ===
-              '70977b66-e3d8-45f2-bdfb-b9776f959027'
-            "
-            class="space-y-2"
-          >
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend">ราคาชุดโปรโมชั่น</legend>
-              <input
-                type="number"
-                min="1"
-                class="input input-sm w-full"
-                placeholder="ตัวเลข มากกว่า 1 เท่านั้น..."
-                v-model="base.form.promotion_bundle_price"
-              />
-            </fieldset>
-            <div
-              v-for="(v, i) in detail.rows"
-              class="border border-base-content/20 rounded-lg p-2 relative"
-            >
-              <button
-                v-if="(i as number) > 1"
-                class="btn btn-xs btn-square btn-ghost btn-error absolute right-1 top-1"
-                v-on:click="fnDetail.onRemoveRow(i as number)"
-              >
-                ✕
-              </button>
-              <div
-                class="w-4 h-4 bg-warning rounded-full text-[10px] font-semibold flex justify-center items-center absolute left-1 top-1"
-              >
-                {{ (i as number) + 1 }}
-              </div>
-              <fieldset class="fieldset mt-3">
-                <legend class="fieldset-legend">สินค้าในชุด</legend>
-                <ComboBox
-                  v-model="detail.rows[i].bundle_item_product"
-                  fetchUrl="/api/products"
-                  placeholder="เลือกสินค้า..."
-                  label="product_name"
-                  value="uuid"
-                  :disabled="!i"
-                />
-              </fieldset>
-              <div class="grid grid-cols-2 gap-2">
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">จำนวนสินค้าในชุด</legend>
-                  <input
-                    type="number"
-                    min="1"
-                    class="input input-xs w-full"
-                    placeholder="ตัวเลข มากกว่า 1 เท่านั้น..."
-                    v-model="detail.rows[i].bundle_item_quantity"
-                  />
-                </fieldset>
-                <fieldset class="fieldset">
-                  <legend class="fieldset-legend">ราคาต่อหน่วยในชุด</legend>
-                  <input
-                    type="number"
-                    min="1"
-                    class="input input-xs w-full"
-                    placeholder="ตัวเลข มากกว่า 1 เท่านั้น..."
-                    v-model="detail.rows[i].bundle_item_unit_price"
-                  />
-                </fieldset>
-              </div>
-            </div>
-
-            <button
-              class="w-full btn btn-xs btn-soft btn-secondary"
-              type="button"
-              v-on:click="fnDetail.onAddRow()"
-            >
-              เพิ่มรายการ
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-action">
-        <button class="flex-1 btn sm:btn-sm btn-xs" @click="baseModal?.close()">
-          ปิด
-        </button>
-        <button
-          class="flex-1 btn sm:btn-sm btn-xs btn-secondary"
-          type="button"
-          @click="fnBase.onSubmit()"
-        >
-          บันทึก
-        </button>
-      </div>
-    </div>
-  </dialog>
-
   <div class="min-h-full p-4 pb-6">
     <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-xl text-lg text-primary"
+          <span class="font-bold sm:text-lg text-base text-primary"
             >Event Promotion</span
           ><span class="font-semibold sm:text-base text-sm text-secondary"
             >โปรโมชั่นสินค้า</span
@@ -237,7 +11,7 @@
         </div>
         <button
           class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
-          v-on:click="fnBase.onCreate()"
+          @click="promotionFormModal?.onCreate()"
         >
           <Icon name="lucide:plus" size="16" />
           เพิ่มโปรโมชั่น
@@ -289,7 +63,7 @@
                 <div
                   v-if="row.image_url"
                   class="h-12 w-12 cursor-pointer"
-                  v-on:click="fnImage.onOpen(row.image_url)"
+                  @click="imagePreviewModal?.onOpen(row.image_url)"
                 >
                   <img
                     :src="row.image_url"
@@ -318,7 +92,7 @@
                   type="checkbox"
                   class="checkbox checkbox-accent"
                   v-model="row.promotion_is_active"
-                  v-on:click="fnBase.onUseActive(row)"
+                  @click="onUseActive(row)"
                 />
               </td>
               <td>
@@ -340,13 +114,13 @@
               <th class="text-end">
                 <button
                   class="btn btn-xs btn-link"
-                  v-on:click="fnBase.onEdit(row)"
+                  @click="promotionFormModal?.onEdit(row)"
                 >
                   แก้ไข
                 </button>
                 <button
                   class="btn btn-xs btn-link btn-error no-underline"
-                  v-on:click="fnBase.onRemove(row)"
+                  @click="removeConfirmModal?.onRemove(row, '/api/promotion')"
                 >
                   ลบ
                 </button>
@@ -365,6 +139,12 @@
       </div>
     </div>
   </div>
+
+  <ModalImagePreview ref="imagePreviewModal" />
+
+  <PromotionFormModal ref="promotionFormModal" @changed="onRefresh" />
+
+  <ModalRemoveConfirm ref="removeConfirmModal" @removed="onRefresh" />
 </template>
 
 <script setup lang="ts">
@@ -373,27 +153,36 @@ definePageMeta({
 });
 
 import { useDayjs } from "~~/composables/useDayjs";
-const dayjs = useDayjs();
 
-const baseModal = ref<HTMLDialogElement | null>(null);
-const isRemoveConfirmOpen = ref(false);
-const isImagePreviewOpen = ref(false);
+type RemoveConfirmExpose = {
+  onRemove: (row: Record<string, unknown>, path: string) => Promise<void>;
+};
+
+type ImagePreviewExpose = {
+  onOpen: (src: string) => void;
+};
+
+type PromotionRow = {
+  [key: string]: unknown;
+  uuid?: string;
+  promotion_is_active?: boolean;
+};
+
+type PromotionFormModalExpose = {
+  onCreate: () => Promise<void>;
+  onEdit: (row: PromotionRow) => Promise<void>;
+};
+
+const promotionFormModal = ref<PromotionFormModalExpose | null>(null);
+
+const removeConfirmModal = ref<RemoveConfirmExpose | null>(null);
+const imagePreviewModal = ref<ImagePreviewExpose | null>(null);
+
+const dayjs = useDayjs();
 
 const page = ref(1);
 const pageSize = ref(10);
 const q = ref("");
-const base = ref<any>({
-  form: {},
-  method: "",
-});
-const detail = ref<any>({
-  rows: [],
-});
-const remove = ref<any>({
-  form: {},
-  path: "",
-});
-const imageSrc = ref("");
 
 const { data, pending, error, refresh } = await useFetch("/api/promotion", {
   server: false,
@@ -405,149 +194,23 @@ const { data, pending, error, refresh } = await useFetch("/api/promotion", {
   watch: [page, pageSize, q],
 });
 
-const fnBase = {
-  onCreate: async () => {
-    base.value.form = {};
-    base.value.method = "post";
+const onUseActive = async (row: PromotionRow) => {
+  const path = `/api/promotion/${row.uuid}`;
 
-    baseModal.value?.showModal();
-  },
-  onEdit: async (row: any) => {
-    base.value.form = { ...row };
-    base.value.method = "put";
+  const response = await $fetch(path, {
+    method: "put",
+    body: {
+      ...row,
+      promotion_is_active: row.promotion_is_active ? false : true,
+    },
+  });
 
-    detail.value.rows = [];
-    detail.value.rows = await fnDetail.onGet();
-
-    baseModal.value?.showModal();
-  },
-  onSubmit: async () => {
-    const path =
-      base.value.method === "post"
-        ? `/api/promotion`
-        : `/api/promotion/${base.value.form.uuid}`;
-
-    const res: any = await $fetch(path, {
-      method: base.value.method,
-      body: {
-        ...base.value.form,
-      },
-    });
-
-    if (res) {
-      if (
-        base.value.form.promotion_type ===
-        "70977b66-e3d8-45f2-bdfb-b9776f959027"
-      ) {
-        detail.value.rows = detail.value.rows.map((v: any) => {
-          return { ...v, bundle_item_promotion: res.row.uuid };
-        });
-        await fnDetail.onSubmit();
-      }
-
-      baseModal.value?.close();
-      refresh();
-    }
-  },
-  onUseActive: async (row: any) => {
-    const path = `/api/promotion/${row.uuid}`;
-
-    const res = await $fetch(path, {
-      method: "put",
-      body: {
-        ...row,
-        promotion_is_active: row.promotion_is_active ? false : true,
-      },
-    });
-
-    if (res) {
-      refresh();
-    }
-  },
-  onRemove: async (row: any) => {
-    remove.value.path = "/api/promotion";
-    remove.value.form = { ...row };
-    isRemoveConfirmOpen.value = true;
-  },
+  if (response) {
+    onRefresh();
+  }
 };
 
-const fnDetail = {
-  onGet: async () => {
-    const res: any = await $fetch(`/api/bundle-items/${base.value.form.uuid}`);
-    return res.rows;
-  },
-  onAddRow: () => {
-    detail.value.rows.push({
-      bundle_item_product: "",
-      bundle_item_quantity: 0,
-      bundle_item_unit_price: 0,
-    });
-  },
-  onRemoveRow: (index: number) => {
-    detail.value.rows = detail.value.rows.filter(
-      (v: any, i: number) => i !== index,
-    );
-  },
-  onSubmit: async () => {
-    detail.value.rows.forEach(async (v: any) => {
-      const path =
-        base.value.method === "post"
-          ? `/api/bundle-items`
-          : `/api/bundle-items/${v.uuid}`;
-
-      const res = await $fetch(path, {
-        method: base.value.method,
-        body: {
-          ...v,
-        },
-      });
-    });
-  },
+const onRefresh = async () => {
+  await refresh();
 };
-
-const fnRemove = {
-  onSubmit: async () => {
-    const res = await $fetch(`${remove.value.path}/${remove.value.form.uuid}`, {
-      method: "delete",
-      body: {
-        ...remove.value.form,
-      },
-    });
-
-    if (res) {
-      isRemoveConfirmOpen.value = false;
-      refresh();
-    }
-  },
-};
-
-const fnImage = {
-  onOpen: (src: string) => {
-    imageSrc.value = src;
-    isImagePreviewOpen.value = true;
-  },
-};
-
-watch(
-  () => base.value.form.promotion_type,
-  (v) => {
-    if (
-      v === "70977b66-e3d8-45f2-bdfb-b9776f959027" &&
-      base.value.method === "post"
-    ) {
-      detail.value.rows = [
-        {
-          bundle_item_product: base.value.form.promotion_product,
-          bundle_item_quantity: 0,
-          bundle_item_unit_price: 0,
-        },
-        {
-          bundle_item_product: "",
-          bundle_item_quantity: 0,
-          bundle_item_unit_price: 0,
-        },
-      ];
-    }
-  },
-);
 </script>

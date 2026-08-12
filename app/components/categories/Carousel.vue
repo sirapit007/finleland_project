@@ -10,10 +10,10 @@
         class="w-full shrink-0"
       >
         <div
-          class="grid lg:grid-cols-6 md:grid-cols-5 sm:grid-cols-4 grid-cols-3 lg:gap-4 sm:gap-2 gap-1 px-1 sm:px-12"
+          class="grid xl:grid-cols-8 lg:grid-cols-7 md:grid-cols-6 sm:grid-cols-5 grid-cols-4 lg:gap-4 sm:gap-2 gap-1 px-1 sm:px-12"
         >
-          <div v-for="item in slide" :key="item.product_name" class="my-2.5">
-            <CardProduct :object="item" />
+          <div v-for="item in slide" :key="item.category_name" class="my-2.5">
+            <CategoryAvatar :object="item" />
           </div>
         </div>
       </div>
@@ -54,40 +54,43 @@
       />
     </div>
   </div>
-  <SkeletonHomeSections v-if="loading" type="products" />
+  <SkeletonHomeSections v-if="loading" type="categories" />
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ category?: string }>();
 const currentSlide = ref(0);
 const itemsPerSlide = ref(4);
 let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
 
-const fetchedProducts = ref<Record<string, any>[]>([]);
+const fetchedCategories = ref<Record<string, any>[]>([]);
 const slides = computed(() => {
   const result: Record<string, any>[][] = [];
 
-  for (let i = 0; i < fetchedProducts.value.length; i += itemsPerSlide.value) {
-    result.push(fetchedProducts.value.slice(i, i + itemsPerSlide.value));
+  for (
+    let i = 0;
+    i < fetchedCategories.value.length;
+    i += itemsPerSlide.value
+  ) {
+    result.push(fetchedCategories.value.slice(i, i + itemsPerSlide.value));
   }
 
   return result;
 });
 const loading = ref(true);
 
-const loadProducts = async () => {
-  if (fetchedProducts.value.length) return;
+const loadCategories = async () => {
+  if (fetchedCategories.value.length) return;
 
   try {
     const response = await $fetch<{ rows?: Record<string, any>[] }>(
-      "/api/products",
+      "/api/categories",
       {
-        params: { pageSize: 12, orderBy: "base.id DESC", category: props.category },
+        params: { pageSize: 999 },
       },
     );
-    fetchedProducts.value = response.rows || [];
+    fetchedCategories.value = response.rows || [];
   } catch (error) {
-    console.error("Unable to load products", error);
+    console.error("Unable to load categories", error);
   } finally {
     loading.value = false;
   }
@@ -133,13 +136,15 @@ const restartAutoPlay = () => {
 
 const updateItemsPerSlide = () => {
   const nextItemsPerSlide =
-    window.innerWidth >= 1024
-      ? 6
-      : window.innerWidth >= 768
-        ? 5
-        : window.innerWidth >= 640
-          ? 4
-          : 3;
+    window.innerWidth >= 1280
+      ? 8
+      : window.innerWidth >= 1024
+        ? 7
+        : window.innerWidth >= 768
+          ? 6
+          : window.innerWidth >= 640
+            ? 5
+            : 4;
   if (nextItemsPerSlide === itemsPerSlide.value) return;
 
   const firstVisibleItemIndex = currentSlide.value * itemsPerSlide.value;
@@ -160,11 +165,11 @@ watch(
 onMounted(() => {
   updateItemsPerSlide();
   window.addEventListener("resize", updateItemsPerSlide);
-  void loadProducts();
+  void loadCategories();
   startAutoPlay();
 });
 onBeforeUnmount(() => {
-  stopAutoPlay;
+  stopAutoPlay();
   window.removeEventListener("resize", updateItemsPerSlide);
 });
 </script>

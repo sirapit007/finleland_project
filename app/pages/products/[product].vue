@@ -66,10 +66,23 @@
           </span>
           {{ base.object.product_name }}
         </div>
-        <span
-          class="badge badge-sm font-semibold badge-warning sm:badge-md lg:badge-lg"
-          >{{ base.object.product_category_name }}</span
-        >
+        <div class="flex flex-col flex-wrap items-start gap-2">
+          <div
+            v-if="base.object.product_category_name"
+            class="badge badge-sm badge-warning sm:badge-md lg:badge-lg"
+          >
+            {{ base.object.product_category_name }}
+          </div>
+          <div class="flex flex-wrap flex-row gap-2">
+            <div
+              v-for="subcategory in base.object.product_subcategories || []"
+              :key="subcategory.uuid"
+              class="badge badge-xs badge-info sm:badge-sm lg:badge-md"
+            >
+              {{ subcategory.subcategory_name }}
+            </div>
+          </div>
+        </div>
         <div class="text-2xl font-semibold sm:text-3xl lg:text-4xl">
           {{ base.object.product_name }}
         </div>
@@ -181,7 +194,7 @@
       >
         <SkeletonProductCards :count="4" />
       </div>
-      <CarouselProducts v-else :category="base.object.product_category" />
+      <ProductsCarousel v-else :category="base.object.product_category" />
     </div>
   </div>
   <div
@@ -202,7 +215,7 @@
       >
         <SkeletonProductCards :count="4" />
       </div>
-      <CarouselProducts v-else />
+      <ProductsCarousel v-else />
     </div>
   </div>
 </template>

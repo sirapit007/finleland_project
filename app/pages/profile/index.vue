@@ -54,7 +54,9 @@
       </p>
 
       <div class="grid gap-6 lg:grid-cols-3 grid-cols-1">
-        <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
+        <section
+          class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition"
+        >
           <div class="flex items-center justify-between gap-3">
             <div>
               <h2 class="text-xl font-bold">ข้อมูลผู้ใช้</h2>
@@ -131,7 +133,9 @@
           </form>
         </section>
 
-        <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
+        <section
+          class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition"
+        >
           <div>
             <h2 class="text-xl font-bold">เปลี่ยนรหัสผ่าน</h2>
             <p class="mt-1 text-sm text-base-content/55">
@@ -206,7 +210,9 @@
           </form>
         </section>
 
-        <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
+        <section
+          class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition"
+        >
           <div class="flex items-start justify-between gap-3">
             <div>
               <h2 class="text-xl font-bold">เชื่อมต่อ LINE</h2>
@@ -304,7 +310,9 @@
         </section>
       </div>
 
-      <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition">
+      <section
+        class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md transition"
+      >
         <div
           class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         >
@@ -396,15 +404,22 @@
         </div>
       </section>
 
-      <section class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md trasnsition">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <section
+        class="rounded-2xl border border-base-300 bg-base-100 p-5 hover:shadow-md trasnsition"
+      >
+        <div
+          class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+        >
           <div>
             <h2 class="text-xl font-bold">ข้อมูลผู้เสียภาษี</h2>
             <p class="mt-1 text-sm text-base-content/55">
               เพิ่ม แก้ไข หรือลบข้อมูลสำหรับใช้ขอใบกำกับภาษี
             </p>
           </div>
-          <button class="btn btn-primary btn-sm" @click="openCreateTaxProfileModal">
+          <button
+            class="btn btn-primary btn-sm"
+            @click="openCreateTaxProfileModal"
+          >
             <Icon name="lucide:receipt-text" size="16" /> เพิ่มข้อมูลภาษี
           </button>
         </div>
@@ -414,9 +429,15 @@
             <SkeletonAddressCards :count="2" />
           </div>
           <div v-else-if="!taxProfiles.length" class="py-10 text-center">
-            <Icon name="lucide:receipt" size="34" class="mx-auto mb-3 text-base-content/30" />
+            <Icon
+              name="lucide:receipt"
+              size="34"
+              class="mx-auto mb-3 text-base-content/30"
+            />
             <p class="font-semibold">ยังไม่มีข้อมูลผู้เสียภาษี</p>
-            <p class="mt-1 text-sm text-base-content/55">กดเพิ่มข้อมูลเพื่อสร้างรายการแรก</p>
+            <p class="mt-1 text-sm text-base-content/55">
+              กดเพิ่มข้อมูลเพื่อสร้างรายการแรก
+            </p>
           </div>
           <div v-else class="grid gap-3 md:grid-cols-2">
             <article
@@ -427,24 +448,67 @@
               <div class="flex items-start justify-between gap-3">
                 <div class="min-w-0">
                   <div class="flex flex-wrap items-center gap-2">
-                    <h3 class="truncate font-bold">{{ taxProfile.tax_profile_label }}</h3>
-                    <span v-if="taxProfile.tax_profile_is_default" class="badge badge-accent badge-xs">Default</span>
-                    <span class="badge badge-outline badge-xs">{{ taxProfile.taxpayer_type === "company" ? "นิติบุคคล" : "บุคคลธรรมดา" }}</span>
+                    <h3 class="truncate font-bold">
+                      {{ taxProfile.tax_profile_label }}
+                    </h3>
+                    <span
+                      v-if="taxProfile.tax_profile_is_default"
+                      class="badge badge-accent badge-xs"
+                      >Default</span
+                    >
+                    <span class="badge badge-outline badge-xs">{{
+                      taxProfile.taxpayer_type === "company"
+                        ? "นิติบุคคล"
+                        : "บุคคลธรรมดา"
+                    }}</span>
                   </div>
-                  <p class="mt-1 text-sm font-semibold">{{ taxProfile.taxpayer_name }}</p>
-                  <p class="mt-1 text-sm text-base-content/65">เลขประจำตัวผู้เสียภาษี {{ taxProfile.taxpayer_id }}</p>
-                  <p v-if="taxProfile.taxpayer_type === 'company'" class="mt-1 text-xs text-base-content/55">
-                    {{ taxProfile.taxpayer_branch_type === "head_office" ? "สำนักงานใหญ่" : `สาขา ${taxProfile.taxpayer_branch_code}` }}
+                  <p class="mt-1 text-sm font-semibold">
+                    {{ taxProfile.taxpayer_name }}
+                  </p>
+                  <p class="mt-1 text-sm text-base-content/65">
+                    เลขประจำตัวผู้เสียภาษี {{ taxProfile.taxpayer_id }}
+                  </p>
+                  <p
+                    v-if="taxProfile.taxpayer_type === 'company'"
+                    class="mt-1 text-xs text-base-content/55"
+                  >
+                    {{
+                      taxProfile.taxpayer_branch_type === "head_office"
+                        ? "สำนักงานใหญ่"
+                        : `สาขา ${taxProfile.taxpayer_branch_code}`
+                    }}
                   </p>
                 </div>
                 <div class="flex shrink-0 flex-col gap-2">
-                  <button class="btn btn-outline btn-secondary btn-xs" @click="openEditTaxProfileModal(taxProfile)">แก้ไข</button>
-                  <button class="btn btn-outline btn-error btn-xs" @click="openRemoveTaxProfileModal(taxProfile)">ลบ</button>
+                  <button
+                    class="btn btn-outline btn-secondary btn-xs"
+                    @click="openEditTaxProfileModal(taxProfile)"
+                  >
+                    แก้ไข
+                  </button>
+                  <button
+                    class="btn btn-outline btn-error btn-xs"
+                    @click="openRemoveTaxProfileModal(taxProfile)"
+                  >
+                    ลบ
+                  </button>
                 </div>
               </div>
-              <p class="mt-3 text-sm leading-6 text-base-content/65">{{ formatTaxProfileAddress(taxProfile) }}</p>
-              <p v-if="taxProfile.taxpayer_phone" class="mt-1 text-sm text-base-content/65">{{ taxProfile.taxpayer_phone }}</p>
-              <p v-if="taxProfile.taxpayer_email" class="mt-1 text-sm text-base-content/65">{{ taxProfile.taxpayer_email }}</p>
+              <p class="mt-3 text-sm leading-6 text-base-content/65">
+                {{ formatTaxProfileAddress(taxProfile) }}
+              </p>
+              <p
+                v-if="taxProfile.taxpayer_phone"
+                class="mt-1 text-sm text-base-content/65"
+              >
+                {{ taxProfile.taxpayer_phone }}
+              </p>
+              <p
+                v-if="taxProfile.taxpayer_email"
+                class="mt-1 text-sm text-base-content/65"
+              >
+                {{ taxProfile.taxpayer_email }}
+              </p>
             </article>
           </div>
         </div>
@@ -468,7 +532,7 @@
     @submit="requestSaveTaxProfile"
   />
 
-  <ModalConfirm
+  <ModalRemoveConfirm
     v-model="isTaxConfirmOpen"
     :title="taxConfirmTitle"
     :message="taxConfirmMessage"
@@ -479,7 +543,7 @@
     @cancel="reopenTaxFormAfterCancel"
   />
 
-  <ModalConfirm
+  <ModalRemoveConfirm
     v-model="isConfirmModalOpen"
     :title="confirmTitle"
     :message="confirmMessage"
@@ -490,7 +554,7 @@
     @cancel="reopenAddressFormAfterCancel"
   />
 
-  <ModalConfirm
+  <ModalRemoveConfirm
     v-model="isLineDisconnectConfirmOpen"
     title="ยืนยันการยกเลิก LINE"
     message="คุณจะไม่ได้รับการแจ้งเตือนคำสั่งซื้อผ่านบัญชี LINE นี้อีกต่อไป"
@@ -613,8 +677,10 @@ const confirmVariant = computed<"error" | "primary">(() =>
 );
 
 const taxConfirmTitle = computed(() => {
-  if (taxConfirmAction.value === "remove") return "ยืนยันการลบข้อมูลผู้เสียภาษี";
-  if (taxConfirmAction.value === "create") return "ยืนยันการบันทึกข้อมูลผู้เสียภาษี";
+  if (taxConfirmAction.value === "remove")
+    return "ยืนยันการลบข้อมูลผู้เสียภาษี";
+  if (taxConfirmAction.value === "create")
+    return "ยืนยันการบันทึกข้อมูลผู้เสียภาษี";
   return "ยืนยันการแก้ไขข้อมูลผู้เสียภาษี";
 });
 const taxConfirmMessage = computed(() => {
@@ -689,7 +755,8 @@ const openCreateTaxProfileModal = () => {
   taxFormMode.value = "create";
   taxForm.value = createTaxProfileForm({
     tax_profile_user: currentUser.value.uuid,
-    taxpayer_name: `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
+    taxpayer_name:
+      `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
     taxpayer_phone: currentUser.value.phone || "",
     taxpayer_email: currentUser.value.email || "",
     tax_profile_is_default:
@@ -740,15 +807,18 @@ const saveCreateTaxProfile = async () => {
   isSavingTaxProfile.value = true;
   taxError.value = "";
   try {
-    await createTaxProfile(createTaxProfileForm({
-      ...taxForm.value,
-      tax_profile_user: currentUser.value.uuid,
-    }));
+    await createTaxProfile(
+      createTaxProfileForm({
+        ...taxForm.value,
+        tax_profile_user: currentUser.value.uuid,
+      }),
+    );
     showToast("เพิ่มข้อมูลผู้เสียภาษีเรียบร้อยแล้ว");
     await loadTaxProfiles();
     return true;
   } catch (error: any) {
-    taxError.value = error?.data?.statusMessage || "ไม่สามารถเพิ่มข้อมูลผู้เสียภาษีได้";
+    taxError.value =
+      error?.data?.statusMessage || "ไม่สามารถเพิ่มข้อมูลผู้เสียภาษีได้";
     return false;
   } finally {
     isSavingTaxProfile.value = false;
@@ -765,7 +835,8 @@ const saveEditTaxProfile = async () => {
     await loadTaxProfiles();
     return true;
   } catch (error: any) {
-    taxError.value = error?.data?.statusMessage || "ไม่สามารถแก้ไขข้อมูลผู้เสียภาษีได้";
+    taxError.value =
+      error?.data?.statusMessage || "ไม่สามารถแก้ไขข้อมูลผู้เสียภาษีได้";
     return false;
   } finally {
     isSavingTaxProfile.value = false;
@@ -783,7 +854,8 @@ const saveRemoveTaxProfile = async () => {
     await loadTaxProfiles();
     return true;
   } catch (error: any) {
-    taxError.value = error?.data?.statusMessage || "ไม่สามารถลบข้อมูลผู้เสียภาษีได้";
+    taxError.value =
+      error?.data?.statusMessage || "ไม่สามารถลบข้อมูลผู้เสียภาษีได้";
     return false;
   } finally {
     isRemovingTaxProfile.value = false;
@@ -792,9 +864,12 @@ const saveRemoveTaxProfile = async () => {
 
 const confirmTaxProfileAction = async () => {
   let succeeded = false;
-  if (taxConfirmAction.value === "create") succeeded = await saveCreateTaxProfile();
-  else if (taxConfirmAction.value === "edit") succeeded = await saveEditTaxProfile();
-  else if (taxConfirmAction.value === "remove") succeeded = await saveRemoveTaxProfile();
+  if (taxConfirmAction.value === "create")
+    succeeded = await saveCreateTaxProfile();
+  else if (taxConfirmAction.value === "edit")
+    succeeded = await saveEditTaxProfile();
+  else if (taxConfirmAction.value === "remove")
+    succeeded = await saveRemoveTaxProfile();
   if (succeeded) isTaxConfirmOpen.value = false;
 };
 

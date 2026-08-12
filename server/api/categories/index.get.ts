@@ -33,7 +33,8 @@ export default defineEventHandler(async (event) => {
       concat_ws(' ', user_c.firstname, user_c.lastname) AS created_username,
       concat_ws(' ', user_u.firstname, user_u.lastname) AS updated_username,
       concat_ws(' ', user_d.firstname, user_d.lastname) AS deleted_username,
-      (SELECT COUNT(*) FROM tb_master_products WHERE base.uuid::text = tb_master_products.product_category) AS qty_count
+      (SELECT COUNT(*) FROM tb_master_products WHERE base.uuid::text = tb_master_products.product_category) AS qty_count,
+      (SELECT COUNT(*) FROM tb_master_subcategories WHERE subcategory_category = base.uuid AND deleted_at IS NULL) AS subcategory_count
     FROM ${tableName} AS base
     LEFT JOIN tb_users AS user_c ON base.created_by = user_c.uuid::text
     LEFT JOIN tb_users AS user_u ON base.updated_by = user_u.uuid::text

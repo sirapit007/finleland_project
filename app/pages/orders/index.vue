@@ -61,9 +61,7 @@
         class="overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm"
       >
         <div class="flex flex-col gap-4 p-4 sm:p-5">
-          <div
-            class="flex gap-4 flex-row sm:items-start justify-between"
-          >
+          <div class="flex gap-4 flex-row sm:items-start justify-between">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
                 <p
@@ -110,7 +108,9 @@
             <div class="flex items-center gap-2 sm:justify-end">
               <NuxtLink
                 v-if="
-                  !['paid', 'refunded'].includes(order.order_payment_status)
+                  !['paid', 'refunded', 'cancelled'].includes(
+                    order.order_payment_status,
+                  ) && order.order_status !== 'canceled'
                 "
                 :to="'/orders/' + order.uuid"
                 class="btn btn-neutral btn-soft sm:btn-sm btn-xs"
@@ -201,19 +201,17 @@
             </section>
 
             <div class="space-y-5">
-              <OrderSummary
+              <OrderSummarySection
                 :order="order"
                 :total-quantity="orderTotalQuantity(order)"
               />
-              <OrderPaymentDetails
+              <OrderPaymentDetailsSection
                 :payment="paymentsByOrder[order.uuid]?.[0] || null"
               />
-              <section>
-                <h2 class="mb-3 text-base font-bold">สถานะคำสั่งซื้อ</h2>
-                <StepsOrderStatus
-                  :histories="historiesByOrder[order.uuid] || []"
-                />
-              </section>
+              <OrderStatusSection
+                :order="order"
+                :histories="historiesByOrder[order.uuid] || []"
+              />
             </div>
           </div>
         </div>

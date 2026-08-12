@@ -34,7 +34,7 @@
       <div class="space-y-2 p-3">
         <span
           v-if="props.object.product_category_name"
-          class="badge badge-xs badge-warning badge-outline max-w-full truncate"
+          class="badge sm:badge-sm badge-xs badge-warning max-w-full truncate"
         >
           {{ props.object.product_category_name }}
         </span>
@@ -67,7 +67,10 @@
       </div>
     </button>
 
-    <NuxtLink :to="`/products/${props.object.product_name}`" class="sm:block hidden">
+    <NuxtLink
+      :to="`/products/${props.object.product_name}`"
+      class="sm:block hidden"
+    >
       <div class="relative aspect-square overflow-hidden bg-base-200">
         <img
           v-if="imageSrc"
@@ -92,7 +95,7 @@
       <div class="space-y-2 p-4 pb-3">
         <span
           v-if="props.object.product_category_name"
-          class="badge badge-sm badge-warning badge-outline max-w-full truncate"
+          class="badge sm:badge-sm badge-xs badge-warning max-w-full truncate"
         >
           {{ props.object.product_category_name }}
         </span>
@@ -175,8 +178,14 @@
       </button>
     </div>
 
-    <div v-else class="mt-auto hidden border-t border-base-300 px-4 py-4 sm:block">
-      <p class="sm:text-sm text-xs font-semibold text-primary cursor-pointer" @click="onSignIn">
+    <div
+      v-else
+      class="mt-auto hidden border-t border-base-300 px-4 py-4 sm:block"
+    >
+      <p
+        class="sm:text-sm text-xs font-semibold text-primary cursor-pointer"
+        @click="onSignIn"
+      >
         เข้าสู่ระบบเพื่อดูราคา
       </p>
     </div>
@@ -235,12 +244,21 @@
           </div>
 
           <div class="space-y-3">
-            <span
-              v-if="props.object.product_category_name"
-              class="badge badge-sm badge-warning font-semibold"
-            >
-              {{ props.object.product_category_name }}
-            </span>
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                v-if="props.object.product_category_name"
+                class="badge badge-sm badge-warning font-semibold"
+              >
+                {{ props.object.product_category_name }}
+              </span>
+              <span
+                v-for="subcategory in props.object.product_subcategories || []"
+                :key="subcategory.uuid"
+                class="badge badge-sm badge-outline badge-primary"
+              >
+                {{ subcategory.subcategory_name }}
+              </span>
+            </div>
             <h2 class="text-xl font-semibold leading-7">
               {{ props.object.product_name }}
             </h2>
