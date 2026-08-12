@@ -163,7 +163,7 @@
           class="grid lg:grid-cols-4 sm:grid-cols-3 grid-cols-2 gap-4 my-4"
         >
           <template v-for="row in data?.rows">
-            <CardProduct :object="row" />
+            <ProductCard :object="row" />
           </template>
         </div>
         <div v-else class="text-center my-4 text-base-content/50">

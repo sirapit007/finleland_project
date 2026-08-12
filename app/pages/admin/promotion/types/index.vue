@@ -3,14 +3,14 @@
     <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-xl text-lg text-primary"
+          <span class="font-bold sm:text-lg text-base text-primary"
             >Manage Promotion Types</span
           ><span class="font-semibold sm:text-base text-sm text-secondary"
             >จัดการประเภทโปรโมชั่น</span
           >
         </div>
       </div>
-  
+
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch
@@ -54,7 +54,7 @@
                   type="checkbox"
                   class="checkbox checkbox-accent"
                   v-model="row.promotion_type_is_active"
-                  v-on:click="fnBase.onSubmit(row)"
+                  v-on:click="onUseActive(row)"
                 />
               </td>
               <td>
@@ -115,21 +115,19 @@ const { data, pending, error, refresh } = await useFetch(
   },
 );
 
-const fnBase = {
-  onSubmit: async (row: any) => {
-    const path = `/api/promotion/types/${row.uuid}`;
+const onUseActive = async (row: any) => {
+  const path = `/api/promotion/types/${row.uuid}`;
 
-    const res = await $fetch(path, {
-      method: "put",
-      body: {
-        ...row,
-        promotion_type_is_active: row.promotion_type_is_active ? false : true,
-      },
-    });
+  const res = await $fetch(path, {
+    method: "put",
+    body: {
+      ...row,
+      promotion_type_is_active: row.promotion_type_is_active ? false : true,
+    },
+  });
 
-    if (res) {
-      refresh();
-    }
-  },
+  if (res) {
+    await refresh();
+  }
 };
 </script>

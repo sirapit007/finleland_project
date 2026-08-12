@@ -3,7 +3,7 @@
     <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-xl text-lg text-primary"
+          <span class="font-bold sm:text-lg text-base text-primary"
             >User feedback</span
           ><span class="font-semibold sm:text-base text-sm text-secondary"
             >ความคิดเห็นจากผู้ใช้งาน</span
@@ -25,10 +25,10 @@
           <thead>
             <tr class="text-xs">
               <th>#</th>
-              <th>ผู้ใช้งาน</th>
-              <th>ข้อความ</th>
-              <th>สถานะ</th>
-              <th>วันที่ส่ง</th>
+              <td>ผู้ใช้งาน</td>
+              <td>ข้อความ</td>
+              <td>สถานะ</td>
+              <td>วันที่ส่ง</td>
             </tr>
           </thead>
           <tbody>
@@ -39,9 +39,9 @@
               :key="row.uuid"
               class="align-top hover:bg-primary/5"
             >
-              <td class="text-base-content/55">
+              <th class="text-base-content/55">
                 {{ (page - 1) * pageSize + (index as number) + 1 }}
-              </td>
+              </th>
               <td>
                 <p class="font-semibold">{{ contactName(row) }}</p>
                 <p class="mt-1 text-xs text-base-content/50">

@@ -3,6 +3,10 @@ import {
   normalizeProductImageUrls,
   serializeProductImageUrls,
 } from "@@/server/utils/productImages";
+import {
+  normalizeProductSubcategoryIds,
+  syncProductSubcategories,
+} from "@@/server/utils/productSubcategories";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
@@ -11,36 +15,36 @@ type ProductBody = {
   product_description?: string;
   product_supplier?: string;
   product_category?: string;
+  product_subcategories?: unknown;
   product_cost_price?: number;
   product_selling_price?: number;
   image_url?: unknown;
-  user?: object;
 };
 
 export default defineEventHandler(async (event) => {
-  const tableName = "tb_master_products";
-
   const body = await readBody<ProductBody>(event);
   const db = useDb();
   const admin = await requireCurrentAdmin(event);
+  const productCode = String(body.product_code || "").trim();
+  const productName = String(body.product_name || "").trim();
+  const productDescription = String(body.product_description || "").trim();
+  const productSupplier = String(body.product_supplier || "").trim();
+  const productCategory = String(body.product_category || "").trim();
+  const productSubcategories = normalizeProductSubcategoryIds(
+    body.product_subcategories,
+  );
+  const productCostPrice = Number(body.product_cost_price || 0);
+  const productSellingPrice = Number(body.product_selling_price || 0);
+  const imageUrl = serializeProductImageUrls(body.image_url);
 
-  const product_code = String(body.product_code || "").trim();
-  const product_name = String(body.product_name || "").trim();
-  const product_description = String(body.product_description || "").trim();
-  const product_supplier = String(body.product_supplier || "").trim();
-  const product_category = String(body.product_category || "").trim();
-  const product_cost_price = Number(body.product_cost_price || 0);
-  const product_selling_price = Number(body.product_selling_price || 0);
-  const image_url = serializeProductImageUrls(body.image_url);
-
-  if (!product_code || !product_name || !product_category) {
+  if (!productCode || !productName || !productCategory) {
     throw createError({
       statusCode: 400,
       statusMessage: "Product code, name, and category are required",
     });
   }
 
-  if (!Number.isFinite(product_selling_price) || product_selling_price < 0) {
+  if (!Number.isFinite(productSellingPrice) || productSellingPrice < 0) {
     throw createError({
       statusCode: 400,
       statusMessage:
@@ -48,26 +52,38 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  let result;
+  const client = await db.connect();
+  let savedProduct: Record<string, any> = {};
 
   try {
-    result = await db.query(
-      `INSERT INTO ${tableName} (product_code, product_name, product_description, product_supplier, product_category, product_cost_price, product_selling_price, image_url, created_by)
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING *`,
+    await client.query("BEGIN");
+    const result = await client.query(
+      "INSERT INTO tb_master_products (product_code, product_name, product_description, product_supplier, product_category, product_cost_price, product_selling_price, image_url, created_by) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
       [
-        product_code,
-        product_name,
-        product_description,
-        product_supplier,
-        product_category,
-        product_cost_price,
-        product_selling_price,
-        image_url,
+        productCode,
+        productName,
+        productDescription,
+        productSupplier,
+        productCategory,
+        productCostPrice,
+        productSellingPrice,
+        imageUrl,
         admin.uuid,
       ],
     );
+    savedProduct = result.rows[0];
+
+    await syncProductSubcategories(
+      client,
+      String(savedProduct.uuid),
+      productCategory,
+      productSubcategories,
+      admin.uuid,
+    );
+    await client.query("COMMIT");
   } catch (error: unknown) {
+    await client.query("ROLLBACK");
+
     if (
       error &&
       typeof error === "object" &&
@@ -81,12 +97,15 @@ export default defineEventHandler(async (event) => {
     }
 
     throw error;
+  } finally {
+    client.release();
   }
 
   return {
     row: {
-      ...result.rows[0],
-      image_url: normalizeProductImageUrls(result.rows[0]?.image_url),
+      ...savedProduct,
+      image_url: normalizeProductImageUrls(savedProduct.image_url),
+      product_subcategories: productSubcategories,
     },
   };
 });

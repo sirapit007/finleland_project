@@ -879,7 +879,7 @@
     @submit="requestSaveTaxProfile"
   />
 
-  <ModalConfirm
+  <ModalRemoveConfirm
     v-model="isTaxConfirmOpen"
     :title="
       taxFormMode === 'create'
@@ -893,7 +893,7 @@
     @cancel="reopenTaxProfileFormAfterCancel"
   />
 
-  <ModalConfirm
+  <ModalRemoveConfirm
     v-model="isConfirmModalOpen"
     :title="confirmTitle"
     :message="confirmMessage"

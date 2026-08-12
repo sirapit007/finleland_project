@@ -19,7 +19,18 @@ export default defineEventHandler(async (event) => {
       statusMessage: "Category uuid is required",
     });
   }
+  const childResult = await db.query(
+    "SELECT COUNT(*)::integer AS total FROM tb_master_subcategories WHERE subcategory_category = $1::uuid AND deleted_at IS NULL",
+    [uuid],
+  );
 
+  if (Number(childResult.rows[0]?.total || 0) > 0) {
+    throw createError({
+      statusCode: 409,
+      statusMessage:
+        "หมวดหมู่หลักนี้ยังมีหมวดหมู่ย่อย กรุณาย้ายหรือลบหมวดหมู่ย่อยก่อน",
+    });
+  }
 
   const result = await db.query(
     `UPDATE ${tableName}

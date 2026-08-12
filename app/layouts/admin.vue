@@ -239,6 +239,11 @@ const navManageItems = [
     icon: "lucide:tags",
   },
   {
+    to: "/admin/subcategories",
+    label: "จัดการรายการหมวดหมู่ย่อย",
+    icon: "lucide:list-tree",
+  },
+  {
     to: "/admin/suppliers",
     label: "จัดการรายการผู้จัดจำหน่าย",
     icon: "lucide:truck",
@@ -268,6 +273,11 @@ const navDeleteItems = [
     to: "/admin/categories/deleted",
     label: "กู้คืนรายการหมวดหมู่",
     icon: "lucide:tags",
+  },
+  {
+    to: "/admin/subcategories/deleted",
+    label: "กู้คืนรายการหมวดหมู่ย่อย",
+    icon: "lucide:list-tree",
   },
   {
     to: "/admin/suppliers/deleted",

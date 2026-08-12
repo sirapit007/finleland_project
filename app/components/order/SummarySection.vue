@@ -21,25 +21,32 @@
     <div class="mt-4 rounded-xl bg-base-200/80 p-4">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2">
-          <Icon
-            :name="deliveryMeta.icon"
-            size="18"
-            :class="deliveryMeta.iconClass"
-          />
-          <p class="font-semibold">
+          <p class="font-semibold sm:text-sm text-xs">
             {{ isPickup ? "วิธีรับสินค้า" : "ที่อยู่จัดส่ง" }}
           </p>
         </div>
         <span
           v-if="!isPickup && deliveryLabel"
-          class="badge badge-outline badge-sm"
+          class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-base-content/70"
         >
+          <Icon
+            :name="deliveryMeta.icon"
+            size="18"
+            :class="deliveryMeta.iconClass"
+          />
           {{ deliveryLabel }}
         </span>
       </div>
 
       <template v-if="isPickup">
-        <p class="mt-3 sm:text-sm text:xs font-semibold">{{ deliveryLabel }}</p>
+        <p class="mt-3 sm:text-sm text:xs font-semibold flex gap-1.5">
+          <Icon
+            :name="deliveryMeta.icon"
+            size="18"
+            :class="deliveryMeta.iconClass"
+          />
+          {{ deliveryLabel }}
+        </p>
         <p
           v-if="order.order_delivery_description"
           class="mt-1 sm:text-xs text:xs leading-5 text-base-content/60"
@@ -106,7 +113,7 @@
         <p class="font-bold">รวมเป็นเงิน</p>
         <p class="mt-1 text-xs text-base-content/55">รวมภาษีมูลค่าเพิ่มแล้ว</p>
       </div>
-      <p class="text-2xl font-bold text-primary">
+      <p class="sm:text-2xl text-xl font-bold text-primary">
         ฿{{ formatMoney(grandTotal) }}
       </p>
     </div>

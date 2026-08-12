@@ -1,142 +1,9 @@
 <template>
-  <ModalConfirm
-    v-model="isRemoveConfirmOpen"
-    title="ยืนยันการลบรายการสินค้า"
-    :message="`ต้องการลบ ${removeTarget?.order_item_product_name || 'รายการนี้'} ออกจากคำสั่งซื้อใช่หรือไม่`"
-    confirm-text="ลบรายการ"
-    :loading="isActionLoading"
-    @confirm="removeItem"
-  />
-
-  <dialog ref="addItemModal" class="modal">
-    <div class="modal-box max-w-md">
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">
-          ×
-        </button>
-      </form>
-      <h3 class="text-lg font-bold">เพิ่มสินค้าในคำสั่งซื้อ</h3>
-      <div class="mt-4 space-y-3">
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">สินค้า</legend>
-          <ComboBox
-            v-model="addItemForm.productUuid"
-            fetch-url="/api/products"
-            label="product_name"
-            value="uuid"
-            placeholder="ค้นหาและเลือกสินค้า"
-            @select="selectProduct"
-          />
-        </fieldset>
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">จำนวน</legend>
-          <input
-            v-model.number="addItemForm.quantity"
-            type="number"
-            min="1"
-            class="input input-sm w-full"
-            placeholder="จำนวนสินค้า"
-          />
-        </fieldset>
-        <div
-          v-if="addItemForm.productName"
-          class="rounded-xl bg-base-200 p-3 text-sm"
-        >
-          <p class="font-semibold">{{ addItemForm.productName }}</p>
-          <p class="mt-1 text-base-content/60">
-            ราคาปกติ ฿{{ formatMoney(addItemForm.unitPrice) }}
-          </p>
-        </div>
-      </div>
-      <div class="modal-action">
-        <button
-          class="btn btn-sm flex-1"
-          type="button"
-          :disabled="isActionLoading"
-          @click="addItemModal?.close()"
-        >
-          ปิด
-        </button>
-        <button
-          class="btn btn-primary btn-sm flex-1"
-          type="button"
-          :disabled="
-            !addItemForm.productUuid ||
-            addItemForm.quantity < 1 ||
-            isActionLoading
-          "
-          @click="addItem"
-        >
-          <span
-            v-if="isActionLoading"
-            class="loading loading-spinner loading-xs"
-          />
-          <template v-else>เพิ่มสินค้า</template>
-        </button>
-      </div>
-    </div>
-  </dialog>
-
-  <dialog ref="statusModal" class="modal">
-    <div class="modal-box max-w-md">
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost absolute right-3 top-3">
-          ×
-        </button>
-      </form>
-      <h3 class="text-lg font-bold">เปลี่ยนสถานะคำสั่งซื้อ</h3>
-      <div class="mt-4 space-y-3">
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">สถานะใหม่</legend>
-          <select v-model="statusForm.status" class="select select-sm w-full">
-            <option
-              v-for="status in statusOptions"
-              :key="status.value"
-              :value="status.value"
-            >
-              {{ status.label }}
-            </option>
-          </select>
-        </fieldset>
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">หมายเหตุ</legend>
-          <textarea
-            v-model.trim="statusForm.note"
-            class="textarea textarea-sm w-full"
-            placeholder="ข้อความนี้จะแสดงในประวัติและแจ้งลูกค้าผ่าน LINE"
-          ></textarea>
-        </fieldset>
-      </div>
-      <div class="modal-action">
-        <button
-          class="btn btn-sm flex-1"
-          type="button"
-          :disabled="isActionLoading"
-          @click="statusModal?.close()"
-        >
-          ปิด
-        </button>
-        <button
-          class="btn btn-primary btn-sm flex-1"
-          type="button"
-          :disabled="!statusForm.status || isActionLoading"
-          @click="changeStatus"
-        >
-          <span
-            v-if="isActionLoading"
-            class="loading loading-spinner loading-xs"
-          />
-          <template v-else>บันทึกสถานะ</template>
-        </button>
-      </div>
-    </div>
-  </dialog>
-
   <div class="min-h-full p-4 pb-6">
     <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-xl text-lg text-primary"
+          <span class="font-bold sm:text-lg text-base text-primary"
             >Order Management</span
           ><span class="font-semibold sm:text-base text-sm text-secondary"
             >จัดการคำสั่งซื้อและการจัดส่ง</span
@@ -275,231 +142,36 @@
                     v-else
                     class="grid gap-5 p-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]"
                   >
-                    <section
-                      class="rounded-xl border border-base-300 bg-base-100 p-4"
-                    >
-                      <div
-                        class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <h2 class="lg:text-lg sm:text-base text-sm font-bold">
-                            รายการสินค้า
-                          </h2>
-                          <p class="text-xs text-base-content/55">
-                            การแก้ไขทุกครั้งจะถูกบันทึกในประวัติด้านขวา
-                          </p>
-                        </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                          <NuxtLink
-                            v-if="order.uuid"
-                            :to="{
-                              path: `/admin/orders/${order.uuid}/product-list`,
-                              query: { print: '1' },
-                            }"
-                            target="_blank"
-                            rel="noopener"
-                            class="btn btn-outline btn-xs"
-                            aria-label="พิมพ์รายการสินค้าในคำสั่งซื้อ"
-                          >
-                            <Icon name="lucide:printer" size="15" />
-                            พิมพ์รายการสินค้า
-                          </NuxtLink>
-                          <button
-                            v-if="!isTerminal(order)"
-                            class="btn btn-primary btn-xs"
-                            :disabled="isTerminal(order)"
-                            @click="openAddItem(order)"
-                          >
-                            <Icon name="lucide:plus" size="15" /> เพิ่มสินค้า
-                          </button>
-                        </div>
-                      </div>
-                      <div class="overflow-x-auto">
-                        <table class="table sm:table-sm table-xs">
-                          <thead>
-                            <tr class="sm:text-sm text-xs">
-                              <th>สินค้า</th>
-                              <th class="sm:table-cell hidden">ราคา</th>
-                              <th class="text-center">จำนวน</th>
-                              <th class="sm:table-cell hidden text-right">
-                                รวม
-                              </th>
-                              <th v-if="!isTerminal(order)"></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr
-                              v-for="item in detailByOrder[order.uuid]?.items ||
-                              []"
-                              :key="item.uuid"
-                            >
-                              <td>
-                                <p class="font-semibold">
-                                  {{ item.order_item_product_name }}
-                                </p>
-                                <p class="text-xs text-base-content/50">
-                                  {{ item.order_item_product_code }}
-                                </p>
-                                <div class="sm:hidden block mt-1">
-                                  ฿{{ formatMoney(item.order_item_unit_price) }}
-                                  <p
-                                    v-if="Number(item.order_item_discount) > 0"
-                                    class="text-xs text-success"
-                                  >
-                                    ลด ฿{{
-                                      formatMoney(item.order_item_discount)
-                                    }}
-                                  </p>
-                                </div>
-                                <div
-                                  class="sm:hidden block mt-1 font-bold text-[11.5px]"
-                                >
-                                  ฿{{ formatMoney(item.order_item_total) }}
-                                </div>
-                              </td>
-                              <td class="sm:table-cell hidden">
-                                ฿{{ formatMoney(item.order_item_unit_price) }}
-                                <p
-                                  v-if="Number(item.order_item_discount) > 0"
-                                  class="text-xs text-success"
-                                >
-                                  ลด ฿{{
-                                    formatMoney(item.order_item_discount)
-                                  }}
-                                </p>
-                              </td>
-                              <td class="text-center">
-                                <div class="join" v-if="!isTerminal(order)">
-                                  <button
-                                    class="btn btn-xs join-item"
-                                    :disabled="
-                                      Number(item.order_item_quantity) <= 1 ||
-                                      isActionLoading
-                                    "
-                                    @click="changeQuantity(order, item, -1)"
-                                  >
-                                    <Icon
-                                      name="lucide:minus"
-                                      size="13"
-                                    /></button
-                                  ><span
-                                    class="btn btn-xs join-item pointer-events-none w-9 bg-base-100"
-                                    >{{ item.order_item_quantity }}</span
-                                  ><button
-                                    class="btn btn-xs join-item"
-                                    :disabled="isActionLoading"
-                                    @click="changeQuantity(order, item, 1)"
-                                  >
-                                    <Icon name="lucide:plus" size="13" />
-                                  </button>
-                                </div>
-                                <div v-else>
-                                  {{ item.order_item_quantity }}
-                                </div>
-                              </td>
-                              <td
-                                class="text-right font-bold sm:table-cell hidden"
-                              >
-                                ฿{{ formatMoney(item.order_item_total) }}
-                              </td>
-                              <td class="text-right" v-if="!isTerminal(order)">
-                                <button
-                                  class="btn btn-ghost btn-xs text-error"
-                                  :disabled="isActionLoading"
-                                  @click="askRemoveItem(item)"
-                                >
-                                  <Icon name="lucide:trash-2" size="15" />
-                                </button>
-                              </td>
-                            </tr>
-                            <tr
-                              v-if="
-                                !(detailByOrder[order.uuid]?.items || []).length
-                              "
-                            >
-                              <td
-                                colspan="5"
-                                class="py-6 text-center text-sm text-base-content/50"
-                              >
-                                ไม่มีรายการสินค้า
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-
                     <div class="space-y-5">
-                      <section
-                        class="rounded-xl border border-base-300 bg-base-100 p-4"
-                      >
-                        <div class="mb-3 flex items-center justify-between">
-                          <h2 class="lg:text-lg sm:text-base text-sm font-bold">
-                            สถานะคำสั่งซื้อ
-                          </h2>
-                          <button
-                            v-if="!isTerminal(order)"
-                            class="btn btn-outline btn-primary btn-xs"
-                            @click="openStatus(order)"
-                          >
-                            เปลี่ยนสถานะ
-                          </button>
-                        </div>
-                        <StepsOrderStatus
-                          :histories="
-                            detailByOrder[order.uuid]?.histories || []
-                          "
-                          show-actor
-                        />
-                      </section>
-                      <OrderSummary
+                      <OrderItemsSection
                         :order="order"
-                        :total-quantity="orderTotalQuantity(order)"
+                        :detail="detailByOrder[order.uuid]"
                       />
-                      <OrderPaymentDetails
+                      <OrderPaymentDetailsSection
                         admin
                         :payment="
                           detailByOrder[order.uuid]?.payments?.[0] || null
                         "
                         @refreshed="reloadOrder(order.uuid)"
                       />
-                      <section
-                        class="rounded-xl border border-base-300 bg-base-100 p-4"
-                      >
-                        <h2
-                          class="mb-3 lg:text-lg sm:text-base text-sm font-bold"
-                        >
-                          ประวัติการปรับสินค้า
-                        </h2>
-                        <ol class="space-y-3 max-h-60 overflow-auto pr-1">
-                          <li
-                            v-for="adjustment in detailByOrder[order.uuid]
-                              ?.adjustments || []"
-                            :key="adjustment.uuid"
-                            class="border-l-2 border-warning/40 pl-3"
-                          >
-                            <p class="text-sm font-semibold">
-                              {{ adjustmentLabel(adjustment) }}
-                            </p>
-                            <p class="mt-1 text-xs text-base-content/60">
-                              {{ adjustmentSummary(adjustment) }}
-                            </p>
-                            <p class="mt-1 text-xs text-base-content/45">
-                              {{ formatDate(adjustment.created_at) }} ·
-                              {{ adjustment.created_username || "-" }}
-                            </p>
-                          </li>
-                          <li
-                            v-if="
-                              !(detailByOrder[order.uuid]?.adjustments || [])
-                                .length
-                            "
-                            class="text-sm text-base-content/50"
-                          >
-                            ยังไม่มีการปรับรายการโดยแอดมิน
-                          </li>
-                        </ol>
-                      </section>
+                    </div>
+
+                    <div class="space-y-5">
+                      <OrderStatusSection
+                        :order="order"
+                        :detail="detailByOrder[order.uuid]"
+                        editable
+                        show-actor
+                      />
+                      <OrderSummarySection
+                        :order="order"
+                        :total-quantity="orderTotalQuantity(order)"
+                      />
+                      <OrderAdjustmentHistorySection
+                        :adjustments="
+                          detailByOrder[order.uuid]?.adjustments || []
+                        "
+                      />
                     </div>
                   </div>
                 </td>
@@ -540,33 +212,7 @@ const detailByOrder = ref<
     }
   >
 >({});
-const addItemModal = ref<HTMLDialogElement | null>(null);
-const statusModal = ref<HTMLDialogElement | null>(null);
-const activeOrder = ref<Row | null>(null);
-const removeTarget = ref<Row | null>(null);
-const isRemoveConfirmOpen = ref(false);
-const isActionLoading = ref(false);
 const { showToast } = useToast();
-
-const addItemForm = reactive({
-  productUuid: "",
-  productCode: "",
-  productName: "",
-  productImage: "",
-  quantity: 1,
-  unitPrice: 0,
-});
-
-const statusForm = reactive({ status: "", note: "" });
-
-const statusOptions = [
-  { value: "confirmed", label: "ยืนยันคำสั่งซื้อ" },
-  { value: "processing", label: "กำลังเตรียมสินค้า" },
-  { value: "ready_for_pickup", label: "พร้อมรับสินค้า" },
-  { value: "shipped", label: "กำลังจัดส่ง" },
-  { value: "completed", label: "ปิดงานสำเร็จ" },
-  { value: "canceled", label: "ยกเลิก" },
-];
 
 const statusMap: Record<string, { badge: string; label: string }> = {
   pending: { badge: "badge-warning", label: "รอตรวจสอบ" },
@@ -606,9 +252,6 @@ const orderTotalQuantity = (order: Row) => {
     0,
   );
 };
-
-const isTerminal = (order: Row) =>
-  ["completed", "canceled"].includes(order.order_status);
 
 const formatMoney = (value: number | string) =>
   new Intl.NumberFormat("th-TH", {
@@ -672,156 +315,5 @@ const toggleOrder = async (order: Row) => {
 
 const reloadOrder = async (orderUuid: string) => {
   await Promise.all([refresh(), loadDetails(orderUuid, true)]);
-};
-
-const openAddItem = (order: Row) => {
-  activeOrder.value = order;
-  Object.assign(addItemForm, {
-    productUuid: "",
-    productCode: "",
-    productName: "",
-    productImage: "",
-    quantity: 1,
-    unitPrice: 0,
-  });
-  addItemModal.value?.showModal();
-};
-const selectProduct = (product: Row) =>
-  Object.assign(addItemForm, {
-    productUuid: product.uuid || "",
-    productCode: product.product_code || "",
-    productName: product.product_name || "",
-    productImage: product.image_url || "",
-    unitPrice: Number(product.product_selling_price || 0),
-  });
-
-const addItem = async () => {
-  if (!activeOrder.value) return;
-  isActionLoading.value = true;
-  try {
-    await $fetch("/api/order/items", {
-      method: "POST",
-      body: {
-        order_item_order: activeOrder.value.uuid,
-        order_item_product: addItemForm.productUuid,
-        order_item_product_code: addItemForm.productCode,
-        order_item_product_name: addItemForm.productName,
-        order_item_product_image: addItemForm.productImage,
-        order_item_unit_price: addItemForm.unitPrice,
-        order_item_quantity: addItemForm.quantity,
-        order_item_discount: 0,
-      },
-    });
-    addItemModal.value?.close();
-    showToast("เพิ่มสินค้าในคำสั่งซื้อแล้ว");
-    await reloadOrder(activeOrder.value.uuid);
-  } catch (error: any) {
-    showToast(error?.data?.statusMessage || "ไม่สามารถเพิ่มสินค้าได้", "error");
-  } finally {
-    isActionLoading.value = false;
-  }
-};
-
-const changeQuantity = async (order: Row, item: Row, amount: number) => {
-  const quantity = Number(item.order_item_quantity) + amount;
-  if (quantity < 1) return;
-  isActionLoading.value = true;
-  try {
-    await $fetch(`/api/order/items/${item.uuid}`, {
-      method: "PUT",
-      body: { order_item_quantity: quantity },
-    });
-    showToast("ปรับจำนวนสินค้าแล้ว");
-    await reloadOrder(order.uuid);
-  } catch (error: any) {
-    showToast(
-      error?.data?.statusMessage || "ไม่สามารถปรับจำนวนสินค้าได้",
-      "error",
-    );
-  } finally {
-    isActionLoading.value = false;
-  }
-};
-
-const askRemoveItem = (item: Row) => {
-  removeTarget.value = item;
-  isRemoveConfirmOpen.value = true;
-};
-
-const removeItem = async () => {
-  if (!removeTarget.value) return;
-  isActionLoading.value = true;
-  try {
-    const orderUuid = String(removeTarget.value.order_item_order);
-    await $fetch(`/api/order/items/${removeTarget.value.uuid}`, {
-      method: "DELETE",
-    });
-    isRemoveConfirmOpen.value = false;
-    showToast("ลบรายการสินค้าแล้ว");
-    await reloadOrder(orderUuid);
-  } catch (error: any) {
-    showToast(error?.data?.statusMessage || "ไม่สามารถลบสินค้าได้", "error");
-  } finally {
-    isActionLoading.value = false;
-    removeTarget.value = null;
-  }
-};
-
-const openStatus = (order: Row) => {
-  activeOrder.value = order;
-  statusForm.status =
-    order.order_status === "pending" ? "confirmed" : order.order_status;
-  statusForm.note = "";
-  statusModal.value?.showModal();
-};
-
-const changeStatus = async () => {
-  if (!activeOrder.value) return;
-  isActionLoading.value = true;
-  try {
-    const response: any = await $fetch("/api/order/status-histories", {
-      method: "POST",
-      body: {
-        order_status_history_order: activeOrder.value.uuid,
-        order_status_history_status: statusForm.status,
-        order_status_history_note: statusForm.note,
-      },
-    });
-    statusModal.value?.close();
-    showToast("เปลี่ยนสถานะคำสั่งซื้อแล้ว");
-    if (response.lineNotification?.sent)
-      showToast("แจ้งสถานะให้ลูกค้าผ่าน LINE แล้ว");
-    else if (response.lineNotification?.reason)
-      showToast(
-        `เปลี่ยนสถานะสำเร็จ แต่ไม่ส่ง LINE: ${response.lineNotification.reason}`,
-        "warning",
-      );
-    await reloadOrder(activeOrder.value.uuid);
-  } catch (error: any) {
-    showToast(
-      error?.data?.statusMessage || "ไม่สามารถเปลี่ยนสถานะได้",
-      "error",
-    );
-  } finally {
-    isActionLoading.value = false;
-  }
-};
-
-const adjustmentLabelMap: Record<string, string> = {
-  added: "เพิ่มสินค้า",
-  updated: "ปรับรายการสินค้า",
-  removed: "ลบสินค้า",
-};
-const adjustmentLabel = (row: Row) =>
-  adjustmentLabelMap[String(row.order_item_adjustment_action || "")] ||
-  "ปรับรายการ";
-const adjustmentSummary = (row: Row) => {
-  const before = row.order_item_adjustment_before || {};
-  const after = row.order_item_adjustment_after || {};
-  const name =
-    after.order_item_product_name || before.order_item_product_name || "สินค้า";
-  if (row.order_item_adjustment_action === "updated")
-    return `${name}: ${before.order_item_quantity || 0} ชิ้น → ${after.order_item_quantity || 0} ชิ้น`;
-  return `${name} ${row.order_item_adjustment_action === "added" ? `${after.order_item_quantity || 0} ชิ้น` : `${before.order_item_quantity || 0} ชิ้น`}`;
 };
 </script>

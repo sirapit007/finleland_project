@@ -1,50 +1,9 @@
 <template>
-  <ModalConfirm
-    v-model="isRemoveConfirmOpen"
-    title="ยืนยันการลบรายการนี้"
-    confirm-text="ยืนยัน"
-    @confirm="fnRemove.onSubmit()"
-  />
-
-  <dialog ref="baseModal" class="modal">
-    <div class="modal-box max-w-sm">
-      <h3 class="text-lg font-bold">Create Category</h3>
-
-      <div class="mt-4 space-y-3">
-        <ImageUpload v-model="base.form.image_url" />
-        <fieldset class="fieldset">
-          <legend class="fieldset-legend">ชื่อหมวดหมู่</legend>
-          <input
-            type="text"
-            class="input input-sm w-full"
-            placeholder="สูงสุด 40 ตัวอักษร..."
-            v-model="base.form.category_name"
-          />
-        </fieldset>
-      </div>
-
-      <div class="modal-action">
-        <button class="flex-1 btn btn-sm" @click="baseModal?.close()">
-          ปิด
-        </button>
-        <button
-          class="flex-1 btn btn-sm btn-primary"
-          type="button"
-          @click="fnBase.onSubmit()"
-        >
-          บันทึก
-        </button>
-      </div>
-    </div>
-  </dialog>
-
-  <ModalImagePreview v-model="isImagePreviewOpen" :src="imageSrc" />
-
   <div class="min-h-full p-4 pb-6">
     <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-xl text-lg text-primary"
+          <span class="font-bold sm:text-lg text-base text-primary"
             >Manage Categories</span
           ><span class="font-semibold sm:text-base text-sm text-secondary"
             >จัดการรายการหมวดหมู่</span
@@ -52,13 +11,13 @@
         </div>
         <button
           class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
-          v-on:click="fnBase.onCreate()"
+          @click="categoryFormModal?.onCreate()"
         >
           <Icon name="lucide:plus" size="16" />
           เพิ่มหมวดหมู่
         </button>
       </div>
-  
+
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch
@@ -96,7 +55,7 @@
                 <div
                   v-if="row.image_url"
                   class="h-12 w-12 cursor-pointer"
-                  v-on:click="fnImage.onOpen(row.image_url)"
+                  @click="imagePreviewModal?.onOpen(row.image_url)"
                 >
                   <img
                     :src="row.image_url"
@@ -111,7 +70,10 @@
                 </div>
               </td>
               <td>{{ row.category_name }}</td>
-              <td>{{ row.qty_count }}</td>
+              <td>
+                {{ row.qty_count }} สินค้า /
+                {{ row.subcategory_count }} หมวดหมู่ย่อย
+              </td>
               <td>
                 <div>{{ row.created_username ?? row.created_by }}</div>
                 <div>
@@ -131,14 +93,14 @@
               <th class="text-end">
                 <button
                   class="btn btn-xs btn-link"
-                  v-on:click="fnBase.onEdit(row)"
+                  @click="categoryFormModal?.onEdit(row)"
                 >
                   แก้ไข
                 </button>
                 <button
                   class="btn btn-xs btn-link btn-error no-underline"
-                  :disabled="row.qty_count > 0"
-                  v-on:click="fnBase.onRemove(row)"
+                  :disabled="row.qty_count > 0 || row.subcategory_count > 0"
+                  @click="removeConfirmModal?.onRemove(row, '/api/categories')"
                 >
                   ลบ
                 </button>
@@ -157,6 +119,12 @@
       </div>
     </div>
   </div>
+
+  <ModalImagePreview ref="imagePreviewModal" />
+
+  <CategoryFormModal ref="categoryFormModal" @changed="onRefresh" />
+
+  <ModalRemoveConfirm ref="removeConfirmModal" @removed="onRefresh" />
 </template>
 
 <script setup lang="ts">
@@ -166,24 +134,36 @@ definePageMeta({
   layout: "admin",
 });
 
-const dayjs = useDayjs();
+type RemoveConfirmExpose = {
+  onRemove: (row: Record<string, unknown>, path: string) => Promise<void>;
+};
 
-const baseModal = ref<HTMLDialogElement | null>(null);
-const isRemoveConfirmOpen = ref(false);
-const isImagePreviewOpen = ref(false);
+type ImagePreviewExpose = {
+  onOpen: (src: string) => void;
+};
+
+type CategoryRow = {
+  [key: string]: unknown;
+  uuid?: string;
+  category_name?: string;
+  image_url?: string;
+};
+
+type CategoryFormModalExpose = {
+  onCreate: () => Promise<void>;
+  onEdit: (row: CategoryRow) => Promise<void>;
+  onSubmit: () => Promise<void>;
+};
+
+const categoryFormModal = ref<CategoryFormModalExpose | null>(null);
+const removeConfirmModal = ref<RemoveConfirmExpose | null>(null);
+const imagePreviewModal = ref<ImagePreviewExpose | null>(null);
+
+const dayjs = useDayjs();
 
 const page = ref(1);
 const pageSize = ref(10);
 const q = ref("");
-const base = ref<any>({
-  form: {},
-  method: "",
-});
-const remove = ref<any>({
-  form: {},
-  path: "",
-});
-const imageSrc = ref("");
 
 const { data, pending, error, refresh } = await useFetch("/api/categories", {
   server: false,
@@ -195,63 +175,7 @@ const { data, pending, error, refresh } = await useFetch("/api/categories", {
   watch: [page, pageSize, q],
 });
 
-const fnBase = {
-  onCreate: async () => {
-    base.value.form = {};
-    base.value.method = "post";
-    baseModal.value?.showModal();
-  },
-  onEdit: async (row: any) => {
-    base.value.form = { ...row };
-    base.value.method = "put";
-
-    baseModal.value?.showModal();
-  },
-  onSubmit: async () => {
-    const path =
-      base.value.method === "post"
-        ? "/api/categories"
-        : `/api/categories/${base.value.form.uuid}`;
-
-    const res = await $fetch(path, {
-      method: base.value.method,
-      body: {
-        ...base.value.form,
-      },
-    });
-
-    if (res) {
-      baseModal.value?.close();
-      refresh();
-    }
-  },
-  onRemove: async (row: any) => {
-    base.value.form = { ...row };
-    isRemoveConfirmOpen.value = true;
-  },
-};
-
-const fnRemove = {
-  onSubmit: async () => {
-    const res = await $fetch(`/api/categories/${base.value.form.uuid}`, {
-      method: "delete",
-      body: {
-        ...base.value.form,
-      },
-    });
-
-    if (res) {
-      refresh();
-
-      isRemoveConfirmOpen.value = false;
-    }
-  },
-};
-
-const fnImage = {
-  onOpen: (src: string) => {
-    imageSrc.value = src;
-    isImagePreviewOpen.value = true;
-  },
+const onRefresh = async () => {
+  await refresh();
 };
 </script>

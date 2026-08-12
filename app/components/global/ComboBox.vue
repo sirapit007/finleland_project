@@ -29,7 +29,7 @@
 
     <button
       v-if="!disabled && !!query"
-      class="btn btn-xs btn-ghost btn-error absolute right-1 top-1"
+      class="btn btn-xs btn-ghost btn-error btn-circle absolute right-1 top-1"
       v-on:click="onClearSelect()"
     >
       <!-- v-on:click="fnItem.onRemoveRow(i as number)" -->
@@ -38,8 +38,8 @@
 
     <transition name="fade">
       <div
-        v-if="open && (filteredOptions.length > 0 || loading)"
-        class="absolute z-20 mt-1 max-h-40 w-full rounded-box border border-base-content/10 bg-base-100 shadow-lg"
+        v-if="open"
+        class="absolute z-20 mt-1 w-full rounded-box border border-base-content/10 bg-base-100 shadow-lg"
       >
         <ul
           ref="dropdownList"
@@ -92,6 +92,19 @@
             <span class="text-xs text-base-content/40">สิ้นสุด</span>
           </li>
         </ul>
+        <button
+          v-if="allowCreate && !disabled"
+          type="button"
+          class="btn btn-ghost btn-sm w-full justify-start rounded-t-none border-t border-base-300 text-primary"
+          @mousedown.prevent
+          @click="requestCreate"
+        >
+          <Icon name="lucide:plus" size="15" />
+          {{ createLabel }}
+          <!-- <span v-if="query.trim()" class="min-w-0 truncate">
+            “{{ query.trim() }}”
+          </span> -->
+        </button>
       </div>
     </transition>
   </div>
@@ -107,6 +120,8 @@ type ComboBoxProps = {
   disabled?: boolean;
   clearOnSelect?: boolean;
   pageSize?: number;
+  allowCreate?: boolean;
+  createLabel?: string;
 };
 
 const props = withDefaults(defineProps<ComboBoxProps>(), {
@@ -118,11 +133,14 @@ const props = withDefaults(defineProps<ComboBoxProps>(), {
   disabled: false,
   clearOnSelect: false,
   pageSize: 999,
+  allowCreate: false,
+  createLabel: "เพิ่มรายการใหม่",
 });
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: any): void;
   (e: "select", value: any): void;
+  (e: "create", query: string): void;
 }>();
 
 const open = ref(false);
@@ -184,7 +202,12 @@ const loadOptions = async (page: number = 1, append: boolean = false) => {
     } else {
       localOptions.value = newRows;
 
-      if (props.modelValue) query.value = newRows[0][props.label];
+      const currentRow = newRows.find(
+        (row: any) => String(row[props.value]) === String(props.modelValue),
+      );
+      if (currentRow) {
+        query.value = String(currentRow[props.label] ?? "");
+      }
     }
 
     // Check if there are more results
@@ -229,11 +252,7 @@ const onInput = () => {
   }
 };
 
-const onSelect = (option: {
-  label: string;
-  value: string;
-  raw: any;
-}) => {
+const onSelect = (option: { label: string; value: string; raw: any }) => {
   // console.log(option);
   emit("update:modelValue", option.value);
   emit("select", option.raw);
@@ -246,6 +265,37 @@ const onClearSelect = () => {
   emit("select", {});
   query.value = "";
   open.value = false;
+};
+
+const requestCreate = () => {
+  if (!props.allowCreate || props.disabled) return;
+  open.value = false;
+  emit("create", query.value.trim());
+};
+
+const refreshOptions = async () => {
+  currentPage.value = 1;
+  hasMore.value = true;
+  await loadOptions(1, false);
+};
+
+const selectOption = (row: any) => {
+  if (!row || typeof row !== "object") return;
+  const rawValue = row[props.value];
+  if (rawValue === undefined || rawValue === null || rawValue === "") return;
+
+  const option = {
+    label: String(row[props.label] ?? rawValue),
+    value: String(rawValue),
+    raw: row,
+  };
+  localOptions.value = [
+    row,
+    ...localOptions.value.filter(
+      (item) => String(item[props.value]) !== option.value,
+    ),
+  ];
+  onSelect(option);
 };
 
 const onBlur = () => {
@@ -297,11 +347,8 @@ const onDropdownScroll = () => {
   }
 };
 
-const optionLabel = (option: {
-  label: string;
-  value: string;
-  raw: any;
-}) => option.label;
+const optionLabel = (option: { label: string; value: string; raw: any }) =>
+  option.label;
 
 const optionKey = (
   option: { label: string; value: string; raw: any },
@@ -314,6 +361,8 @@ const findLabelByValue = (value: string) => {
   );
   return match ? match.label : String(value ?? "");
 };
+
+defineExpose({ refreshOptions, selectOption });
 
 watch(
   () => props.modelValue,

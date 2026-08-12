@@ -5,7 +5,7 @@
         <Icon name="lucide:badge-dollar-sign" size="18" class="text-primary" />
         <h2 class="lg:text-lg sm:text-base text-sm font-bold">การชำระเงิน</h2>
       </div>
-      <span v-if="payment" class="badge badge-sm" :class="statusMeta?.badge">
+      <span v-if="payment" class="badge badge-soft badge-sm" :class="statusMeta?.badge">
         {{ statusMeta?.label }}
       </span>
     </div>

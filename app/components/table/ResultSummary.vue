@@ -4,6 +4,7 @@
     aria-live="polite"
   >
     แสดง {{ rangeStart }} - {{ rangeEnd }} จากทั้งหมด
+    <br class="md:hidden block" />
     <span class="text-sm text-primary sm:text-base">{{ total }}</span> รายการ
   </div>
 </template>

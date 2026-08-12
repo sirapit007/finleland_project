@@ -64,7 +64,23 @@ export default defineEventHandler(async (event) => {
   if (current) {
     const currentResult = await db.query(
       `
-    SELECT base.*, product.product_description
+    SELECT base.*, product.product_description,
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'uuid', subcategory.uuid,
+            'subcategory_name', subcategory.subcategory_name,
+            'image_url', subcategory.image_url,
+            'category_uuid', subcategory.subcategory_category
+          )
+          ORDER BY relation.sort_order, subcategory.id
+        )
+        FROM tb_product_subcategories AS relation
+        INNER JOIN tb_master_subcategories AS subcategory
+          ON subcategory.uuid = relation.subcategory_uuid
+        WHERE relation.product_uuid = base.uuid
+          AND subcategory.deleted_at IS NULL
+      ), '[]'::jsonb) AS product_subcategories
     FROM ${tableName} AS base
     LEFT JOIN ${productTableName} AS product ON product.uuid = base.uuid
     WHERE base.uuid = $1::uuid
@@ -85,7 +101,23 @@ export default defineEventHandler(async (event) => {
   const result = await db.query(
     `SELECT 
       base.*,
-      product.product_description
+      product.product_description,
+      COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'uuid', subcategory.uuid,
+            'subcategory_name', subcategory.subcategory_name,
+            'image_url', subcategory.image_url,
+            'category_uuid', subcategory.subcategory_category
+          )
+          ORDER BY relation.sort_order, subcategory.id
+        )
+        FROM tb_product_subcategories AS relation
+        INNER JOIN tb_master_subcategories AS subcategory
+          ON subcategory.uuid = relation.subcategory_uuid
+        WHERE relation.product_uuid = base.uuid
+          AND subcategory.deleted_at IS NULL
+      ), '[]'::jsonb) AS product_subcategories
     FROM ${tableName} AS base
     LEFT JOIN ${productTableName} AS product ON product.uuid = base.uuid
     WHERE ${condition} 

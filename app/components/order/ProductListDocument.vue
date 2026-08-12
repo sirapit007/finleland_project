@@ -1,64 +1,93 @@
 <template>
   <div class="product-list-document">
-    <section
+    <article
       v-for="(pageItems, pageIndex) in itemPages"
       :key="pageIndex"
       class="product-list-sheet"
     >
       <header class="document-header">
-        <h1>{{ sellerName }}</h1>
-        <div class="document-meta">
-          <div class="meta-row">
-            <span class="meta-label">Title</span>
-            <span class="meta-separator">:</span>
-            <strong>ใบสั่งซื้อสินค้า</strong>
+        <div class="seller-heading">
+          <img src="~/assets/images/logo.png" alt="ฟินลี่แลนด์ พลาซ่า" />
+          <div>
+            <p class="seller-name">{{ seller.name }}</p>
+            <p>{{ seller.address || "ยังไม่ได้ตั้งค่าที่อยู่ร้านค้า" }}</p>
+            <p v-if="seller.phone || seller.email">
+              {{ [seller.phone, seller.email].filter(Boolean).join(" · ") }}
+            </p>
+            <p>
+              เลขประจำตัวผู้เสียภาษี
+              <strong>{{ seller.taxId || "ยังไม่ได้ตั้งค่า" }}</strong>
+              <span v-if="seller.branch"> · {{ seller.branch }}</span>
+            </p>
           </div>
-          <div class="meta-row page-number">
-            <span class="meta-label">Page No.</span>
-            <span class="meta-separator">:</span>
-            <strong>{{ pageIndex + 1 }}/{{ itemPages.length }}</strong>
-          </div>
-          <div class="meta-row">
-            <span class="meta-label">Printed By</span>
-            <span class="meta-separator">:</span>
-            <span>{{ printedBy || "ผู้ดูแลระบบ" }}</span>
-          </div>
-          <div class="meta-row page-number">
-            <span class="meta-label">Printed Date</span>
-            <span class="meta-separator">:</span>
-            <span>{{ formattedPrintedDate }}</span>
-          </div>
-          <div class="meta-row description-row">
-            <span class="meta-label">Description</span>
-            <span class="meta-separator">:</span>
-            <span>คำสั่งซื้อ {{ order.order_number || "-" }}</span>
-          </div>
+        </div>
+
+        <div class="document-heading">
+          <p class="document-title">ใบรายการสินค้า</p>
+          <p class="document-subtitle">PRODUCT PICKING LIST</p>
+          <span class="document-badge">
+            หน้า {{ pageIndex + 1 }} / {{ itemPages.length }}
+          </span>
         </div>
       </header>
 
+      <section class="document-meta">
+        <dl>
+          <div>
+            <dt>เลขที่คำสั่งซื้อ</dt>
+            <dd>{{ text(order.order_number) }}</dd>
+          </div>
+          <div>
+            <dt>ชื่อลูกค้า</dt>
+            <dd>{{ text(order.order_customer_name) }}</dd>
+          </div>
+        </dl>
+        <dl>
+          <div>
+            <dt>วันที่พิมพ์</dt>
+            <dd>{{ formattedPrintedDate }}</dd>
+          </div>
+          <div>
+            <dt>จัดทำโดย</dt>
+            <dd>{{ printedBy || "ผู้ดูแลระบบ" }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="list-heading">
+        <div>
+          <p class="section-label">รายการสินค้าสำหรับจัดเตรียม</p>
+          <p>ตรวจสอบรหัสสินค้า รูปสินค้า และจำนวนก่อนนำส่ง</p>
+        </div>
+        <div class="order-status">
+          <span>สถานะคำสั่งซื้อ</span>
+          <strong>{{ orderStatusLabel }}</strong>
+        </div>
+      </section>
+
       <table class="product-table">
         <colgroup>
-          <col class="code-column" />
+          <col class="number-column" />
           <col class="image-column" />
-          <col class="name-column" />
-          <col class="cost-column" />
+          <col />
+          <col class="price-column" />
           <col class="quantity-column" />
           <col class="unit-column" />
         </colgroup>
         <thead>
           <tr>
-            <th>รหัสสินค้า</th>
-            <th>รูป</th>
-            <th>ชื่อสินค้า</th>
-            <th>ราคาทุน (หลัง VAT)</th>
-            <th>จำนวน</th>
-            <th>หน่วยนับ</th>
+            <th class="center">ลำดับ</th>
+            <th class="center">รูปสินค้า</th>
+            <th>รายการสินค้า</th>
+            <th class="right">ราคาขายปัจจุบัน</th>
+            <th class="center">จำนวน</th>
+            <th class="center">หน่วย</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="item in pageItems" :key="item.uuid">
-            <td class="product-code">
-              {{ item.order_item_product_code || "-" }}
+          <tr v-for="(item, itemIndex) in pageItems" :key="item.uuid">
+            <td class="center row-number">
+              {{ pageIndex * itemsPerPage + itemIndex + 1 }}
             </td>
             <td class="product-image-cell">
               <img
@@ -68,23 +97,69 @@
               />
               <span v-else class="image-placeholder">ไม่มีรูป</span>
             </td>
-            <td class="product-name">
-              {{ item.order_item_product_name || "-" }}
+            <td class="product-detail">
+              <strong>{{ text(item.order_item_product_name) }}</strong>
+              <small>รหัส {{ text(item.order_item_product_code) }}</small>
             </td>
-            <td class="number-cell">
-              {{ formatMoney(item.order_item_unit_cost) }}
+            <td class="right money-cell">
+              {{ formatMoney(item.product_selling_price) }}
             </td>
-            <td class="number-cell">
+            <td class="center quantity-cell">
               {{ formatQuantity(item.order_item_quantity) }}
             </td>
-            <td class="center-cell">{{ item.order_item_unit || "ชิ้น" }}</td>
+            <td class="center">{{ item.order_item_unit || "ชิ้น" }}</td>
           </tr>
-          <tr v-if="!pageItems.length">
-            <td colspan="6" class="empty-row">ไม่มีรายการสินค้า</td>
+          <tr v-if="pageItems.length === 0">
+            <td colspan="6" class="empty-row">ไม่พบรายการสินค้า</td>
           </tr>
         </tbody>
       </table>
-    </section>
+
+      <section class="summary-section">
+        <div class="summary-note">
+          <p class="section-label">หมายเหตุสำหรับผู้จัดสินค้า</p>
+          <p>
+            ราคาที่แสดงเป็นราคาขายปัจจุบัน ณ เวลาที่พิมพ์เอกสาร
+            กรุณายึดจำนวนสินค้าตามรายการนี้และตรวจสภาพสินค้าก่อนส่งมอบ
+          </p>
+        </div>
+        <dl class="summary-list">
+          <div>
+            <dt>จำนวนรายการทั้งหมด</dt>
+            <dd>{{ items.length }} รายการ</dd>
+          </div>
+          <div>
+            <dt>จำนวนสินค้ารวม</dt>
+            <dd>{{ formatQuantity(totalQuantity) }} ชิ้น</dd>
+          </div>
+          <div class="summary-total">
+            <dt>มูลค่าตามราคาปัจจุบัน</dt>
+            <dd>฿{{ formatMoney(totalCurrentValue) }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="signature-grid">
+        <div>
+          <span class="signature-line" />
+          <p>ผู้จัดเตรียมสินค้า</p>
+          <p>วันที่ ______ / ______ / ______</p>
+        </div>
+        <div>
+          <span class="signature-line" />
+          <p>ผู้ตรวจสอบสินค้า</p>
+          <p>วันที่ ______ / ______ / ______</p>
+        </div>
+      </section>
+
+      <footer class="document-footer">
+        <span>เอกสารสำหรับใช้ภายในระบบจัดการคำสั่งซื้อ</span>
+        <span>
+          หน้านี้ {{ pageItems.length }} รายการ ·
+          {{ formatQuantity(pageQuantity(pageItems)) }} ชิ้น
+        </span>
+      </footer>
+    </article>
   </div>
 </template>
 
@@ -101,13 +176,24 @@ const props = defineProps<{
 }>();
 
 const runtimeConfig = useRuntimeConfig();
-const itemsPerPage = 10;
+const publicConfig = runtimeConfig.public as Record<string, unknown>;
+const itemsPerPage = 8;
 
-const sellerName = computed(
-  () =>
-    String(runtimeConfig.public.taxInvoiceSellerName || "").trim() ||
-    "ฟินลี่แลนด์ พลาซ่า",
-);
+const text = (value: unknown, fallback = "-") =>
+  String(value ?? "").trim() || fallback;
+const number = (value: unknown) => {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const seller = computed(() => ({
+  name: text(publicConfig.taxInvoiceSellerName, "ฟินลี่แลนด์ พลาซ่า"),
+  taxId: text(publicConfig.taxInvoiceSellerTaxId, "").replace(/\D/g, ""),
+  branch: text(publicConfig.taxInvoiceSellerBranch, "สำนักงานใหญ่"),
+  address: text(publicConfig.taxInvoiceSellerAddress, ""),
+  phone: text(publicConfig.taxInvoiceSellerPhone, ""),
+  email: text(publicConfig.taxInvoiceSellerEmail, ""),
+}));
 
 const itemPages = computed(() => {
   if (!props.items.length) return [[]] as ProductListRow[][];
@@ -119,35 +205,62 @@ const itemPages = computed(() => {
   return pages;
 });
 
+const totalQuantity = computed(() =>
+  props.items.reduce(
+    (total, item) => total + number(item.order_item_quantity),
+    0,
+  ),
+);
+const totalCurrentValue = computed(() =>
+  props.items.reduce(
+    (total, item) =>
+      total +
+      number(item.product_selling_price) * number(item.order_item_quantity),
+    0,
+  ),
+);
+
+const orderStatusMap: Record<string, string> = {
+  pending: "รอตรวจสอบ",
+  confirmed: "ยืนยันคำสั่งซื้อแล้ว",
+  processing: "กำลังเตรียมสินค้า",
+  ready_for_pickup: "พร้อมรับสินค้า",
+  shipped: "กำลังจัดส่ง",
+  completed: "สำเร็จ",
+  canceled: "ยกเลิก",
+};
+const orderStatusLabel = computed(
+  () =>
+    orderStatusMap[text(props.order.order_status, "pending")] ||
+    text(props.order.order_status),
+);
+
 const formattedPrintedDate = computed(() => {
   const date = new Date(props.printedAt);
   if (Number.isNaN(date.getTime())) return "-";
-
-  const parts = new Intl.DateTimeFormat("th-TH", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  return new Intl.DateTimeFormat("th-TH", {
+    dateStyle: "medium",
+    timeStyle: "short",
     timeZone: "Asia/Bangkok",
-  }).formatToParts(date);
-  const value = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((part) => part.type === type)?.value || "";
-
-  return `${value("day")}/${value("month")}/${value("year")}`;
+  }).format(date);
 });
 
 const productImage = (item: ProductListRow) =>
   firstProductImageUrl(item.order_item_product_image);
-
+const pageQuantity = (pageItems: ProductListRow[]) =>
+  pageItems.reduce(
+    (total, item) => total + number(item.order_item_quantity),
+    0,
+  );
 const formatMoney = (value: unknown) =>
   new Intl.NumberFormat("th-TH", {
-    minimumFractionDigits: 0,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Number(value || 0));
-
+  }).format(number(value));
 const formatQuantity = (value: unknown) =>
-  new Intl.NumberFormat("th-TH", {
-    maximumFractionDigits: 2,
-  }).format(Number(value || 0));
+  new Intl.NumberFormat("th-TH", { maximumFractionDigits: 2 }).format(
+    number(value),
+  );
 </script>
 
 <style scoped>
@@ -158,125 +271,226 @@ const formatQuantity = (value: unknown) =>
 }
 
 .product-list-sheet {
+  position: relative;
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto;
-  padding: 7mm 6mm 8mm;
+  padding: 13mm 14mm 11mm;
   overflow: hidden;
   background: #fff;
-  color: #000;
-  font-family: Tahoma, "Noto Sans Thai", sans-serif;
-  font-size: 10px;
-  line-height: 1.4;
+  color: #172033;
+  font-family: "Noto Sans Thai", sans-serif;
+  font-size: 10.5px;
+  line-height: 1.55;
   box-shadow: 0 18px 55px rgba(15, 23, 42, 0.14);
 }
 
-.document-header h1 {
-  margin: 0 0 4mm;
-  font-size: 13px;
+.document-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 12px;
+  border-bottom: 3px solid #0b4aac;
+}
+
+.seller-heading {
+  display: flex;
+  max-width: 56%;
+  gap: 12px;
+}
+
+.seller-heading img {
+  width: 68px;
+  height: 68px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.seller-heading p,
+.list-heading p,
+.summary-note p,
+.signature-grid p {
+  margin: 0;
+}
+
+.seller-name {
+  margin-bottom: 2px !important;
+  color: #0b3f8f;
+  font-size: 17px;
   font-weight: 700;
-  text-align: center;
+}
+
+.document-heading {
+  min-width: 245px;
+  text-align: right;
+}
+
+.document-title {
+  margin: 0;
+  color: #0b3f8f;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.document-subtitle {
+  margin: 2px 0 7px;
+  color: #526173;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.1px;
+}
+
+.document-badge {
+  display: inline-block;
+  border: 1px solid #0b4aac;
+  border-radius: 999px;
+  padding: 2px 10px;
+  color: #0b4aac;
+  font-weight: 700;
 }
 
 .document-meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2.5mm 8mm;
-  padding: 0 2.5mm 2.5mm;
+  gap: 20px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
 }
 
-.meta-row {
+.document-meta dl,
+.summary-list {
+  margin: 0;
+}
+
+.document-meta dl > div {
   display: grid;
-  grid-template-columns: 23mm 4mm minmax(0, 1fr);
-  align-items: baseline;
+  grid-template-columns: 105px 1fr;
+  gap: 8px;
 }
 
-.meta-label {
-  font-weight: 700;
+.document-meta dt,
+.summary-list dt {
+  color: #586679;
 }
 
-.meta-separator {
+.document-meta dd,
+.summary-list dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+}
+
+.section-label {
+  margin: 0 0 2px !important;
   color: #0b4aac;
+  font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.15px;
 }
 
-.page-number {
-  grid-template-columns: 27mm 4mm minmax(0, 1fr);
-  justify-self: end;
+.list-heading > div:first-child > p:last-child {
+  color: #526173;
+  font-size: 9.5px;
 }
 
-.page-number strong,
-.page-number span:last-child {
+.order-status {
+  flex: 0 0 auto;
   text-align: right;
 }
 
-.description-row {
-  grid-column: 1 / -1;
+.order-status span {
+  display: block;
+  color: #64748b;
+  font-size: 8.5px;
+}
+
+.order-status strong {
+  color: #0b3f8f;
 }
 
 .product-table {
   width: 100%;
+  margin-top: 10px;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
-.product-table thead {
-  border-top: 1.2px solid #111;
-  border-bottom: 1.2px solid #111;
-}
-
-.product-table th {
-  padding: 2mm 1.5mm;
-  font-size: 9.5px;
-  font-weight: 700;
-  text-align: center;
-}
-
+.product-table th,
 .product-table td {
-  height: 18.2mm;
-  padding: 1.8mm 2mm;
-  border-bottom: 1px solid #d4d4d4;
+  padding: 7px 6px;
+  border: 1px solid #b8c4d3;
   vertical-align: middle;
 }
 
-.code-column {
-  width: 18%;
-}
-
-.image-column {
-  width: 12%;
-}
-
-.name-column {
-  width: 34%;
-}
-
-.cost-column {
-  width: 15%;
-}
-
-.quantity-column {
-  width: 10%;
-}
-
-.unit-column {
-  width: 11%;
-}
-
-.product-code,
-.product-name {
+.product-table th {
+  background: #0b4aac;
+  color: #fff;
   font-weight: 600;
 }
 
+.product-table tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.product-table tbody td {
+  height: 58px;
+}
+
+.number-column {
+  width: 42px;
+}
+
+.image-column {
+  width: 66px;
+}
+
+.price-column {
+  width: 105px;
+}
+
+.quantity-column {
+  width: 62px;
+}
+
+.unit-column {
+  width: 55px;
+}
+
+.center {
+  text-align: center;
+}
+
+.right {
+  text-align: right;
+}
+
+.row-number {
+  color: #475569;
+}
+
 .product-image-cell {
+  padding: 4px !important;
   text-align: center;
 }
 
 .product-image-cell img,
 .image-placeholder {
   display: inline-flex;
-  width: 15mm;
-  height: 15mm;
+  width: 48px;
+  height: 48px;
   align-items: center;
   justify-content: center;
   object-fit: contain;
@@ -289,19 +503,104 @@ const formatQuantity = (value: unknown) =>
   font-size: 7.5px;
 }
 
-.number-cell {
-  text-align: center;
+.product-detail strong {
+  display: block;
+  font-size: 11px;
+}
+
+.product-detail small {
+  display: block;
+  margin-top: 1px;
+  color: #64748b;
+}
+
+.money-cell,
+.quantity-cell {
   font-variant-numeric: tabular-nums;
 }
 
-.center-cell {
-  text-align: center;
+.money-cell {
+  font-weight: 600;
+}
+
+.quantity-cell {
+  color: #0b3f8f;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .empty-row {
-  height: 40mm !important;
+  height: 80px !important;
   color: #64748b;
   text-align: center;
+}
+
+.summary-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 285px;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.summary-note {
+  padding: 9px 10px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 9px;
+}
+
+.summary-list > div {
+  display: grid;
+  grid-template-columns: 1fr 105px;
+  gap: 8px;
+  padding: 2px 7px;
+}
+
+.summary-list dd {
+  text-align: right;
+}
+
+.summary-total {
+  margin-top: 3px;
+  padding: 6px 7px !important;
+  background: #0b4aac;
+  color: #fff;
+}
+
+.summary-total dt,
+.summary-total dd {
+  color: #fff;
+  font-weight: 700;
+}
+
+.signature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 55px;
+  margin: 36px 36px 0;
+  color: #475569;
+  text-align: center;
+}
+
+.signature-line {
+  display: block;
+  margin-bottom: 6px;
+  border-top: 1px solid #64748b;
+}
+
+.document-footer {
+  position: absolute;
+  right: 14mm;
+  bottom: 7mm;
+  left: 14mm;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 6px;
+  border-top: 1px solid #cbd5e1;
+  color: #64748b;
+  font-size: 8.5px;
 }
 
 @media print {
@@ -325,7 +624,13 @@ const formatQuantity = (value: unknown) =>
     page-break-after: auto;
   }
 
-  .product-table tr {
+  .product-table thead {
+    display: table-header-group;
+  }
+
+  .product-table tr,
+  .summary-section,
+  .signature-grid {
     break-inside: avoid;
     page-break-inside: avoid;
   }

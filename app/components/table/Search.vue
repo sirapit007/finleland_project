@@ -1,7 +1,6 @@
 <template>
   <label
-    class="input input-xs shadow-sm sm:input-sm"
-    :class="widthClass"
+    class="input input-xs shadow-sm sm:input-sm sm:w-56 w-48"
   >
     <span class="label"><Icon name="lucide:search" size="16" /></span>
     <input
@@ -26,14 +25,12 @@ withDefaults(
     ariaLabel?: string;
     name?: string;
     disabled?: boolean;
-    widthClass?: string;
   }>(),
   {
     placeholder: "ค้นหา...",
     ariaLabel: "",
     name: "q",
     disabled: false,
-    widthClass: "w-60",
   },
 );
 

@@ -4,6 +4,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },
+  devServer: {
+    port: 6996,
+  },
   app: {
     head: {
       link: [
@@ -103,8 +106,9 @@ export default defineNuxtConfig({
         process.env.NUXT_PUBLIC_TAX_INVOICE_SELLER_PHONE || "",
       taxInvoiceSellerEmail:
         process.env.NUXT_PUBLIC_TAX_INVOICE_SELLER_EMAIL || "",
-      paymentMerchantQrUrl:
-        process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_QR_URL || "",
+      paymentMerchantPromptPayId:
+        process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_PROMPTPAY_ID ||
+        "1529901008135",
       paymentMerchantName:
         process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_NAME || "ฟินลี่แลนด์ พลาซ่า",
       paymentMerchantBank: process.env.NUXT_PUBLIC_PAYMENT_MERCHANT_BANK || "",

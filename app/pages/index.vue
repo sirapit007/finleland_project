@@ -49,7 +49,7 @@
       class="mx-auto w-full max-w-7xl px-4 sm:px-2 lg:px-1 py-6 sm:py-8 lg:py-10"
     >
       <div class="relative overflow-hidden">
-        <CarouselPromotions />
+        <PromotionsCarousel />
       </div>
     </section>
 
@@ -61,7 +61,7 @@
           หมวดหมู่สินค้า
         </h2>
         <div class="relative overflow-hidden">
-          <CarouselCategories />
+          <CategoriesCarousel />
         </div>
       </div>
     </section>
@@ -103,7 +103,7 @@
           </NuxtLink>
         </div>
         <div class="relative overflow-hidden">
-          <CarouselProducts />
+          <ProductsCarousel />
         </div>
       </div>
     </section>

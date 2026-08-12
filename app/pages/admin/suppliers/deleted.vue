@@ -1,41 +1,16 @@
 <template>
-  <dialog ref="restoreModal" class="modal">
-    <div class="modal-box max-w-xs">
-      <h3 class="text-lg font-bold">ยืนยันที่จะกู้คืนรายการนี้</h3>
-      <div class="text-center mt-5">
-        <Icon
-          name="lucide:message-circle-question-mark"
-          class="text-success"
-          size="60"
-        />
-      </div>
-      <div class="modal-action">
-        <button class="flex-1 btn btn-sm" @click="restoreModal?.close()">
-          ปิด
-        </button>
-        <button
-          class="flex-1 btn btn-sm btn-success"
-          type="button"
-          @click="fnRestore.onSubmit()"
-        >
-          ยืนยัน
-        </button>
-      </div>
-    </div>
-  </dialog>
-
   <div class="min-h-full p-4 pb-6">
     <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-xl text-lg text-primary"
+          <span class="font-bold sm:text-lg text-base text-primary"
             >Restore Suppliers</span
           ><span class="font-semibold sm:text-base text-sm text-secondary"
             >กู้คืนรายการผู้จัดจำหน่าย</span
           >
         </div>
       </div>
-  
+
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch
@@ -92,7 +67,7 @@
               <td class="text-end">
                 <button
                   class="btn btn-xs btn-success btn-link"
-                  v-on:click="fnBase.onRestore(row)"
+                  @click="restoreConfirmModal?.onRestore(row)"
                 >
                   กู้คืน
                 </button>
@@ -111,6 +86,14 @@
       </div>
     </div>
   </div>
+
+  <ModalRestoreConfirm
+    ref="restoreConfirmModal"
+    endpoint="/api/suppliers"
+    identifier-key="uuid"
+    item-name-key="supplier_name"
+    @restored="onRestored"
+  />
 </template>
 
 <script setup lang="ts">
@@ -120,22 +103,17 @@ definePageMeta({
   layout: "admin",
 });
 
-const dayjs = useDayjs();
+type RestoreConfirmExpose = {
+  onRestore: (row: Record<string, unknown>) => void;
+};
 
-const baseModal = ref<HTMLDialogElement | null>(null);
-const restoreModal = ref<HTMLDialogElement | null>(null);
+const restoreConfirmModal = ref<RestoreConfirmExpose | null>(null);
+
+const dayjs = useDayjs();
 
 const page = ref(1);
 const pageSize = ref(10);
 const q = ref("");
-const base = ref<any>({
-  form: {},
-  method: "",
-});
-const remove = ref<any>({
-  form: {},
-  path: "",
-});
 
 const { data, pending, error, refresh } = await useFetch("/api/suppliers", {
   server: false,
@@ -148,56 +126,7 @@ const { data, pending, error, refresh } = await useFetch("/api/suppliers", {
   watch: [page, pageSize, q],
 });
 
-const fnBase = {
-  onCreate: async () => {
-    base.value.form = {};
-    base.value.method = "post";
-    baseModal.value?.showModal();
-  },
-  onEdit: async (row: any) => {
-    base.value.form = { ...row };
-    base.value.method = "put";
-
-    baseModal.value?.showModal();
-  },
-  onSubmit: async () => {
-    const path =
-      base.value.method === "post"
-        ? "/api/suppliers"
-        : `/api/suppliers/${base.value.form.uuid}`;
-
-    const res = await $fetch(path, {
-      method: base.value.method,
-      body: {
-        ...base.value.form,
-      },
-    });
-
-    if (res) {
-      baseModal.value?.close();
-      refresh();
-    }
-  },
-  onRestore: async (row: any) => {
-    base.value.form = { ...row };
-    restoreModal.value?.showModal();
-  },
-};
-
-const fnRestore = {
-  onSubmit: async () => {
-    const res = await $fetch(`/api/suppliers/${base.value.form.uuid}`, {
-      method: "put",
-      body: {
-        ...base.value.form,
-      },
-    });
-
-    if (res) {
-      refresh();
-
-      restoreModal.value?.close();
-    }
-  },
+const onRestored = async () => {
+  await refresh();
 };
 </script>
