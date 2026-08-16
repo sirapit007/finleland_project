@@ -5,6 +5,7 @@
       <slot />
       <AppFooter />
     </main>
+    <AppMobile />
   </div>
 </template>
 

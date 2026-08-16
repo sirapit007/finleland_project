@@ -108,6 +108,28 @@
       </div>
     </section>
 
+    <section
+      class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10"
+    >
+      <div class="space-y-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-xl font-bold text-primary sm:text-2xl">
+            สินค้าขายดี
+          </h2>
+          <NuxtLink
+            to="/products"
+            class="btn btn-ghost btn-primary btn-sm sm:btn-md"
+          >
+            ดูเพิ่มเติม
+            <Icon name="lucide:chevrons-right" size="18" />
+          </NuxtLink>
+        </div>
+        <div class="relative overflow-hidden">
+          <ProductsCarousel ranking="best-selling" />
+        </div>
+      </div>
+    </section>
+
     <section class="bg-base-200 border-t border-base-300">
       <div class="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
         <div

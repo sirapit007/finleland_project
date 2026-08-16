@@ -12,6 +12,8 @@ export default defineEventHandler(async (event) => {
   const page = Math.max(Number(query.page || 1), 1);
   const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 1000);
   const orderBy = String(query.orderBy || "base.id DESC");
+  const ranking = String(query.ranking || "").trim();
+  const isBestSelling = ranking === "best-selling";
   const allowedOrderBy = new Set([
     "base.id DESC",
     "base.id ASC",
@@ -19,13 +21,29 @@ export default defineEventHandler(async (event) => {
     "base.product_selling_price ASC",
   ]);
   const safeOrderBy = allowedOrderBy.has(orderBy) ? orderBy : "base.id DESC";
+  const effectiveOrderBy = isBestSelling
+    ? "sales.sold_quantity DESC, base.id DESC"
+    : safeOrderBy;
   const offset = (page - 1) * pageSize;
   const params: unknown[] = [];
 
   const uuid = String(query.uuid || "");
   const category = String(query.category || "");
   const category_name = String(query.category_name || "");
+  const subcategory_uuid = String(query.subcategory_uuid || "").trim();
   const product_name = String(query.product_name || "");
+  const salesJoin = isBestSelling
+    ? `INNER JOIN (
+        SELECT
+          order_item_transaction_product AS product_uuid,
+          SUM(order_item_transaction_quantity) AS sold_quantity
+        FROM tb_shopping_order_item_transactions
+        WHERE order_item_transaction_status = 'posted'
+          AND deleted_at IS NULL
+        GROUP BY order_item_transaction_product
+      ) AS sales
+        ON sales.product_uuid = base.uuid::text`
+    : "";
 
   let condition = " 1 = 1 ";
   condition += query?.deleted
@@ -53,6 +71,15 @@ export default defineEventHandler(async (event) => {
     params.push(category_name);
     condition += ` AND base.product_category_name = $${params.length} `;
   }
+  if (subcategory_uuid) {
+    params.push(subcategory_uuid);
+    condition += ` AND EXISTS (
+      SELECT 1
+      FROM tb_product_subcategories AS subcategory_relation
+      WHERE subcategory_relation.product_uuid = base.uuid
+        AND subcategory_relation.subcategory_uuid::text = $${params.length}
+    ) `;
+  }
   if (product_name) {
     params.push(product_name);
     condition += ` AND base.product_name = $${params.length} `;
@@ -64,7 +91,7 @@ export default defineEventHandler(async (event) => {
   if (current) {
     const currentResult = await db.query(
       `
-    SELECT base.*, product.product_description,
+      SELECT base.*, product.product_description,
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -120,14 +147,18 @@ export default defineEventHandler(async (event) => {
       ), '[]'::jsonb) AS product_subcategories
     FROM ${tableName} AS base
     LEFT JOIN ${productTableName} AS product ON product.uuid = base.uuid
-    WHERE ${condition} 
-    ORDER BY ${safeOrderBy} 
+    ${salesJoin}
+    WHERE ${condition}
+    ORDER BY ${effectiveOrderBy}
     LIMIT $${limitParam} OFFSET $${offsetParam}`,
     params,
   );
 
   const totalResult = await db.query(
-    `SELECT COUNT(base.*) AS total FROM ${tableName} AS base WHERE ${condition}`,
+    `SELECT COUNT(base.*) AS total
+     FROM ${tableName} AS base
+     ${salesJoin}
+     WHERE ${condition}`,
     params.slice(0, params.length - 2),
   );
   const total = totalResult.rows[0]?.total ?? 0;

@@ -19,7 +19,7 @@
           <NuxtLink
             v-if="user?.role === 'Admin'"
             to="/admin/login"
-            class="text-xs text-secondary/90 hover:underline inline font-semibold"
+            class="text-xs text-accent hover:underline inline"
           >
             เข้าใช้ Admin Panel
           </NuxtLink>
@@ -72,7 +72,7 @@
                 : ''
             "
           >
-            <Icon name="lucide:shopping-cart" size="16" />
+            <Icon name="material-symbols:shopping-cart-outline-rounded" size="16" />
             ตะกร้าสินค้า
             <span
               class="badge badge-sm rounded-full text-xs"
@@ -89,9 +89,7 @@
             to="/orders"
             class="flex items-center gap-1 text-sm transition-colors hover:text-primary"
             :class="
-              route.path === '/orders'
-                ? 'font-semibold text-primary'
-                : ''
+              route.path === '/orders' ? 'font-semibold text-primary' : ''
             "
           >
             เช็คสถานะการจัดซื้อ/จัดส่ง
@@ -100,9 +98,7 @@
             to="/contact"
             class="flex items-center gap-1 text-sm transition-colors hover:text-primary"
             :class="
-              route.path === '/contact'
-                ? 'font-semibold text-primary'
-                : ''
+              route.path === '/contact' ? 'font-semibold text-primary' : ''
             "
           >
             ติดต่อเรา
@@ -155,7 +151,7 @@
     </div>
   </header>
 
-  <div class="fab fixed bottom-5 right-5 z-50 lg:hidden">
+  <div class="fab fixed bottom-5 right-5 z-50 hidden sm:flex lg:hidden">
     <div
       tabindex="0"
       role="button"
@@ -184,42 +180,43 @@
         <Icon :name="menu.icon" size="20" />
       </NuxtLink>
     </div>
-    <template v-if="isLoggedIn"> </template>
-    <div class="tooltip tooltip-left" data-tip="ตะกร้าสินค้า">
-      <NuxtLink
-        to="/shopping-basket"
-        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
-        title="ตะกร้าสินค้า"
-        aria-label="ตะกร้าสินค้า"
-      >
-        <Icon name="lucide:shopping-cart" size="20" />
-        <span
-          class="badge badge-secondary badge-xs absolute -right-1 -top-1 rounded-full"
+    <template v-if="isLoggedIn">
+      <div class="tooltip tooltip-left" data-tip="ตะกร้าสินค้า">
+        <NuxtLink
+          to="/shopping-basket"
+          class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
+          title="ตะกร้าสินค้า"
+          aria-label="ตะกร้าสินค้า"
         >
-          {{ itemCount }}
-        </span>
-      </NuxtLink>
-    </div>
-    <div class="tooltip tooltip-left" data-tip="เช็คสถานะการจัดซื้อ/จัดส่ง">
-      <NuxtLink
-        to="/orders"
-        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
-        title="เช็คสถานะการจัดซื้อ/จัดส่ง"
-        aria-label="เช็คสถานะการจัดซื้อ/จัดส่ง"
-      >
-        <Icon name="lucide:truck" size="20" />
-      </NuxtLink>
-    </div>
-    <div class="tooltip tooltip-left" data-tip="ติดต่อเรา">
-      <NuxtLink
-        to="/contact"
-        class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
-        title="ติดต่อเรา"
-        aria-label="ติดต่อเรา"
-      >
-        <Icon name="lucide:message-square-text" size="20" />
-      </NuxtLink>
-    </div>
+          <Icon name="material-symbols:shopping-cart-outline-rounded" size="20" />
+          <span
+            class="badge badge-secondary badge-xs absolute -right-1 -top-1 rounded-full"
+          >
+            {{ itemCount }}
+          </span>
+        </NuxtLink>
+      </div>
+      <div class="tooltip tooltip-left" data-tip="เช็คสถานะการจัดซื้อ/จัดส่ง">
+        <NuxtLink
+          to="/orders"
+          class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
+          title="เช็คสถานะการจัดซื้อ/จัดส่ง"
+          aria-label="เช็คสถานะการจัดซื้อ/จัดส่ง"
+        >
+          <Icon name="material-symbols:local-shipping-outline-rounded" size="20" />
+        </NuxtLink>
+      </div>
+      <div class="tooltip tooltip-left" data-tip="ติดต่อเรา">
+        <NuxtLink
+          to="/contact"
+          class="btn btn-circle btn-lg border-base-300 bg-base-100 shadow border border-primary"
+          title="ติดต่อเรา"
+          aria-label="ติดต่อเรา"
+        >
+          <Icon name="material-symbols:chat-outline-rounded" size="20" />
+        </NuxtLink>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -242,12 +239,20 @@ let scrollContainer: HTMLElement | null = null;
 let scrollAnimationFrame: number | null = null;
 
 const menus = [
-  { path: "/", title: "หน้าแรก", icon: "lucide:house" },
-  { path: "/products", title: "สินค้าทั้งหมด", icon: "lucide:store" },
+  {
+    path: "/",
+    title: "หน้าแรก",
+    icon: "material-symbols:home-outline-rounded",
+  },
+  {
+    path: "/products",
+    title: "สินค้าทั้งหมด",
+    icon: "material-symbols:storefront-outline-rounded",
+  },
   {
     path: "/how-to-order",
     title: "วิธีการสั่งซื้อ",
-    icon: "lucide:circle-help",
+    icon: "material-symbols:help-outline-rounded",
   },
 ];
 
