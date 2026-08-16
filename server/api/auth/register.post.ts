@@ -1,6 +1,9 @@
-import { createHmac } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
 import { hashPassword } from "@@/server/utils/password";
+import {
+  createPasswordSessionVersion,
+  signSessionToken,
+} from "@@/server/utils/sessionToken";
 
 const USERS_TABLE = "tb_users";
 const OTP_TABLE = "tb_otp_challenges";
@@ -33,31 +36,6 @@ type OtpChallengeRow = {
   verified_at: Date | string | null;
   consumed_at: Date | string | null;
 };
-
-function base64Url(input: string | Buffer) {
-  return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
-function signJwt(
-  payload: Record<string, unknown>,
-  secret: string,
-  expiresIn: number,
-) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "HS256", typ: "JWT" };
-  const tokenPayload = { ...payload, iat: now, exp: now + expiresIn };
-
-  const unsignedToken = `${base64Url(JSON.stringify(header))}.${base64Url(
-    JSON.stringify(tokenPayload),
-  )}`;
-  const signature = createHmac("sha256", secret).update(unsignedToken).digest();
-
-  return `${unsignedToken}.${base64Url(signature)}`;
-}
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<RegisterBody>(event);
@@ -118,6 +96,7 @@ export default defineEventHandler(async (event) => {
   const role = "User";
   const client = await db.connect();
   let user: UserRow | undefined;
+  let passwordHash = "";
 
   try {
     await client.query("BEGIN");
@@ -172,6 +151,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const hashedPassword = await hashPassword(password);
+    passwordHash = hashedPassword;
     const result = await client.query<UserRow>(
       `INSERT INTO ${USERS_TABLE}
         (firstname, lastname, phone, email, password, role)
@@ -202,9 +182,10 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const token = signJwt(
+  const token = signSessionToken(
     {
       sub: String(user.id),
+      pwdv: createPasswordSessionVersion(passwordHash, jwtSecret),
       firstname: user.firstname,
       lastname: user.lastname,
       phone: user.phone,

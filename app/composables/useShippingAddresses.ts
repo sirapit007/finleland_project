@@ -87,9 +87,9 @@ export async function fetchShippingAddresses(shippingUser: string) {
 
 export async function createShippingAddress(
   form: ShippingAddressForm,
-  user: any,
+  user?: object,
 ) {
-  return $fetch("/api/user/shipping-addresses", {
+  return $fetch<{ row: ShippingAddress }>("/api/user/shipping-addresses", {
     method: "POST",
     body: {
       ...form,
@@ -101,18 +101,21 @@ export async function createShippingAddress(
 export async function updateShippingAddress(
   uuid: string,
   form: ShippingAddressForm,
-  user: any,
+  user?: object,
 ) {
-  return $fetch(`/api/user/shipping-addresses/${uuid}`, {
-    method: "PUT",
-    body: {
-      ...form,
-      user,
+  return $fetch<{ row: ShippingAddress }>(
+    `/api/user/shipping-addresses/${uuid}`,
+    {
+      method: "PUT",
+      body: {
+        ...form,
+        user,
+      },
     },
-  });
+  );
 }
 
-export async function deleteShippingAddress(uuid: string, user: any) {
+export async function deleteShippingAddress(uuid: string, user?: object) {
   return $fetch(`/api/user/shipping-addresses/${uuid}`, {
     method: "DELETE",
     body: {

@@ -17,6 +17,7 @@
     "nuxt": "^4.4.4",
     "pg": "^8.20.0",
     "tailwindcss": "^4.3.0",
+    "thai-banks-logo": "^1.0.7",
     "thai-qr-payment": "^1.2.0",
     "thailand-geography-json": "github:thailand-geography-data/thailand-geography-json",
     "vue": "^3.5.33",

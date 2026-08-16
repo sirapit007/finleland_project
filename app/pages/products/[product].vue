@@ -67,20 +67,32 @@
           {{ base.object.product_name }}
         </div>
         <div class="flex flex-col flex-wrap items-start gap-2">
-          <div
+          <NuxtLink
+            class="badge badge-warning badge-sm sm:badge-md lg:badge-lg hover:translate-y-[-1px] hover:shadow-sm transition"
             v-if="base.object.product_category_name"
-            class="badge badge-sm badge-warning sm:badge-md lg:badge-lg"
+            :to="{
+              path: '/products',
+              query: { category: base.object.product_category_name },
+            }"
           >
             {{ base.object.product_category_name }}
-          </div>
+          </NuxtLink>
+
           <div class="flex flex-wrap flex-row gap-2">
-            <div
+            <NuxtLink
               v-for="subcategory in base.object.product_subcategories || []"
               :key="subcategory.uuid"
-              class="badge badge-xs badge-info sm:badge-sm lg:badge-md"
+              class="badge badge-info badge-xs sm:badge-sm lg:badge-md hover:translate-y-[-1px] hover:shadow-sm transition"
+              :to="{
+                path: '/products',
+                query: {
+                  category: base.object.product_category_name,
+                  subcategory: subcategory.uuid,
+                },
+              }"
             >
               {{ subcategory.subcategory_name }}
-            </div>
+            </NuxtLink>
           </div>
         </div>
         <div class="text-2xl font-semibold sm:text-3xl lg:text-4xl">

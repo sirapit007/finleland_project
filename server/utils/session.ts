@@ -1,9 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
+import { matchesPasswordSessionVersion } from "@@/server/utils/sessionToken";
 
 type SessionPayload = {
   sub?: string;
   exp?: number;
+  pwdv?: string;
 };
 
 type SessionUser = {
@@ -14,6 +16,10 @@ type SessionUser = {
   email: string;
   phone: string;
   role: string | null;
+};
+
+type SessionUserRow = SessionUser & {
+  password: string;
 };
 
 function toBase64UrlBuffer(value: string) {
@@ -118,8 +124,9 @@ async function requireSessionUser(
   unauthenticatedMessage: string,
 ): Promise<SessionUser> {
   const session = getSessionFromCookie(event, cookieName);
+  const secret = process.env.JWT_SECRET;
 
-  if (!session?.sub) {
+  if (!session?.sub || !session.pwdv || !secret) {
     throw createError({
       statusCode: 401,
       statusMessage: unauthenticatedMessage,
@@ -127,8 +134,8 @@ async function requireSessionUser(
   }
 
   const db = useDb();
-  const result = await db.query<SessionUser>(
-    `SELECT id, uuid, firstname, lastname, email, phone, role
+  const result = await db.query<SessionUserRow>(
+    `SELECT id, uuid, firstname, lastname, email, phone, role, password
      FROM tb_users
      WHERE id = $1
        AND deleted_at IS NULL
@@ -144,5 +151,20 @@ async function requireSessionUser(
     });
   }
 
-  return user;
+  if (!matchesPasswordSessionVersion(session.pwdv, user.password, secret)) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "Your sign-in session is no longer valid",
+    });
+  }
+
+  return {
+    id: user.id,
+    uuid: user.uuid,
+    firstname: user.firstname,
+    lastname: user.lastname,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+  };
 }

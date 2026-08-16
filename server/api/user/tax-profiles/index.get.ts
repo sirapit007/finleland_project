@@ -1,5 +1,5 @@
 import { useDb } from "@@/server/utils/db";
-import { requireCurrentUser } from "@@/server/utils/session";
+import { requireScopedUserUuid } from "@@/server/utils/scopedUser";
 
 type TaxProfileQuery = {
   page?: string;
@@ -8,16 +8,19 @@ type TaxProfileQuery = {
   q?: string;
   uuid?: string;
   deleted?: string;
+  user_uuid?: string;
 };
 
 export default defineEventHandler(async (event) => {
   const db = useDb();
   const query = getQuery(event) as TaxProfileQuery;
-  const currentUser = await requireCurrentUser(event);
+  const scopedUserUuid = await requireScopedUserUuid(event, query.user_uuid);
   const page = Math.max(Number(query.page || 1), 1);
   const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 100);
   const offset = (page - 1) * pageSize;
-  const requestedOrderBy = String(query.orderBy || "base.tax_profile_is_default DESC, base.id DESC");
+  const requestedOrderBy = String(
+    query.orderBy || "base.tax_profile_is_default DESC, base.id DESC",
+  );
   const allowedOrderBy = new Set([
     "base.tax_profile_is_default DESC, base.id DESC",
     "base.tax_profile_is_default DESC, base.id ASC",
@@ -31,7 +34,7 @@ export default defineEventHandler(async (event) => {
   const orderBy = allowedOrderBy.has(requestedOrderBy)
     ? requestedOrderBy
     : "base.tax_profile_is_default DESC, base.id DESC";
-  const params: unknown[] = [currentUser.uuid];
+  const params: unknown[] = [scopedUserUuid];
   let condition = "base.tax_profile_user = $1";
   condition += query.deleted
     ? " AND base.deleted_at IS NOT NULL"
@@ -74,5 +77,11 @@ export default defineEventHandler(async (event) => {
   );
   const total = Number(totalResult.rows[0]?.total || 0);
 
-  return { rows: result.rows, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  return {
+    rows: result.rows,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
 });

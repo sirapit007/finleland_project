@@ -1,8 +1,13 @@
-import { requireCurrentUser } from "@@/server/utils/session";
+import { requireScopedUserUuid } from "@@/server/utils/scopedUser";
 import { useDb } from "@@/server/utils/db";
 
+type LineAccountQuery = {
+  user_uuid?: string;
+};
+
 export default defineEventHandler(async (event) => {
-  const currentUser = await requireCurrentUser(event);
+  const query = getQuery(event) as LineAccountQuery;
+  const scopedUserUuid = await requireScopedUserUuid(event, query.user_uuid);
   const db = useDb();
   const result = await db.query(
     `SELECT base.*
@@ -10,7 +15,7 @@ export default defineEventHandler(async (event) => {
      WHERE base.line_user = $1
        AND base.deleted_at IS NULL
      ORDER BY base.line_connected_at DESC, base.id DESC`,
-    [currentUser.uuid],
+    [scopedUserUuid],
   );
 
   return {

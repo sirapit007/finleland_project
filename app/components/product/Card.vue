@@ -1,6 +1,4 @@
 <template>
-  <AuthBothModal ref="signModal" />
-
   <article
     class="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg"
   >
@@ -29,16 +27,33 @@
         >
           ลด {{ discountLabel }}
         </span>
+        <span
+          v-if="ranking"
+          class="badge badge-success absolute right-2 top-2 border-0 text-xs font-bold text-error-content"
+        >
+          #{{ ranking }}
+        </span>
       </div>
 
       <div class="space-y-2 p-3">
         <span
           v-if="props.object.product_category_name"
-          class="badge sm:badge-sm badge-xs badge-warning max-w-full truncate"
+          class="badge sm:badge-md badge-sm badge-warning max-w-full truncate"
         >
           {{ props.object.product_category_name }}
         </span>
-        <h2 class="line-clamp-2 min-h-10 text-xs font-semibold leading-5">
+        <div class="flex flex-wrap flex-row gap-2">
+          <span
+            v-for="subcategory in props.object.product_subcategories"
+            :key="subcategory.uuid"
+            class="badge sm:badge-sm badge-xs badge-info"
+          >
+            {{ subcategory.subcategory_name }}
+          </span>
+        </div>
+        <h2
+          class="line-clamp-2 min-h-10 sm:text-base text-sm font-semibold leading-5"
+        >
           {{ props.object.product_name }}
         </h2>
         <p
@@ -95,10 +110,19 @@
       <div class="space-y-2 p-4 pb-3">
         <span
           v-if="props.object.product_category_name"
-          class="badge sm:badge-sm badge-xs badge-warning max-w-full truncate"
+          class="badge sm:badge-md badge-sm badge-warning max-w-full truncate"
         >
           {{ props.object.product_category_name }}
         </span>
+        <div class="flex flex-wrap flex-row gap-2">
+          <span
+            v-for="subcategory in props.object.product_subcategories"
+            :key="subcategory.uuid"
+            class="badge sm:badge-sm badge-xs badge-info max-w-full truncate"
+          >
+            {{ subcategory.subcategory_name }}
+          </span>
+        </div>
         <h2
           class="min-h-12 line-clamp-2 sm:text-sm text-xs font-semibold leading-6 text-base-content sm:text-base"
         >
@@ -197,7 +221,7 @@
           <span
             class="absolute left-1/2 top-2 h-1 w-12 -translate-x-1/2 rounded-full bg-base-content/20"
           />
-          <h3 class="font-semibold">รายละเอียดสินค้า</h3>
+          <h2 class="font-semibold text-xl">รายละเอียดสินค้า</h2>
           <button
             type="button"
             class="btn btn-circle btn-ghost btn-sm"
@@ -208,19 +232,19 @@
           </button>
         </div>
 
-        <div class="space-y-5 overflow-y-auto p-4 pb-6">
+        <div class="space-y-5 overflow-y-auto p-4 pb-6 bg-base-200">
           <div class="space-y-3">
             <img
               v-if="selectedProductImage"
               :src="selectedProductImage"
               :alt="props.object.product_name || 'สินค้า'"
-              class="h-64 w-full rounded-xl border border-base-300 object-contain"
+              class="h-64 w-full rounded-xl bg-base-100 border border-base-300 object-contain"
             />
             <img
               v-else
               src="@/assets/images/blank.png"
               alt="ยังไม่มีรูปสินค้า"
-              class="h-64 w-full rounded-xl border border-base-300 object-contain opacity-70"
+              class="h-64 w-full rounded-xl bg-base-100 border border-base-300 object-contain opacity-70"
             />
             <div
               v-if="productImages.length > 1"
@@ -244,22 +268,37 @@
           </div>
 
           <div class="space-y-3">
-            <div class="flex flex-wrap items-center gap-2">
-              <span
+            <div class="flex flex-col flex-wrap items-start gap-2">
+              <NuxtLink
+                class="badge badge-md badge-warning hover:translate-y-[-1px] hover:shadow-sm transition"
                 v-if="props.object.product_category_name"
-                class="badge badge-sm badge-warning font-semibold"
+                :to="{
+                  path: '/products',
+                  query: { category: props.object.product_category_name },
+                }"
+                @click="closeMobileSheet"
               >
                 {{ props.object.product_category_name }}
-              </span>
-              <span
-                v-for="subcategory in props.object.product_subcategories || []"
-                :key="subcategory.uuid"
-                class="badge badge-sm badge-outline badge-primary"
-              >
-                {{ subcategory.subcategory_name }}
-              </span>
+              </NuxtLink>
+              <div class="flex flex-wrap flex-row gap-2">
+                <NuxtLink
+                  v-for="subcategory in props.object.product_subcategories ||
+                  []"
+                  :key="subcategory.uuid"
+                  class="badge badge-sm badge-info hover:translate-y-[-1px] hover:shadow-sm transition"
+                  :to="{
+                    path: '/products',
+                    query: {
+                      category: props.object.product_category_name,
+                      subcategory: subcategory.uuid,
+                    },
+                  }"
+                >
+                  {{ subcategory.subcategory_name }}
+                </NuxtLink>
+              </div>
             </div>
-            <h2 class="text-xl font-semibold leading-7">
+            <h2 class="text-lg font-semibold leading-7">
               {{ props.object.product_name }}
             </h2>
           </div>
@@ -375,12 +414,14 @@
       </form>
     </dialog>
   </article>
+
+  <AuthBothModal ref="signModal" />
 </template>
 
 <script setup lang="ts">
 import { normalizeProductImageUrls } from "~/utils/productImages";
 
-const props = defineProps<{ object: Record<string, any> }>();
+const props = defineProps<{ object: Record<string, any>; ranking?: number }>();
 type SignModalHandle = {
   onSignIn: () => void;
 };

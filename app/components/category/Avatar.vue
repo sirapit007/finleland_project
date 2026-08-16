@@ -10,7 +10,7 @@
         class="avatar flex justify-center transition-transform duration-100 ease-in-out hover:scale-105"
       >
         <div
-          class="rounded-full border ring-2 ring-accent"
+          class="rounded-full border border-none"
         >
           <img
             v-if="props.object.image_url"
@@ -25,7 +25,7 @@
         </div>
       </div>
     </NuxtLink>
-    <p class="text-center text-accent sm:text-[13.5px]! text-[11.5px] font-extrabold mt-2">
+    <p class="text-center sm:text-sm! text-xs font-bold mt-2">
       {{ props.object.category_name }}
     </p>
   </div>

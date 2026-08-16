@@ -12,8 +12,8 @@
         <div
           class="grid lg:grid-cols-6 md:grid-cols-5 sm:grid-cols-4 grid-cols-3 lg:gap-4 sm:gap-2 gap-1 px-1 sm:px-12"
         >
-          <div v-for="item in slide" :key="item.product_name" class="my-2.5">
-            <ProductCard :object="item" />
+          <div v-for="(item, index) in slide" :key="item.product_name" class="my-2.5">
+            <ProductCard :object="item" :ranking="ranking ? ( slideIndex*itemsPerSlide ) + (index + 1) : 0" />
           </div>
         </div>
       </div>
@@ -58,7 +58,10 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ category?: string }>();
+const props = defineProps<{
+  category?: string;
+  ranking?: "best-selling";
+}>();
 const currentSlide = ref(0);
 const itemsPerSlide = ref(4);
 let autoPlayTimer: ReturnType<typeof setInterval> | null = null;
@@ -82,7 +85,11 @@ const loadProducts = async () => {
     const response = await $fetch<{ rows?: Record<string, any>[] }>(
       "/api/products",
       {
-        params: { pageSize: 12, orderBy: "base.id DESC", category: props.category },
+        params: {
+          pageSize: 12,
+          category: props.category,
+          ranking: props.ranking,
+        },
       },
     );
     fetchedProducts.value = response.rows || [];
@@ -164,7 +171,7 @@ onMounted(() => {
   startAutoPlay();
 });
 onBeforeUnmount(() => {
-  stopAutoPlay;
+  stopAutoPlay();
   window.removeEventListener("resize", updateItemsPerSlide);
 });
 </script>

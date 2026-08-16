@@ -1,6 +1,9 @@
-import { createHmac } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
 import { hashPassword, verifyPassword } from "@@/server/utils/password";
+import {
+  createPasswordSessionVersion,
+  signSessionToken,
+} from "@@/server/utils/sessionToken";
 
 const USERS_TABLE = "tb_users";
 const ID_COLUMN = "id";
@@ -27,31 +30,6 @@ type UserRow = {
   password: string;
   role?: string | null;
 };
-
-function base64Url(input: string | Buffer) {
-  return Buffer.from(input)
-    .toString("base64")
-    .replace(/=/g, "")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_");
-}
-
-function signJwt(
-  payload: Record<string, unknown>,
-  secret: string,
-  expiresIn: number,
-) {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "HS256", typ: "JWT" };
-  const tokenPayload = { ...payload, iat: now, exp: now + expiresIn };
-
-  const unsignedToken = `${base64Url(JSON.stringify(header))}.${base64Url(
-    JSON.stringify(tokenPayload),
-  )}`;
-  const signature = createHmac("sha256", secret).update(unsignedToken).digest();
-
-  return `${unsignedToken}.${base64Url(signature)}`;
-}
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<LoginBody>(event);
@@ -94,6 +72,8 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  let sessionPasswordHash = user.password;
+
   if (passwordResult.needsUpgrade) {
     const upgradedHash = await hashPassword(password);
     await db.query(
@@ -103,6 +83,7 @@ export default defineEventHandler(async (event) => {
        WHERE id = $2`,
       [upgradedHash, user.id],
     );
+    sessionPasswordHash = upgradedHash;
   }
 
   if (admin && user.role !== "Admin") {
@@ -122,9 +103,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const maxAge = body.rememberMe ? TOKEN_AGE_SECONDS * 30 : TOKEN_AGE_SECONDS;
-  const token = signJwt(
+  const token = signSessionToken(
     {
       sub: String(user?.id),
+      pwdv: createPasswordSessionVersion(sessionPasswordHash, jwtSecret),
       firstname: user?.firstname,
       lastname: user?.lastname,
       phone: user?.phone,

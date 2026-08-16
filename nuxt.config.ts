@@ -92,6 +92,7 @@ export default defineNuxtConfig({
     paymentReceiverAccount: process.env.PAYMENT_RECEIVER_ACCOUNT || "",
     paymentReceiverName: process.env.PAYMENT_RECEIVER_NAME || "",
     paymentReceiverMerchantId: process.env.PAYMENT_RECEIVER_MERCHANT_ID || "",
+    bankAccountEncryptionKey: process.env.BANK_ACCOUNT_ENCRYPTION_KEY || "",
     public: {
       taxInvoiceSellerName:
         process.env.NUXT_PUBLIC_TAX_INVOICE_SELLER_NAME || "ฟินลี่แลนด์ พลาซ่า",

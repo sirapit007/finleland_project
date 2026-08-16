@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
   if (query.error) {
+    clearLineConnectStateCookie(event);
     return sendRedirect(event, profileRedirect("cancelled"));
   }
 
@@ -33,7 +34,11 @@ export default defineEventHandler(async (event) => {
   const config = getLineLoginConfig();
   const statePayload = readLineConnectState(state, config.stateSecret);
 
-  if (!code || !statePayload || !hasLineConnectStateCookie(event, statePayload.nonce)) {
+  if (
+    !code ||
+    !statePayload ||
+    !hasLineConnectStateCookie(event, statePayload.nonce)
+  ) {
     clearLineConnectStateCookie(event);
     return sendRedirect(event, profileRedirect("error"));
   }

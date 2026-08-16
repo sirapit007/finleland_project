@@ -864,33 +864,13 @@
   </dialog>
 
   <ShippingAddressFormModal
-    v-model="isAddressFormOpen"
-    :mode="addressFormMode"
-    :form="addressForm"
-    :loading="isSavingAddress"
-    @submit="requestSaveAddress"
+    ref="shippingAddressFormModal"
+    @saved="handleShippingAddressSaved"
   />
 
   <TaxProfileFormModal
-    v-model="isTaxFormOpen"
-    :mode="taxFormMode"
-    :form="taxForm"
-    :loading="isSavingTaxProfile"
-    @submit="requestSaveTaxProfile"
-  />
-
-  <ModalRemoveConfirm
-    v-model="isTaxConfirmOpen"
-    :title="
-      taxFormMode === 'create'
-        ? 'ยืนยันการบันทึกข้อมูลผู้เสียภาษี'
-        : 'ยืนยันการแก้ไขข้อมูลผู้เสียภาษี'
-    "
-    message="กรุณาตรวจสอบชื่อ เลขประจำตัวผู้เสียภาษี และที่อยู่ก่อนบันทึก"
-    confirm-text="บันทึก"
-    :loading="isSavingTaxProfile"
-    @confirm="confirmTaxProfileSave"
-    @cancel="reopenTaxProfileFormAfterCancel"
+    ref="taxProfileFormModal"
+    @saved="handleTaxProfileSaved"
   />
 
   <ModalRemoveConfirm
@@ -903,7 +883,6 @@
     :shipping-address="confirmShippingAddress"
     :delivery-method="confirmDeliveryMethod"
     @confirm="confirmBasketAction"
-    @cancel="reopenAddressFormAfterCancel"
   />
 </template>
 
@@ -942,28 +921,21 @@ const shippingDistanceError = ref("");
 const shippingDistanceQuoteCache = new Map<string, ShippingDistanceQuote>();
 let shippingDistanceAbortController: AbortController | null = null;
 const isShippingLoading = ref(false);
-const isSavingAddress = ref(false);
 const isTaxLoading = ref(false);
-const isSavingTaxProfile = ref(false);
-const editingAddressUuid = ref("");
 const isConfirmModalOpen = ref(false);
-const confirmAction = ref<
-  "remove" | "clear" | "checkout" | "create-address" | "edit-address" | ""
->("");
+const confirmAction = ref<"remove" | "clear" | "checkout" | "">("");
 const confirmBasketTarget = ref<any>(null);
 
 const selectAddressModal = ref<HTMLDialogElement | null>(null);
 const selectTaxProfileModal = ref<HTMLDialogElement | null>(null);
-const isAddressFormOpen = ref(false);
-const addressFormMode = ref<"create" | "edit">("create");
-const addressForm = ref(
-  createShippingAddressForm({ shipping_is_default: false }),
-);
-const isTaxFormOpen = ref(false);
-const isTaxConfirmOpen = ref(false);
-const taxFormMode = ref<"create" | "edit">("create");
-const taxForm = ref(createTaxProfileForm({ tax_profile_is_default: false }));
-const editingTaxProfileUuid = ref("");
+const shippingAddressFormModal = ref<{
+  onCreate: (initial?: Partial<ShippingAddressForm>) => void;
+  onEdit: (address: ShippingAddress) => void;
+} | null>(null);
+const taxProfileFormModal = ref<{
+  onCreate: (initial?: Partial<TaxProfileForm>) => void;
+  onEdit: (profile: TaxProfile) => void;
+} | null>(null);
 
 const benefits = [
   {
@@ -1055,8 +1027,7 @@ const confirmTitle = computed(() => {
   if (confirmAction.value === "remove") return "ยืนยันการลบรายการนี้";
   if (confirmAction.value === "clear") return "ยืนยันการลบสินค้าในตะกร้า";
   if (confirmAction.value === "checkout") return "ยืนยันการสั่งซื้อ";
-  if (confirmAction.value === "create-address") return "ยืนยันการบันทึกที่อยู่";
-  return "ยืนยันการแก้ไขที่อยู่";
+  return "ยืนยันการทำรายการ";
 });
 
 const confirmMessage = computed(() => {
@@ -1067,16 +1038,13 @@ const confirmMessage = computed(() => {
     return "สินค้าทุกรายการจะถูกลบออกจากตะกร้า";
   if (confirmAction.value === "checkout")
     return `ยอดสั่งซื้อ ฿${formatPrice(grandTotal.value)} จะถูกส่งให้ร้านตรวจสอบ`;
-  if (confirmAction.value === "create-address")
-    return "ตรวจสอบข้อมูลแล้วบันทึกที่อยู่จัดส่งนี้";
-  return "ยืนยันการบันทึกการแก้ไขที่อยู่จัดส่งนี้";
+  return "";
 });
 
 const confirmButtonText = computed(() => {
   if (confirmAction.value === "remove" || confirmAction.value === "clear")
     return "ลบ";
-  if (confirmAction.value === "checkout") return "ยืนยันการสั่งซื้อ";
-  return "บันทึก";
+  return "ยืนยันการสั่งซื้อ";
 });
 
 const confirmVariant = computed<"error" | "primary">(() =>
@@ -1089,7 +1057,6 @@ const isConfirmLoading = computed(
   () =>
     isClearing.value ||
     isCheckingOut.value ||
-    isSavingAddress.value ||
     Boolean(
       confirmBasketTarget.value &&
       isItemUpdating(confirmBasketTarget.value.uuid),
@@ -1467,8 +1434,11 @@ const openCreateTaxProfileModal = async () => {
     taxError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มข้อมูลผู้เสียภาษี";
     return;
   }
-  taxFormMode.value = "create";
-  taxForm.value = createTaxProfileForm({
+
+  taxError.value = "";
+  selectTaxProfileModal.value?.close();
+  await nextTick();
+  taxProfileFormModal.value?.onCreate({
     tax_profile_user: currentUser.value.uuid,
     taxpayer_name:
       `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
@@ -1478,18 +1448,12 @@ const openCreateTaxProfileModal = async () => {
       taxProfiles.value.length === 0 ||
       !taxProfiles.value.some((profile) => profile.tax_profile_is_default),
   });
-  selectTaxProfileModal.value?.close();
-  await nextTick();
-  isTaxFormOpen.value = true;
 };
 
 const openEditTaxProfileModal = async (profile: TaxProfile) => {
-  taxFormMode.value = "edit";
-  editingTaxProfileUuid.value = profile.uuid;
-  taxForm.value = toTaxProfileForm(profile);
   selectTaxProfileModal.value?.close();
   await nextTick();
-  isTaxFormOpen.value = true;
+  taxProfileFormModal.value?.onEdit(profile);
 };
 
 const selectTaxProfile = (uuid: string) => {
@@ -1499,56 +1463,18 @@ const selectTaxProfile = (uuid: string) => {
   showToast("เลือกข้อมูลผู้เสียภาษีเรียบร้อยแล้ว");
 };
 
-const requestSaveTaxProfile = async () => {
-  taxError.value = "";
-  if (!/^[0-9]{13}$/.test(String(taxForm.value.taxpayer_id || "").trim())) {
-    taxError.value = "กรุณากรอกเลขประจำตัวผู้เสียภาษีให้ครบ 13 หลัก";
-    return;
-  }
-  const phone = String(taxForm.value.taxpayer_phone || "").trim();
-  if (phone && !/^[0-9]{10}$/.test(phone)) {
-    taxError.value = "เบอร์โทรศัพท์ผู้เสียภาษีต้องเป็นตัวเลข 10 หลัก";
-    return;
-  }
-  isTaxFormOpen.value = false;
-  await nextTick();
-  isTaxConfirmOpen.value = true;
-};
-
-const reopenTaxProfileFormAfterCancel = async () => {
-  await nextTick();
-  isTaxFormOpen.value = true;
-};
-
-const confirmTaxProfileSave = async () => {
-  if (!currentUser.value?.uuid) return;
-  isSavingTaxProfile.value = true;
-  taxError.value = "";
-  try {
-    const response =
-      taxFormMode.value === "create"
-        ? await createTaxProfile(
-            createTaxProfileForm({
-              ...taxForm.value,
-              tax_profile_user: currentUser.value.uuid,
-            }),
-          )
-        : await updateTaxProfile(editingTaxProfileUuid.value, taxForm.value);
-    await loadTaxProfiles();
-    if (response?.row?.uuid) selectedTaxProfileId.value = response.row.uuid;
-    requestTaxInvoice.value = true;
-    isTaxConfirmOpen.value = false;
-    showToast(
-      taxFormMode.value === "create"
-        ? "เพิ่มข้อมูลผู้เสียภาษีเรียบร้อยแล้ว"
-        : "บันทึกข้อมูลผู้เสียภาษีเรียบร้อยแล้ว",
-    );
-  } catch (error: any) {
-    taxError.value =
-      error?.data?.statusMessage || "ไม่สามารถบันทึกข้อมูลผู้เสียภาษีได้";
-  } finally {
-    isSavingTaxProfile.value = false;
-  }
+const handleTaxProfileSaved = async (
+  mode: "create" | "edit",
+  profile: TaxProfile,
+) => {
+  await loadTaxProfiles();
+  selectedTaxProfileId.value = profile.uuid;
+  requestTaxInvoice.value = true;
+  showToast(
+    mode === "create"
+      ? "เพิ่มข้อมูลผู้เสียภาษีเรียบร้อยแล้ว"
+      : "บันทึกข้อมูลผู้เสียภาษีเรียบร้อยแล้ว",
+  );
 };
 
 const openSelectAddressModal = async () => {
@@ -1564,9 +1490,10 @@ const openCreateAddressModal = async () => {
     return;
   }
 
-  confirmAction.value = "create-address";
-  addressFormMode.value = "create";
-  addressForm.value = createShippingAddressForm({
+  shippingError.value = "";
+  selectAddressModal.value?.close();
+  await nextTick();
+  shippingAddressFormModal.value?.onCreate({
     shipping_user: currentUser.value.uuid,
     shipping_recipient:
       `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
@@ -1575,19 +1502,12 @@ const openCreateAddressModal = async () => {
       shippingAddresses.value.length === 0 ||
       !shippingAddresses.value.some((address) => address.shipping_is_default),
   });
-  selectAddressModal.value?.close();
-  await nextTick();
-  isAddressFormOpen.value = true;
 };
 
 const openEditAddressModal = async (address: ShippingAddress) => {
-  confirmAction.value = "edit-address";
-  addressFormMode.value = "edit";
-  editingAddressUuid.value = address.uuid;
-  addressForm.value = toShippingAddressForm(address);
   selectAddressModal.value?.close();
   await nextTick();
-  isAddressFormOpen.value = true;
+  shippingAddressFormModal.value?.onEdit(address);
 };
 
 const selectShippingAddress = (addressUuid: string) => {
@@ -1596,95 +1516,17 @@ const selectShippingAddress = (addressUuid: string) => {
   showToast("เลือกที่อยู่จัดส่งเรียบร้อยแล้ว");
 };
 
-const requestSaveAddress = async () => {
-  isAddressFormOpen.value = false;
-  await nextTick();
-  isConfirmModalOpen.value = true;
-};
-
-const reopenAddressFormAfterCancel = async () => {
-  if (
-    confirmAction.value !== "create-address" &&
-    confirmAction.value !== "edit-address"
-  ) {
-    return;
-  }
-
-  await nextTick();
-  isAddressFormOpen.value = true;
-};
-
-const saveCreateAddress = async () => {
-  shippingError.value = "";
-
-  if (!currentUser.value?.uuid) {
-    shippingError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มที่อยู่จัดส่ง";
-    return false;
-  }
-
-  isSavingAddress.value = true;
-
-  try {
-    const res: any = await createShippingAddress(
-      createShippingAddressForm({
-        ...addressForm.value,
-        shipping_user: currentUser.value.uuid,
-      }),
-      currentUser.value,
-    );
-
-    isAddressFormOpen.value = false;
-    showToast("เพิ่มที่อยู่จัดส่งเรียบร้อยแล้ว");
-    await loadShippingAddresses();
-
-    if (res?.row?.uuid) {
-      selectedShippingAddressId.value = res.row.uuid;
-    }
-    return true;
-  } catch {
-    shippingError.value = "ไม่สามารถเพิ่มที่อยู่จัดส่งได้";
-    return false;
-  } finally {
-    isSavingAddress.value = false;
-  }
-};
-
-const saveEditAddress = async () => {
-  shippingError.value = "";
-
-  if (!editingAddressUuid.value) {
-    shippingError.value = "ไม่พบรายการที่อยู่จัดส่ง";
-    return false;
-  }
-
-  if (!currentUser.value?.uuid) {
-    shippingError.value = "กรุณาเข้าสู่ระบบก่อนแก้ไขที่อยู่จัดส่ง";
-    return false;
-  }
-
-  isSavingAddress.value = true;
-
-  try {
-    const res: any = await updateShippingAddress(
-      editingAddressUuid.value,
-      addressForm.value,
-      currentUser.value,
-    );
-
-    isAddressFormOpen.value = false;
-    showToast("บันทึกการแก้ไขที่อยู่เรียบร้อยแล้ว");
-    await loadShippingAddresses();
-
-    if (res?.row?.uuid) {
-      selectedShippingAddressId.value = res.row.uuid;
-    }
-    return true;
-  } catch {
-    shippingError.value = "ไม่สามารถแก้ไขที่อยู่จัดส่งได้";
-    return false;
-  } finally {
-    isSavingAddress.value = false;
-  }
+const handleShippingAddressSaved = async (
+  mode: "create" | "edit",
+  address: ShippingAddress,
+) => {
+  await loadShippingAddresses();
+  selectedShippingAddressId.value = address.uuid;
+  showToast(
+    mode === "create"
+      ? "เพิ่มที่อยู่จัดส่งเรียบร้อยแล้ว"
+      : "บันทึกการแก้ไขที่อยู่เรียบร้อยแล้ว",
+  );
 };
 
 const onRefreshBasket = async () => {
@@ -1829,10 +1671,6 @@ const confirmBasketAction = async () => {
   } else if (confirmAction.value === "clear") {
     await onClearBasket();
     actionSucceeded = !errorMessage.value;
-  } else if (confirmAction.value === "create-address") {
-    actionSucceeded = await saveCreateAddress();
-  } else if (confirmAction.value === "edit-address") {
-    actionSucceeded = await saveEditAddress();
   } else if (confirmAction.value === "checkout") {
     await onCheckout();
     actionSucceeded =

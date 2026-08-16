@@ -1,5 +1,5 @@
 import { useDb } from "@@/server/utils/db";
-import { requireCurrentUser } from "@@/server/utils/session";
+import { requireScopedUserUuid } from "@@/server/utils/scopedUser";
 
 type ShippingAddressQuery = {
   page?: string;
@@ -8,6 +8,7 @@ type ShippingAddressQuery = {
   q?: string;
   uuid?: string;
   shipping_user?: string;
+  user_uuid?: string;
   deleted?: string;
 };
 
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const tableName = "tb_user_shipping_addresses";
   const db = useDb();
   const query = getQuery(event) as ShippingAddressQuery;
-  const currentUser = await requireCurrentUser(event);
+  const scopedUserUuid = await requireScopedUserUuid(event, query.user_uuid);
 
   const page = Math.max(Number(query.page || 1), 1);
   const pageSize = Math.min(Math.max(Number(query.pageSize || 10), 1), 100);
@@ -39,7 +40,7 @@ export default defineEventHandler(async (event) => {
   const params: unknown[] = [];
 
   let condition = "1 = 1";
-  params.push(currentUser.uuid);
+  params.push(scopedUserUuid);
   condition += ` AND base.shipping_user = $${params.length} `;
   condition += query.deleted
     ? " AND base.deleted_at IS NOT NULL "
