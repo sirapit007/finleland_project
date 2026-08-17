@@ -4,6 +4,8 @@ import { normalizeProductImageUrls } from "~/utils/productImages";
 const model = defineModel<string[]>({ default: () => [] });
 
 const loading = ref(false);
+const isDragging = ref(false);
+let dragDepth = 0;
 const images = computed(() => normalizeProductImageUrls(model.value));
 
 async function uploadFile(file: File) {
@@ -18,9 +20,8 @@ async function uploadFile(file: File) {
   return result.url as string;
 }
 
-async function upload(e: Event) {
-  const files = Array.from((e.target as HTMLInputElement).files || []);
-  if (!files.length) return;
+async function uploadFiles(files: File[]) {
+  if (!files.length || loading.value) return;
 
   loading.value = true;
 
@@ -38,8 +39,45 @@ async function upload(e: Event) {
     }
   } finally {
     loading.value = false;
-    (e.target as HTMLInputElement).value = "";
   }
+}
+
+async function upload(e: Event) {
+  const input = e.target as HTMLInputElement;
+
+  try {
+    await uploadFiles(Array.from(input.files || []));
+  } finally {
+    input.value = "";
+  }
+}
+
+function hasDraggedFiles(e: DragEvent) {
+  return Array.from(e.dataTransfer?.types || []).includes("Files");
+}
+
+function onDragEnter(e: DragEvent) {
+  if (!hasDraggedFiles(e) || loading.value) return;
+
+  dragDepth += 1;
+  isDragging.value = true;
+}
+
+function onDragLeave() {
+  dragDepth = Math.max(0, dragDepth - 1);
+
+  if (dragDepth === 0) isDragging.value = false;
+}
+
+async function onDrop(e: DragEvent) {
+  dragDepth = 0;
+  isDragging.value = false;
+
+  const files = Array.from(e.dataTransfer?.files || []).filter((file) =>
+    file.type.startsWith("image/"),
+  );
+
+  await uploadFiles(files);
 }
 
 function removeImage(index: number) {
@@ -50,7 +88,16 @@ function removeImage(index: number) {
 <template>
   <div class="space-y-3">
     <div
-      class="group relative overflow-hidden rounded-lg border-2 border-dashed border-primary/30 bg-base-100 transition-all duration-300 hover:border-primary hover:bg-base-200"
+      class="group relative overflow-hidden rounded-lg border-2 border-dashed transition-all duration-300"
+      :class="
+        isDragging
+          ? 'border-primary bg-primary/10'
+          : 'border-primary/30 bg-base-100 hover:border-primary hover:bg-base-200'
+      "
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent
+      @dragleave.prevent="onDragLeave"
+      @drop.prevent="onDrop"
     >
       <label
         class="flex min-h-[14rem] cursor-pointer flex-col items-center justify-center gap-4 px-4 py-8 text-center"
