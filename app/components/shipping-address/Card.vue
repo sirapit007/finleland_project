@@ -1,7 +1,19 @@
 <template>
   <article
     :key="shippingAddress.uuid"
-    class="rounded-2xl border border-base-300 bg-base-100 p-4 transition hover:translate-y-[-1px] hover:shadow-md"
+    class="rounded-2xl border p-4 transition hover:translate-y-[-1px] hover:shadow-md"
+    :class="[
+      selected
+        ? 'border-primary bg-primary/5 ring-1 ring-primary'
+        : 'border-base-300 bg-base-100',
+      selectable ? 'cursor-pointer' : '',
+    ]"
+    :role="selectable ? 'button' : undefined"
+    :tabindex="selectable ? 0 : undefined"
+    :aria-pressed="selectable ? selected : undefined"
+    @click="selectAddress"
+    @keydown.enter.prevent="selectAddress"
+    @keydown.space.prevent="selectAddress"
   >
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
@@ -23,22 +35,24 @@
           {{ shippingAddress.shipping_phone }}
         </p>
       </div>
-      <div v-if="!readonly" class="flex shrink-0 gap-1">
-        <button
-          class="btn btn-ghost btn-square btn-sm text-secondary"
-          aria-label="แก้ไขที่อยู่จัดส่ง"
-          @click="shippingAddressFormModal?.onEdit(shippingAddress)"
-        >
-          <Icon name="lucide:pencil" size="16" />
-        </button>
-        <button
-          class="btn btn-ghost btn-square btn-sm text-error"
-          aria-label="ลบที่ิยู่จัเส่ง"
-          @click="openRemoveAddressModal(shippingAddress)"
-        >
-          <Icon name="lucide:trash-2" size="16" />
-        </button>
-      </div>
+      <slot name="actions" :shipping-address="shippingAddress">
+        <div class="flex shrink-0 gap-1">
+          <button
+            class="btn btn-ghost btn-square btn-sm text-secondary"
+            aria-label="แก้ไขที่อยู่จัดส่ง"
+            @click.stop="shippingAddressFormModal?.onEdit(shippingAddress)"
+          >
+            <Icon name="lucide:pencil" size="16" />
+          </button>
+          <button
+            class="btn btn-ghost btn-square btn-sm text-error"
+            aria-label="ลบที่อยู่จัดส่ง"
+            @click.stop="openRemoveAddressModal(shippingAddress)"
+          >
+            <Icon name="lucide:trash-2" size="16" />
+          </button>
+        </div>
+      </slot>
     </div>
 
     <div
@@ -75,9 +89,10 @@
 <script setup lang="ts">
 const { showToast } = useToast();
 
-defineProps<{
+const props = defineProps<{
   shippingAddress: ShippingAddress;
-  readonly?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
 }>();
 
 const shippingAddressFormModal = ref<{
@@ -89,7 +104,12 @@ const isRemovingAddress = ref(false);
 
 const emit = defineEmits<{
   saved: [mode: "edit" | "remove"];
+  select: [shippingAddress: ShippingAddress];
 }>();
+
+const selectAddress = () => {
+  if (props.selectable) emit("select", props.shippingAddress);
+};
 
 const addressRemoveConfirmMessage = computed(
   () =>

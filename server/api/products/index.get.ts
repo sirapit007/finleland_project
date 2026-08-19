@@ -19,6 +19,10 @@ export default defineEventHandler(async (event) => {
     "base.id ASC",
     "base.product_selling_price DESC",
     "base.product_selling_price ASC",
+    "base.product_name DESC",
+    "base.product_name ASC",
+    "base.product_category_name DESC",
+    "base.product_category_name ASC",
   ]);
   const safeOrderBy = allowedOrderBy.has(orderBy) ? orderBy : "base.id DESC";
   const effectiveOrderBy = isBestSelling

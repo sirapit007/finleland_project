@@ -146,9 +146,18 @@
           class="border-t border-base-300 bg-base-200/35 p-4 sm:p-5"
         >
           <SkeletonOrderDetail v-if="detailLoadingOrderUuid === order.uuid" />
-          <div v-else class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div v-else class="space-y-5">
             <section>
-              <h2 class="mb-3 text-base font-bold">รายการสินค้า</h2>
+              <div class="flex items-center gap-2 mb-3">
+                <Icon
+                  name="lucide:package"
+                  size="20"
+                  class="text-primary"
+                />
+                <h2 class="lg:text-lg sm:text-base text-sm font-bold">
+                  รายการสินค้า
+                </h2>
+              </div>
               <div class="space-y-3">
                 <div
                   v-for="item in itemsByOrder[order.uuid] || []"
@@ -200,7 +209,7 @@
               </div>
             </section>
 
-            <div class="space-y-5">
+            <div class="grid gap-5 lg:grid-cols-3 grid-cols-1 space-y-5">
               <OrderSummarySection
                 :order="order"
                 :total-quantity="orderTotalQuantity(order)"

@@ -1,9 +1,9 @@
 <template>
-  <section class="rounded-xl border border-base-300 bg-base-100 p-4">
+  <section class="rounded-xl border border-base-300 bg-base-100 p-4 h-full">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <Icon name="lucide:badge-dollar-sign" size="18" class="text-primary" />
-        <h2 class="lg:text-lg sm:text-base text-sm font-bold">การชำระเงิน</h2>
+        <h2 class="sm:text-base text-sm font-bold">การชำระเงิน</h2>
       </div>
       <span v-if="payment" class="badge badge-soft badge-sm" :class="statusMeta?.badge">
         {{ statusMeta?.label }}

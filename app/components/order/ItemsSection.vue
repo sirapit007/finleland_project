@@ -4,13 +4,33 @@
       class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
     >
       <div>
-        <h2 class="text-sm font-bold sm:text-base lg:text-lg">รายการสินค้า</h2>
+        <div class="flex items-center gap-2 mb-3">
+          <Icon name="lucide:package" size="20" class="text-primary" />
+          <h2 class="text-sm font-bold sm:text-base lg:text-lg">
+            รายการสินค้า
+          </h2>
+        </div>
         <p class="text-xs text-base-content/55">
           การแก้ไขทุกครั้งจะถูกบันทึกในประวัติด้านขวา
         </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
+        <NuxtLink
+          v-if="order.uuid"
+          :to="{
+            path: `/admin/orders/${order.uuid}/quotation`,
+            query: { print: '1' },
+          }"
+          target="_blank"
+          rel="noopener"
+          class="btn btn-outline btn-xs"
+          aria-label="เปิดและพิมพ์ใบเสนอราคา"
+        >
+          <Icon name="lucide:file-text" size="15" />
+          ใบเสนอราคา
+        </NuxtLink>
+
         <NuxtLink
           v-if="order.uuid"
           :to="{

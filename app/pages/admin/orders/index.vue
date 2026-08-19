@@ -17,8 +17,9 @@
           v-model="q"
           placeholder="ค้นหาเลขที่คำสั่งซื้อ ชื่อ หรือเบอร์โทร"
         />
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
-      <div class="relative my-1 overflow-auto">
+      <div class="relative my-1" :class="pending ? 'overflow-hidden' : 'overflow-auto'">
         <p v-if="error" class="p-4 text-error">{{ error.message }}</p>
         <table
           class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-xs table-pin-rows table-pin-cols"
@@ -138,14 +139,18 @@
                   <SkeletonOrderDetail
                     v-if="detailLoadingOrderUuid === order.uuid"
                   />
-                  <div
-                    v-else
-                    class="grid gap-5 p-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.65fr)]"
-                  >
-                    <div class="space-y-5">
-                      <OrderItemsSection
+                  <div v-else class="space-y-5 p-4">
+                    <OrderItemsSection
+                      :order="order"
+                      :detail="detailByOrder[order.uuid]"
+                    />
+
+                    <div
+                      class="grid gap-5 lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 space-y-5"
+                    >
+                      <OrderSummarySection
                         :order="order"
-                        :detail="detailByOrder[order.uuid]"
+                        :total-quantity="orderTotalQuantity(order)"
                       />
                       <OrderPaymentDetailsSection
                         admin
@@ -154,18 +159,11 @@
                         "
                         @refreshed="reloadOrder(order.uuid)"
                       />
-                    </div>
-
-                    <div class="space-y-5">
                       <OrderStatusSection
                         :order="order"
                         :detail="detailByOrder[order.uuid]"
                         editable
                         show-actor
-                      />
-                      <OrderSummarySection
-                        :order="order"
-                        :total-quantity="orderTotalQuantity(order)"
                       />
                       <OrderAdjustmentHistorySection
                         :adjustments="

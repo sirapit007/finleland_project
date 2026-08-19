@@ -24,8 +24,9 @@
           v-model="q"
           placeholder="ค้นหาชื่อหมวดหมู่ หรือคำค้นหา..."
         />
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
-      <div class="relative my-1 overflow-auto">
+      <div class="relative my-1" :class="pending ? 'overflow-hidden' : 'overflow-auto'">
         <p v-if="error" class="text-error">{{ error.message }}</p>
 
         <table
