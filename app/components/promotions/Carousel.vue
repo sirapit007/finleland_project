@@ -10,19 +10,19 @@
         class="w-full shrink-0"
       >
         <div
-          class="overflow-hidden rounded-2xl border border-base-300 bg-base-100 h-[300px]"
+          class="overflow-hidden rounded-2xl border border-base-300 bg-base-100 h-[500px]"
         >
           <img
             v-if="promotionImage(promotion)"
             :src="promotionImage(promotion)"
             :alt="promotion.promotion_name || 'โปรโมชั่น'"
-            class="size-full object-contain"
+            class="size-full object-cover"
           />
           <img
             v-else
             src="@/assets/images/blank.png"
             alt="ยังไม่มีรูปโปรโมชั่น"
-            class="size-full object-contain p-8 opacity-70"
+            class="size-full object-cover p-8 opacity-70"
           />
         </div>
       </div>

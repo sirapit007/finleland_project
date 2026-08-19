@@ -175,7 +175,7 @@
             v-model.number="quantity"
             type="number"
             min="0"
-            class="input input-xs join-item w-11 text-center"
+            class="input input-xs join-item w-12 text-center"
             aria-label="จำนวนสินค้า"
           />
           <button

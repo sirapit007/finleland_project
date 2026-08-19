@@ -1,7 +1,11 @@
 <template>
-  <section class="rounded-xl border border-base-300 bg-base-100 p-4">
+  <section class="rounded-xl border border-base-300 bg-base-100 p-4 h-full">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h2 class="lg:text-lg sm:text-base text-sm font-bold">สรุปคำสั่งซื้อ</h2>
+      <div class="flex items-center gap-2">
+        <Icon name="lucide:clipboard-list" size="18" class="text-primary" />
+        <h2 class="sm:text-base text-sm font-bold">สรุปคำสั่งซื้อ</h2>
+      </div>
+
       <NuxtLink
         v-if="order.uuid"
         :to="{
@@ -13,8 +17,8 @@
         class="btn btn-outline btn-xs"
         aria-label="พิมพ์เอกสารคำสั่งซื้อ"
       >
-        <Icon name="lucide:printer" size="14" />
-        พิมพ์เอกสาร
+        <Icon name="lucide:file-text" size="15" />
+        ใบกำกับภาษี
       </NuxtLink>
     </div>
 

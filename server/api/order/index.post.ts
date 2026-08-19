@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { useDb } from "@@/server/utils/db";
 import { notifyLineAdminGroupOfNewOrder } from "@@/server/utils/lineMessaging";
-import { calculateOrderItemPricing, toMoney } from "@@/server/utils/orderPricing";
+import {
+  calculateOrderItemPricing,
+  toMoney,
+} from "@@/server/utils/orderPricing";
 import { requireCurrentUser } from "@@/server/utils/session";
 
 type DeliveryMethod = "pickup" | "normal" | "express";
@@ -11,6 +14,7 @@ type OrderBody = {
   order_tax_profile_uuid?: string;
   order_delivery_method?: string;
   order_customer_note?: string;
+  order_stock_terms_accepted?: boolean;
 };
 
 const deliveryOptions: Record<
@@ -59,6 +63,13 @@ export default defineEventHandler(async (event) => {
   const taxProfileUuid = String(body.order_tax_profile_uuid || "").trim();
   const customerNote = String(body.order_customer_note || "").trim() || null;
 
+  if (body.order_stock_terms_accepted !== true) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "กรุณายอมรับเงื่อนไขการสั่งซื้อก่อนสร้างคำสั่งซื้อ",
+    });
+  }
+
   if (!Object.hasOwn(deliveryOptions, deliveryMethod)) {
     throw createError({
       statusCode: 400,
@@ -84,7 +95,10 @@ export default defineEventHandler(async (event) => {
     const orderUser = userResult.rows[0];
 
     if (!orderUser) {
-      throw createError({ statusCode: 404, statusMessage: "User was not found" });
+      throw createError({
+        statusCode: 404,
+        statusMessage: "User was not found",
+      });
     }
 
     let shippingAddress: Record<string, any> | null = null;
@@ -250,7 +264,8 @@ export default defineEventHandler(async (event) => {
 
     const shippingFee = selectedDelivery.fee;
     const grandTotal = toMoney(merchandiseTotal + shippingFee);
-    const customerName = `${orderUser.firstname || ""} ${orderUser.lastname || ""}`.trim();
+    const customerName =
+      `${orderUser.firstname || ""} ${orderUser.lastname || ""}`.trim();
 
     const orderResult = await client.query(
       `INSERT INTO tb_shopping_orders (
@@ -418,10 +433,7 @@ export default defineEventHandler(async (event) => {
        WHERE created_by = $1
          AND uuid::text = ANY($2::text[])
          AND deleted_at IS NULL`,
-      [
-        userUuid,
-        orderItems.map((item) => item.basketUuid),
-      ],
+      [userUuid, orderItems.map((item) => item.basketUuid)],
     );
 
     await client.query("COMMIT");

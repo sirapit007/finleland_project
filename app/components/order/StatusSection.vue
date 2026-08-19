@@ -1,7 +1,12 @@
 <template>
-  <section class="rounded-xl border border-base-300 bg-base-100 p-4">
+  <section class="rounded-xl border border-base-300 bg-base-100 p-4 h-full">
     <div class="mb-3 flex items-center justify-between">
-      <h2 class="text-sm font-bold sm:text-base lg:text-lg">สถานะคำสั่งซื้อ</h2>
+      <div class="flex items-center gap-2">
+        <Icon name="lucide:package-check" size="18" class="text-primary" />
+        <h2 class="text-sm font-bold sm:text-base">
+          สถานะคำสั่งซื้อ
+        </h2>
+      </div>
       <button
         v-if="editable && !isTerminal"
         class="btn btn-outline btn-primary btn-xs"

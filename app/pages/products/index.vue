@@ -101,7 +101,9 @@
           </div>
         </template>
         <template v-else>
-          <div class="mt-3 rounded-xl border border-primary/10 bg-primary/5 p-2">
+          <div
+            class="mt-3 rounded-xl border border-primary/10 bg-primary/5 p-2"
+          >
             <NuxtLink
               to="/products"
               class="group flex cursor-pointer items-center justify-between rounded-lg sm:p-2 p-1 text-xs sm:text-sm gap-2"
@@ -290,6 +292,14 @@
                 </option>
                 <option value="base.product_selling_price ASC">
                   เรียงตามลำดับ: ถูกไปแพง
+                </option>
+                <option value="base.product_name ASC">เรียงตามชื่อ: A-Z</option>
+                <option value="base.product_name DESC">
+                  เรียงตามชื่อ: Z-A
+                </option>
+                <option value="base.product_category_name ASC">เรียงตามหมวดหมู่: A-Z</option>
+                <option value="base.product_category_name DESC">
+                  เรียงตามหมวดหมู่: Z-A
                 </option>
               </select>
             </div>

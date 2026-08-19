@@ -6,8 +6,8 @@ const props = withDefaults(
     imageColumn?: number;
   }>(),
   {
-    columns: 6,
-    rows: 7,
+    columns: 2,
+    rows: 10,
     imageColumn: -1,
   },
 );

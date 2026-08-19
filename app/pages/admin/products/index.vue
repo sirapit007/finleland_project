@@ -9,13 +9,38 @@
             >จัดการรายการสินค้า</span
           >
         </div>
-        <button
-          class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
-          v-on:click="productFormModal?.onCreate()"
-        >
-          <Icon name="lucide:plus" size="16" />
-          เพิ่มสินค้า
-        </button>
+        <div class="space-x-4">
+          <select
+            class="select select-xs w-full cursor-pointer bg-base-100 sm:select-sm sm:w-fit lg:select-base"
+            v-model="orderBy"
+          >
+            <option value="base.id DESC" selected>
+              เรียงตามลำดับ: หลังไปก่อน
+            </option>
+            <option value="base.id ASC">เรียงตามลำดับ: ก่อนไปหลัง</option>
+            <option value="base.product_selling_price DESC">
+              เรียงตามลำดับ: แพงไปถูก
+            </option>
+            <option value="base.product_selling_price ASC">
+              เรียงตามลำดับ: ถูกไปแพง
+            </option>
+            <option value="base.product_name ASC">เรียงตามชื่อ: A-Z</option>
+            <option value="base.product_name DESC">เรียงตามชื่อ: Z-A</option>
+            <option value="base.product_category_name ASC">
+              เรียงตามหมวดหมู่: A-Z
+            </option>
+            <option value="base.product_category_name DESC">
+              เรียงตามหมวดหมู่: Z-A
+            </option>
+          </select>
+          <button
+            class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
+            v-on:click="productFormModal?.onCreate()"
+          >
+            <Icon name="lucide:plus" size="16" />
+            เพิ่มสินค้า
+          </button>
+        </div>
       </div>
 
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
@@ -24,8 +49,12 @@
           v-model="q"
           placeholder="ค้นหาชื่อสินค้า หรือคำค้นหาอื่นๆ..."
         />
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
-      <div class="relative my-1 overflow-auto">
+      <div
+        class="relative my-1"
+        :class="pending ? 'overflow-hidden' : 'overflow-auto'"
+      >
         <p v-if="error" class="text-error">{{ error.message }}</p>
 
         <table
@@ -147,6 +176,8 @@ import {
 } from "~/utils/productImages";
 const dayjs = useDayjs();
 
+const orderBy = ref("base.id DESC");
+
 type ImagePreviewExpose = {
   onOpen: (src: string) => void;
 };
@@ -180,6 +211,7 @@ const { data, pending, error, refresh } = await useFetch("/api/products", {
     page,
     pageSize,
     q,
+    orderBy
   },
   watch: [page, pageSize, q],
   transform: (data) => {

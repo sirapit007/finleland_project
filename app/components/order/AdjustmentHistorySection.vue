@@ -1,10 +1,11 @@
 <template>
   <section class="rounded-xl border border-base-300 bg-base-100 p-4">
-    <h2 class="mb-3 text-sm font-bold sm:text-base lg:text-lg">
-      ประวัติการปรับสินค้า
-    </h2>
+    <div class="flex items-center gap-2 mb-3">
+      <Icon name="lucide:history" size="18" class="text-primary" />
+      <h2 class="text-sm font-bold sm:text-base">ประวัติการปรับสินค้า</h2>
+    </div>
 
-    <ol class="max-h-60 space-y-3 overflow-auto pr-1">
+    <ol class="overflow-y-auto max-h-[400px] space-y-3 pr-1">
       <li
         v-for="adjustment in adjustments"
         :key="adjustment.uuid"

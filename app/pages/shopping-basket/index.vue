@@ -28,75 +28,6 @@
         </NuxtLink>
       </div>
 
-      <section
-        class="rounded-xl border border-base-300 bg-base-200/40 p-4 sm:p-5"
-      >
-        <div
-          class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-        >
-          <div class="flex gap-3">
-            <div
-              class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-            >
-              <Icon name="lucide:map-pin" size="21" />
-            </div>
-            <div>
-              <div class="mb-1 flex flex-wrap items-center gap-2">
-                <h2 class="font-bold">ที่อยู่จัดส่ง</h2>
-                <span class="text-xs text-primary font-semibold">
-                  ( {{ shippingAddresses.length }} ที่อยู่ )
-                </span>
-                <span
-                  v-if="selectedShippingAddress"
-                  class="badge badge-sm badge-soft badge-success"
-                >
-                  กำลังใช้งาน
-                </span>
-              </div>
-
-              <template v-if="selectedShippingAddress">
-                <p class="text-sm font-semibold">
-                  {{ selectedShippingAddress.shipping_label }}:
-                  {{ selectedShippingAddress.shipping_recipient }}
-                </p>
-                <p
-                  class="mt-1 max-w-3xl text-sm leading-6 text-base-content/65"
-                >
-                  {{ formatShippingAddress(selectedShippingAddress) }}
-                </p>
-                <p class="text-sm text-base-content/65">
-                  {{ selectedShippingAddress.shipping_phone }}
-                </p>
-                <p
-                  v-if="selectedShippingAddress.shipping_note"
-                  class="mt-1 text-xs text-base-content/55"
-                >
-                  หมายเหตุ: {{ selectedShippingAddress.shipping_note }}
-                </p>
-              </template>
-              <template v-else>
-                <p class="text-sm font-semibold text-base-content/70">
-                  ยังไม่มีที่อยู่จัดส่ง
-                </p>
-                <p class="mt-1 text-sm text-base-content/55">
-                  เพิ่มที่อยู่ไว้ก่อนเพื่อใช้ตอนสั่งซื้อ
-                </p>
-              </template>
-            </div>
-          </div>
-
-          <div class="flex shrink-0 flex-wrap gap-2">
-            <button
-              class="btn btn-outline sm:btn-sm btn-xs sm:w-fit w-full"
-              :disabled="isShippingLoading"
-              @click="openSelectAddressModal"
-            >
-              <Icon name="lucide:map-pinned" size="16" /> เลือกที่อยู่
-            </button>
-          </div>
-        </div>
-      </section>
-
       <div
         v-if="
           currentUser?.uuid && !isShippingLoading && !shippingAddresses.length
@@ -108,7 +39,11 @@
         <span>ต้องเพิ่มที่อยู่ก่อนจึงจะบันทึกคำสั่งซื้อได้</span>
       </div>
 
-      <div role="alert" class="alert alert-info text-sm">
+      <div
+        v-if="shouldShowLineConnectNotice"
+        role="alert"
+        class="alert alert-info text-sm"
+      >
         <Icon name="lucide:message-circle-more" size="18" />
         <span>
           หากต้องการรับการแจ้งเตือนเพื่อติดตามสถานะคำสั่งซื้อ
@@ -139,6 +74,75 @@
       </p>
       <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <section class="min-w-0 space-y-4">
+          <section
+            class="rounded-xl border border-base-300 bg-base-200/40 p-4 sm:p-5"
+          >
+            <div
+              class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            >
+              <div class="flex gap-3">
+                <div
+                  class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                >
+                  <Icon name="lucide:map-pin" size="21" />
+                </div>
+                <div>
+                  <div class="mb-1 flex flex-wrap items-center gap-2">
+                    <h2 class="font-bold">ที่อยู่จัดส่ง</h2>
+                    <span class="text-xs text-primary font-semibold">
+                      ( {{ shippingAddresses.length }} ที่อยู่ )
+                    </span>
+                    <span
+                      v-if="selectedShippingAddress"
+                      class="badge badge-sm badge-soft badge-success"
+                    >
+                      กำลังใช้งาน
+                    </span>
+                  </div>
+
+                  <template v-if="selectedShippingAddress">
+                    <p class="text-sm font-semibold">
+                      {{ selectedShippingAddress.shipping_label }}:
+                      {{ selectedShippingAddress.shipping_recipient }}
+                    </p>
+                    <p
+                      class="mt-1 max-w-3xl text-sm leading-6 text-base-content/65"
+                    >
+                      {{ formatShippingAddress(selectedShippingAddress) }}
+                    </p>
+                    <p class="text-sm text-base-content/65">
+                      {{ selectedShippingAddress.shipping_phone }}
+                    </p>
+                    <p
+                      v-if="selectedShippingAddress.shipping_note"
+                      class="mt-1 text-xs text-base-content/55"
+                    >
+                      หมายเหตุ: {{ selectedShippingAddress.shipping_note }}
+                    </p>
+                  </template>
+                  <template v-else>
+                    <p class="text-sm font-semibold text-base-content/70">
+                      ยังไม่มีที่อยู่จัดส่ง
+                    </p>
+                    <p class="mt-1 text-sm text-base-content/55">
+                      เพิ่มที่อยู่ไว้ก่อนเพื่อใช้ตอนสั่งซื้อ
+                    </p>
+                  </template>
+                </div>
+              </div>
+
+              <div class="flex shrink-0 flex-wrap gap-2">
+                <button
+                  class="btn btn-outline sm:btn-sm btn-xs sm:w-fit w-full"
+                  :disabled="isShippingLoading"
+                  @click="openSelectAddressModal"
+                >
+                  <Icon name="lucide:map-pinned" size="16" /> เลือกที่อยู่
+                </button>
+              </div>
+            </div>
+          </section>
+
           <div class="overflow-x-auto rounded-xl border border-base-300">
             <table
               class="table border-separate border-spacing-0"
@@ -578,12 +582,93 @@
             </p>
           </div>
 
+          <section
+            class="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4"
+            aria-labelledby="wiang-sa-contact-title"
+          >
+            <div class="flex items-start gap-3">
+              <Icon
+                name="lucide:store"
+                size="20"
+                class="mt-0.5 shrink-0 text-primary"
+              />
+              <div class="min-w-0 flex-1">
+                <h3 id="wiang-sa-contact-title" class="text-sm font-bold">
+                  ติดต่อร้านค้าสาขาเวียงสา
+                </h3>
+                <p class="mt-1 text-xs leading-5 text-base-content/60">
+                  เปิดทุกวัน 08:00 - 20:00 น. หากต้องการสอบถามสถานะสินค้า
+                  ติดต่อทางร้านได้ก่อนสั่งซื้อ
+                </p>
+                <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                  <a
+                    href="tel:+66930166996"
+                    class="btn btn-outline btn-primary btn-xs"
+                  >
+                    <Icon name="lucide:phone" size="14" /> 093-0166996
+                  </a>
+                  <a
+                    href="tel:+66955979995"
+                    class="btn btn-outline btn-primary btn-xs"
+                  >
+                    <Icon name="lucide:phone" size="14" /> 095-5979995
+                  </a>
+                  <a
+                    href="https://www.facebook.com/Fillyland.Sa"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="btn btn-outline btn-primary btn-xs sm:col-span-2"
+                  >
+                    <Icon name="ri:facebook-fill" size="14" />
+                    ฟินลี่แลนด์ พลาซ่า เวียงสา
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <label
+            class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
+            :class="
+              orderConditionsError
+                ? 'border-error/50 bg-error/5'
+                : acceptOrderConditions
+                  ? 'border-success/40 bg-success/5'
+                  : 'border-warning/40 bg-warning/5'
+            "
+          >
+            <input
+              v-model="acceptOrderConditions"
+              type="checkbox"
+              required
+              class="checkbox checkbox-primary checkbox-sm mt-0.5 shrink-0"
+              aria-describedby="order-conditions-details"
+              @change="orderConditionsError = ''"
+            />
+            <div id="order-conditions-details" class="min-w-0">
+              <p class="text-sm font-bold">ยอมรับเงื่อนไขการสั่งซื้อ</p>
+              <ol
+                class="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-base-content/65"
+              >
+                <li>
+                  หากทางร้านไม่สามารถจัดหาสินค้าได้
+                  ทางร้านจะโอนเงินคืนให้ผู้สั่งซื้อ
+                </li>
+                <li>
+                  หากสินค้าอยู่ระหว่างรอเติมสต็อก
+                  ผู้สั่งซื้อตกลงรอสินค้าตามระยะเวลาที่ทางร้านแจ้ง
+                </li>
+              </ol>
+            </div>
+          </label>
+
           <button
             class="btn btn-primary mt-5 w-full"
             :disabled="
               subtotal < 1500 ||
               (delivery !== 'pickup' && !selectedShippingAddress) ||
               (requestTaxInvoice && !selectedTaxProfile) ||
+              !acceptOrderConditions ||
               isShippingDistanceLoading ||
               isCheckingOut
             "
@@ -609,6 +694,12 @@
             class="mt-2 text-center text-xs text-base-content/55"
           >
             กรุณาเลือกข้อมูลผู้เสียภาษีก่อน
+          </p>
+          <p
+            v-else-if="!acceptOrderConditions"
+            class="mt-2 text-center text-xs text-warning"
+          >
+            กรุณาอ่านและยอมรับเงื่อนไขการสั่งซื้อ
           </p>
           <button
             class="btn btn-outline btn-primary btn-sm mt-3 w-full"
@@ -694,62 +785,15 @@
           </p>
         </div>
 
-        <div class="space-y-3">
-          <div
+        <div v-else class="space-y-3">
+          <ShippingAddressCard
             v-for="address in shippingAddresses"
             :key="address.uuid"
-            class="relative w-full rounded-xl border text-left transition"
-            :class="
-              selectedShippingAddressId === address.uuid
-                ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                : 'border-base-300 hover:border-primary/50'
-            "
-          >
-            <button
-              class="flex w-full items-start gap-3 p-4 pr-20 text-left"
-              type="button"
-              @click="selectShippingAddress(address.uuid)"
-            >
-              <Icon
-                name="lucide:map-pin"
-                size="18"
-                class="mt-0.5 text-primary"
-              />
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <p class="font-bold">
-                    {{ address.shipping_label }}:
-                    {{ address.shipping_recipient }}
-                  </p>
-                  <span
-                    v-if="address.shipping_is_default"
-                    class="badge badge-sm badge-accent"
-                  >
-                    Default
-                  </span>
-                </div>
-                <p class="mt-1 text-sm text-base-content/65">
-                  {{ formatShippingAddress(address) }}
-                </p>
-                <p class="mt-1 text-sm text-base-content/65">
-                  {{ address.shipping_phone }}
-                </p>
-                <p
-                  v-if="address.shipping_note"
-                  class="mt-1 text-xs text-base-content/55"
-                >
-                  หมายเหตุ: {{ address.shipping_note }}
-                </p>
-              </div>
-            </button>
-            <button
-              class="btn btn-ghost btn-xs absolute right-4 top-4"
-              type="button"
-              @click="openEditAddressModal(address)"
-            >
-              แก้ไข
-            </button>
-          </div>
+            :shipping-address="address"
+            :selected="selectedShippingAddressId === address.uuid"
+            selectable
+            @select="selectShippingAddress($event.uuid)"
+          />
         </div>
       </div>
     </div>
@@ -905,12 +949,16 @@ type ShippingDistanceQuote = {
 
 const delivery = ref("normal");
 const requestTaxInvoice = ref(false);
+const acceptOrderConditions = ref(false);
+const orderConditionsError = ref("");
 const errorMessage = ref("");
 const shippingError = ref("");
 const taxError = ref("");
 const isClearing = ref(false);
 const isCheckingOut = ref(false);
 const currentUser = ref<any>(null);
+const lineAccounts = useLineAccountsState();
+const isLineAccountsLoaded = ref(false);
 const shippingAddresses = ref<ShippingAddress[]>([]);
 const selectedShippingAddressId = ref("");
 const taxProfiles = ref<TaxProfile[]>([]);
@@ -925,6 +973,13 @@ const isTaxLoading = ref(false);
 const isConfirmModalOpen = ref(false);
 const confirmAction = ref<"remove" | "clear" | "checkout" | "">("");
 const confirmBasketTarget = ref<any>(null);
+
+const shouldShowLineConnectNotice = computed(
+  () =>
+    isLineAccountsLoaded.value &&
+    Boolean(currentUser.value?.uuid) &&
+    !lineAccounts.value.some((account) => account.line_is_connected),
+);
 
 const selectAddressModal = ref<HTMLDialogElement | null>(null);
 const selectTaxProfileModal = ref<HTMLDialogElement | null>(null);
@@ -1364,6 +1419,22 @@ const loadCurrentUser = () => {
   currentUser.value = stored ? JSON.parse(stored) : null;
 };
 
+const loadLineConnection = async () => {
+  isLineAccountsLoaded.value = false;
+
+  if (!currentUser.value?.uuid) {
+    lineAccounts.value = [];
+    return;
+  }
+
+  try {
+    await fetchLineAccounts();
+    isLineAccountsLoaded.value = true;
+  } catch {
+    // Do not suggest connecting LINE until the current status is known.
+  }
+};
+
 const loadShippingAddresses = async () => {
   shippingError.value = "";
 
@@ -1580,7 +1651,13 @@ const requestClearBasket = () => {
 };
 
 const requestCheckout = () => {
+  orderConditionsError.value = "";
   if (isShippingDistanceLoading.value) return;
+
+  if (!acceptOrderConditions.value) {
+    orderConditionsError.value = "กรุณาอ่านและยอมรับเงื่อนไขการสั่งซื้อ";
+    return;
+  }
 
   if (requestTaxInvoice.value && !selectedTaxProfile.value) {
     taxError.value = "กรุณาเลือกข้อมูลผู้เสียภาษีก่อนดำเนินการสั่งซื้อ";
@@ -1595,6 +1672,7 @@ const onCheckout = async () => {
   errorMessage.value = "";
   shippingError.value = "";
   taxError.value = "";
+  orderConditionsError.value = "";
 
   if (!currentUser.value?.uuid) {
     errorMessage.value = "กรุณาเข้าสู่ระบบก่อนดำเนินการสั่งซื้อ";
@@ -1603,6 +1681,11 @@ const onCheckout = async () => {
 
   if (!basketRows.value.length) {
     errorMessage.value = "ไม่พบสินค้าในตะกร้า";
+    return;
+  }
+
+  if (!acceptOrderConditions.value) {
+    orderConditionsError.value = "กรุณาอ่านและยอมรับเงื่อนไขการสั่งซื้อ";
     return;
   }
 
@@ -1623,6 +1706,7 @@ const onCheckout = async () => {
       method: "POST",
       body: {
         order_delivery_method: delivery.value,
+        order_stock_terms_accepted: acceptOrderConditions.value,
         order_shipping_address_uuid:
           delivery.value === "pickup"
             ? undefined
@@ -1674,7 +1758,10 @@ const confirmBasketAction = async () => {
   } else if (confirmAction.value === "checkout") {
     await onCheckout();
     actionSucceeded =
-      !errorMessage.value && !shippingError.value && !taxError.value;
+      !errorMessage.value &&
+      !shippingError.value &&
+      !taxError.value &&
+      !orderConditionsError.value;
   }
 
   if (actionSucceeded) {
@@ -1697,6 +1784,10 @@ onBeforeUnmount(() => {
 
 onMounted(async () => {
   loadCurrentUser();
-  await Promise.all([loadShippingAddresses(), loadTaxProfiles()]);
+  await Promise.all([
+    loadShippingAddresses(),
+    loadTaxProfiles(),
+    loadLineConnection(),
+  ]);
 });
 </script>

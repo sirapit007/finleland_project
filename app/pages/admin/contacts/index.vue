@@ -14,9 +14,10 @@
       <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
         <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
         <TableSearch v-model="q" placeholder="ค้นหาชื่อ อีเมล หรือข้อความ..." />
+        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
 
-      <div class="relative my-1 overflow-auto">
+      <div class="relative my-1" :class="pending ? 'overflow-hidden' : 'overflow-auto'">
         <p v-if="error" class="text-error">{{ error.message }}</p>
 
         <table
