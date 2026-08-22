@@ -38,9 +38,11 @@
       <div class="space-y-2 p-3">
         <span
           v-if="props.object.product_category_name"
-          class="badge sm:badge-md badge-sm badge-warning max-w-full truncate"
+          class="badge badge-warning badge-sm w-fit max-w-full min-w-0 justify-start overflow-hidden text-left sm:badge-md"
         >
-          {{ props.object.product_category_name }}
+          <span class="block min-w-0 truncate text-left">
+            {{ props.object.product_category_name }}
+          </span>
         </span>
         <div class="flex flex-wrap flex-row gap-2">
           <span
@@ -105,14 +107,22 @@
         >
           ลด {{ discountLabel }}
         </span>
+        <span
+          v-if="ranking"
+          class="badge badge-success absolute right-2 top-2 border-0 text-xs font-bold text-error-content"
+        >
+          #{{ ranking }}
+        </span>
       </div>
 
       <div class="space-y-2 p-4 pb-3">
         <span
           v-if="props.object.product_category_name"
-          class="badge sm:badge-md badge-sm badge-warning max-w-full truncate"
+          class="badge badge-warning badge-sm w-fit max-w-full min-w-0 justify-start overflow-hidden text-left sm:badge-md"
         >
-          {{ props.object.product_category_name }}
+          <span class="block min-w-0 truncate text-left">
+            {{ props.object.product_category_name }}
+          </span>
         </span>
         <div class="flex flex-wrap flex-row gap-2">
           <span
@@ -270,7 +280,7 @@
           <div class="space-y-3">
             <div class="flex flex-col flex-wrap items-start gap-2">
               <NuxtLink
-                class="badge badge-md badge-warning hover:translate-y-[-1px] hover:shadow-sm transition"
+                class="badge badge-md badge-warning max-w-full min-w-0 justify-start overflow-hidden text-left transition hover:-translate-y-px hover:shadow-sm"
                 v-if="props.object.product_category_name"
                 :to="{
                   path: '/products',
@@ -278,7 +288,9 @@
                 }"
                 @click="closeMobileSheet"
               >
-                {{ props.object.product_category_name }}
+                <span class="block min-w-0 truncate text-left">
+                  {{ props.object.product_category_name }}
+                </span>
               </NuxtLink>
               <div class="flex flex-wrap flex-row gap-2">
                 <NuxtLink
