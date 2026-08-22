@@ -98,6 +98,17 @@
         สมัครสมาชิก
       </button>
     </div>
+    <div
+      v-else
+      class="sm:text-sm text-xs text-center flex items-center justify-center gap-1"
+    >
+      <NuxtLink
+        to="/"
+        class="btn sm:btn-md btn-sm btn-link no-underline relative z-10"
+      >
+        กลับสู่หน้าแรก
+      </NuxtLink>
+    </div>
   </form>
 </template>
 
