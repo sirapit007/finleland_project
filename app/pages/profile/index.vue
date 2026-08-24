@@ -16,7 +16,7 @@
           <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
             โปรไฟล์ของฉัน
           </h1>
-          <p class="mt-1 text-sm text-base-content/60">
+          <p class="mt-1 sm:text-sm text-xs text-base-content/60">
             จัดการข้อมูลผู้ใช้ รหัสผ่าน ที่อยู่จัดส่ง และการแจ้งเตือนผ่าน LINE
           </p>
         </div>

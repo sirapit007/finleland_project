@@ -15,14 +15,6 @@
         </div>
         <h1 class="text-3xl font-bold sm:text-4xl">ชำระเงินคำสั่งซื้อ</h1>
       </div>
-      <!-- <NuxtLink
-        v-if="order?.uuid"
-        :to="`/orders/${order.uuid}/invoice`"
-        target="_blank"
-        class="btn btn-outline btn-sm"
-      >
-        <Icon name="lucide:receipt-text" size="16" /> พิมพ์เอกสาร
-      </NuxtLink> -->
     </div>
 
     <div v-if="status === 'pending'" class="space-y-5">
@@ -48,7 +40,7 @@
             {{ formatDate(order.order_placed_at || order.created_at) }}
           </p>
         </div>
-        <div class="flex items-center gap-3 sm:text-right">
+        <div class="flex items-start gap-3 sm:text-right">
           <div>
             <p class="text-xs text-base-content/55">สถานะการชำระเงิน</p>
             <span
@@ -60,7 +52,7 @@
           </div>
           <div>
             <p class="text-xs text-base-content/55">ยอดชำระ</p>
-            <p class="text-2xl font-bold text-primary">
+            <p class="sm:text-2xl text-xl font-bold text-primary">
               ฿{{ formatMoney(order.order_grand_total) }}
             </p>
           </div>
@@ -103,8 +95,8 @@
                 <Icon name="lucide:scan-qr-code" size="21" />
               </div>
               <div>
-                <h2 class="text-lg font-bold">1. สแกน QR เพื่อชำระเงิน</h2>
-                <p class="mt-1 text-sm text-base-content/60">
+                <h2 class="sm:text-lg text-base font-bold">1. สแกน QR เพื่อชำระเงิน</h2>
+                <p class="mt-1 sm:text-sm text-xs text-base-content/60">
                   กรุณาตรวจชื่อผู้รับและโอนให้ตรงกับยอดของคำสั่งซื้อนี้
                 </p>
               </div>
@@ -127,7 +119,7 @@
               </p>
               <div class="mt-4 rounded-xl bg-blue-50 px-4 py-3">
                 <p class="text-xs text-slate-500">ยอดที่ต้องโอน</p>
-                <p class="text-3xl font-bold text-blue-700">
+                <p class="sm:text-2xl text-xl font-bold text-blue-700">
                   ฿{{ formatMoney(order.order_grand_total) }}
                 </p>
               </div>
@@ -140,7 +132,7 @@
               </button>
             </div>
 
-            <div v-else role="alert" class="alert alert-warning mt-5 text-sm">
+            <div v-else role="alert" class="alert alert-warning mt-5 sm:text-sm text-xs">
               <Icon name="lucide:triangle-alert" size="18" />
               <span>
                 ร้านค้ายังไม่ได้ตั้งค่า PromptPay ID
@@ -160,8 +152,8 @@
                 <Icon name="lucide:image-up" size="21" />
               </div>
               <div>
-                <h2 class="text-lg font-bold">2. แนบสลิปเพื่อยืนยัน</h2>
-                <p class="mt-1 text-sm text-base-content/60">
+                <h2 class="sm:text-lg text-base font-bold">2. แนบสลิปเพื่อยืนยัน</h2>
+                <p class="mt-1 sm:text-sm text-xs text-base-content/60">
                   ระบบจะตรวจยอด บัญชีผู้รับ และเลขอ้างอิงผ่าน SlipOK
                 </p>
               </div>
@@ -245,7 +237,7 @@
           </section>
 
           <section class="rounded-2xl border border-base-300 bg-base-100 p-4">
-            <h2 class="mb-3 font-bold">รายการสินค้า</h2>
+            <h2 class="mb-3 font-bold sm:text-base text-sm">รายการสินค้า</h2>
             <div class="divide-y divide-base-300">
               <div
                 v-for="item in items"
@@ -253,7 +245,7 @@
                 class="flex items-center justify-between gap-4 py-3 text-sm"
               >
                 <div class="min-w-0">
-                  <p class="font-semibold">
+                  <p class="font-semibold text-sm">
                     {{ item.order_item_product_name }}
                   </p>
                   <p class="mt-1 text-xs text-base-content/50">
@@ -261,7 +253,7 @@
                     {{ item.order_item_quantity }} ชิ้น
                   </p>
                 </div>
-                <p class="shrink-0 font-bold text-primary">
+                <p class="shrink-0 font-bold text-primary sm:text-lg text-base">
                   ฿{{ formatMoney(item.order_item_total) }}
                 </p>
               </div>

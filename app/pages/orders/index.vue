@@ -90,7 +90,7 @@
             </div>
             <div class="text-right">
               <p class="text-xs text-base-content/55">ยอดชำระทั้งหมด</p>
-              <p class="sm:text-2xl text-xl font-bold text-primary">
+              <p class="sm:text-xl text-lg font-bold text-primary">
                 ฿{{ formatMoney(order.order_grand_total) }}
               </p>
               <p class="mt-1 text-xs text-base-content/55">
@@ -100,7 +100,7 @@
           </div>
 
           <div
-            class="flex gap-2 border-t border-base-300 pt-4 sm:flex-row items-center justify-between"
+            class="flex sm:flex-row flex-col gap-2 border-t border-base-300 pt-4 sm:flex-row items-center justify-between"
           >
             <p class="sm:text-sm text-xs text-base-content/65">
               {{ statusMeta(order.order_status).description }}
@@ -177,7 +177,7 @@
                     class="size-16 shrink-0 rounded-lg border border-base-300 object-contain p-2 opacity-70"
                   />
                   <div class="min-w-0 flex-1">
-                    <p class="font-semibold">
+                    <p class="font-semibold sm:text-base text-sm">
                       {{ item.order_item_product_name }}
                     </p>
                     <p class="mt-1 text-xs text-base-content/55">
@@ -201,7 +201,7 @@
                     >
                       ฿{{ formatMoney(item.order_item_subtotal) }}
                     </p>
-                    <p class="font-bold text-primary">
+                    <p class="font-bold text-primary sm:text-lg text-base">
                       ฿{{ formatMoney(item.order_item_total) }}
                     </p>
                   </div>

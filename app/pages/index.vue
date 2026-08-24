@@ -146,7 +146,7 @@
       </div>
     </section>
 
-    <section class="md:hidden block mx-auto w-full max-w-7xl pt-2 sm:pb-6 pb-18 px-2">
+    <section class="md:hidden block mx-auto w-full max-w-7xl pt-2 sm:pb-6 pb-22 px-2">
       <div class="relative flex justify-center">
         <img
           src="/images/content-mobile.png"
@@ -170,54 +170,54 @@
         <div
           class="absolute inset-x-0 top-[22%] mx-auto w-[calc(100%-2rem)] max-w-[25rem] sm:space-y-6.5 space-y-0.5 text-center"
         >
-          <p class="text-xl leading-relaxed text-base-content/60">
+          <p class="text-lg leading-relaxed text-base-content/60">
             ครบทุกความต้องการเรื่องของใช้<br />ในบ้านและไลฟ์สไตล์
           </p>
-          <p class="text-base leading-relaxed text-base-content/60">
+          <p class="text-sm leading-relaxed text-base-content/60">
             สินค้าคุณภาพดี ราคาคุ้มค่า ใกล้บ้านคุณ<br />
             คัดสรรสินค้าหลากหลายหมวดหมู่ ให้เลือกครบในที่เดียว
           </p>
-          <div class="bg-base-100 p-3 grid grid-cols-4 gap-6 rounded-2xl">
-            <div class="flex flex-col items-center text-xs space-y-1.5">
+          <div class="bg-base-100 p-1 grid grid-cols-4 gap-2 rounded-2xl">
+            <div class="flex flex-col items-center text-[11px] space-y-1.5">
               <div
                 class="bg-primary/5 text-primary w-12 h-12 p-3 rounded-full w-fit"
               >
                 <Icon name="lucide:tag" size="24" />
               </div>
-              <div class="text-base-content/80 text-center">
+              <div class="text-base-content/80 text-center text-[9.5px]">
                 <p class="font-bold">ราคาประหยัด</p>
                 <p>คุ้มค่าทุกการซื้อ</p>
               </div>
             </div>
-            <div class="flex flex-col items-center text-xs space-y-1.5">
+            <div class="flex flex-col items-center text-[11px] space-y-1.5">
               <div
                 class="bg-primary/5 text-primary w-12 h-12 p-3 rounded-full w-fit"
               >
                 <Icon name="lucide:shopping-bag" size="24" />
               </div>
-              <div class="text-base-content/80 text-center">
+              <div class="text-base-content/80 text-center text-[9.5px]">
                 <p class="font-bold">สินค้าครบครัน</p>
                 <p>หลายหมวดหมู่</p>
               </div>
             </div>
-            <div class="flex flex-col items-center text-xs space-y-1.5">
+            <div class="flex flex-col items-center text-[11px] space-y-1.5">
               <div
                 class="bg-primary/5 text-primary w-12 h-12 p-3 rounded-full w-fit"
               >
                 <Icon name="lucide:shield-check" size="24" />
               </div>
-              <div class="text-base-content/80 text-center">
+              <div class="text-base-content/80 text-center text-[9.5px]">
                 <p class="font-bold">คุณภาพ</p>
                 <p>มั่นใจทุกชิ้น</p>
               </div>
             </div>
-            <div class="flex flex-col items-center text-xs space-y-1.5">
+            <div class="flex flex-col items-center text-[11px] space-y-1.5">
               <div
                 class="bg-primary/5 text-primary w-12 h-12 p-3 rounded-full w-fit"
               >
                 <Icon name="lucide:heart" size="24" />
               </div>
-              <div class="text-base-content/80 text-center">
+              <div class="text-base-content/80 text-center text-[9.5px]">
                 <p class="font-bold">บริการด้วยใจ</p>
                 <p>ใกล้บ้าน ใกล้คุณ</p>
               </div>
@@ -230,7 +230,7 @@
         </div>
 
         <div
-          class="absolute sm:-bottom-10 -bottom-20 w-full flex flex-col items-center justify-center"
+          class="absolute -bottom-24 w-full flex flex-col items-center justify-center max-w-xs"
         >
           <p class="font-semibold">สะดวก ครบ จบในที่เดียว</p>
           <div class="grid grid-cols-2 gap-4 mt-2">
@@ -244,7 +244,7 @@
                 <Icon name="lucide:shopping-bag" size="32" />
               </div>
               <p class="text-primary text-sm">สินค้าของเรา</p>
-              <p class="text-base-content/60">
+              <p class="text-base-content/60 text-[8.5px]">
                 เลือกซื้อสินค้าหลากหลายหมวดหมู่<br />
                 ครบครัน คุณภาพดี ราคาประหยัด
               </p>
@@ -264,7 +264,7 @@
                 <Icon name="lucide:clipboard-list" size="32" />
               </div>
               <p class="text-primary text-sm">วิธีการสั่งซื้อ</p>
-              <p class="text-base-content/60">
+              <p class="text-base-content/60 text-[8.5px]">
                 ขั้นตอนง่าย สะดวก รวดเร็ว<br />
                 สั่งซื้อได้ทุกที่ทุกเวลา
               </p>

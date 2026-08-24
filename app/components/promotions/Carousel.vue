@@ -20,7 +20,7 @@
           class="grid items-stretch gap-4"
           :class="
             promotion.product
-              ? 'lg:grid-cols-[minmax(0,1fr)_minmax(10rem,13rem)] sm:grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)] grid-cols-[minmax(0,1fr)_minmax(7rem,10rem)]'
+              ? 'lg:grid-cols-[minmax(0,1fr)_minmax(10rem,13rem)] sm:grid-cols-[minmax(0,1fr)_minmax(8rem,11rem)] grid-cols-1'
               : ''
           "
         >
@@ -82,11 +82,12 @@
             </div>
           </div>
 
-          <ProductCard
+          <div class="sm:w-full w-40">
+            <ProductCard
             v-if="promotion.product"
             :object="promotion.product"
-            class="min-w-0"
-          />
+            />
+          </div>
         </div>
       </div>
     </div>
