@@ -158,6 +158,20 @@
                 <span class="lg:inline-flex hidden">ติดต่อเรา</span>
               </NuxtLink>
             </template>
+
+            <div class="sm:hidden block" v-if="!isLoggedIn">
+              <button
+                type="button"
+                class="drawer-button btn btn-ghost btn-square btn-sm"
+                title="เปิดเมนูด้านข้าง"
+                aria-label="เปิดเมนูด้านข้าง"
+                aria-controls="app-header-drawer-panel"
+                :aria-expanded="isDrawerOpen"
+                @click="isDrawerOpen = true"
+              >
+                <Icon name="lucide:panel-right-open" size="18" />
+              </button>
+            </div>
           </nav>
 
           <div
@@ -280,6 +294,7 @@
 
         <div class="flex flex-1 flex-col gap-6 p-5">
           <NuxtLink
+            v-if="isLoggedIn"
             to="/profile"
             class="flex items-center gap-3 rounded-2xl p-4 transition-colors hover:bg-primary/12"
             :class="
@@ -338,7 +353,7 @@
             </ul>
           </div>
 
-          <div>
+          <div v-if="isLoggedIn">
             <p class="mb-2 px-3 text-xs font-semibold text-base-content/45">
               บัญชีและคำสั่งซื้อ
             </p>
@@ -397,7 +412,7 @@
             </ul>
           </div>
 
-          <div class="mt-auto border-t border-base-300 pt-4">
+          <div class="mt-auto border-t border-base-300 pt-4" v-if="isLoggedIn">
             <button
               type="button"
               class="btn btn-ghost w-full justify-start text-error"
