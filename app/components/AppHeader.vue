@@ -158,6 +158,20 @@
                 <span class="lg:inline-flex hidden">ติดต่อเรา</span>
               </NuxtLink>
             </template>
+
+            <div class="sm:hidden block" v-if="!isLoggedIn">
+              <button
+                type="button"
+                class="drawer-button btn btn-ghost btn-square btn-sm"
+                title="เปิดเมนูด้านข้าง"
+                aria-label="เปิดเมนูด้านข้าง"
+                aria-controls="app-header-drawer-panel"
+                :aria-expanded="isDrawerOpen"
+                @click="isDrawerOpen = true"
+              >
+                <Icon name="lucide:panel-right-open" size="18" />
+              </button>
+            </div>
           </nav>
 
           <div
@@ -241,19 +255,6 @@
               @click="onSignOut"
             >
               <Icon name="lucide:log-out" size="18" />
-            </button>
-          </div>
-          <div v-else>
-            <button
-              type="button"
-              class="sm:hidden drawer-button btn btn-ghost btn-square btn-sm"
-              title="เปิดเมนูด้านข้าง"
-              aria-label="เปิดเมนูด้านข้าง"
-              aria-controls="app-header-drawer-panel"
-              :aria-expanded="isDrawerOpen"
-              @click="isDrawerOpen = true"
-            >
-              <Icon name="lucide:panel-right-open" size="18" />
             </button>
           </div>
         </div>
