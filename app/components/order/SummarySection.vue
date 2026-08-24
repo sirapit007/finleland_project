@@ -53,7 +53,7 @@
         </p>
         <p
           v-if="order.order_delivery_description"
-          class="mt-1 sm:text-xs text:xs leading-5 text-base-content/60"
+          class="mt-1 text:xs leading-5 text-base-content/60"
         >
           {{ order.order_delivery_description }}
         </p>
@@ -62,17 +62,17 @@
       <template v-else>
         <p
           v-if="order.order_delivery_description"
-          class="mt-2 sm:text-sm text:xs text-base-content/55"
+          class="mt-2 sm:text-sm text-xs text-base-content/55"
         >
           {{ order.order_delivery_description }}
         </p>
-        <p class="mt-3 sm:text-sm text:xs font-semibold">{{ recipientLine }}</p>
-        <p class="mt-1 sm:text-sm text:xs leading-6 text-base-content/65">
+        <p class="mt-3 sm:text-sm text-xs font-semibold">{{ recipientLine }}</p>
+        <p class="mt-1 sm:text-sm text-xs leading-6 text-base-content/65">
           {{ shippingAddressLine || "ไม่มีข้อมูลที่อยู่จัดส่ง" }}
         </p>
         <p
           v-if="order.order_shipping_phone"
-          class="mt-1 sm:text-sm text:xs text-base-content/65"
+          class="mt-1 sm:text-sm text-xs text-base-content/65"
         >
           {{ order.order_shipping_phone }}
         </p>
@@ -85,9 +85,9 @@
       </template>
     </div>
 
-    <TaxOrderDetails v-if="taxDetail" class="mt-4" :detail="taxDetail" />
+    <TaxProfileOrderDetails v-if="taxDetail" class="mt-4" :detail="taxDetail" />
 
-    <div class="mt-5 space-y-3 text-sm">
+    <div class="mt-5 space-y-3 sm:text-sm text-xs">
       <div class="flex justify-between gap-4 text-base-content/70">
         <span>ราคารวมสินค้า ({{ formattedQuantity }} ชิ้น)</span>
         <span class="font-semibold text-base-content">
@@ -112,9 +112,9 @@
 
     <div class="my-5 border-t border-base-300" />
 
-    <div class="flex items-end justify-between gap-4">
+    <div class="flex items-center justify-between gap-4">
       <div>
-        <p class="font-bold">รวมเป็นเงิน</p>
+        <p class="font-bold text-sm">รวมเป็นเงิน</p>
         <p class="mt-1 text-xs text-base-content/55">รวมภาษีมูลค่าเพิ่มแล้ว</p>
       </div>
       <p class="sm:text-2xl text-xl font-bold text-primary">

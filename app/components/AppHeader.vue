@@ -224,7 +224,7 @@
                 <Icon v-else name="lucide:user-round" size="16" />
               </div>
               <div class="min-w-0 text-left">
-                <p class="max-w-24 truncate text-sm font-semibold sm:max-w-36">
+                <p class="truncate text-sm font-semibold sm:max-w-36 max-w-12">
                   {{ user?.firstname }} {{ user?.lastname }}
                 </p>
                 <p
@@ -235,7 +235,7 @@
               </div>
             </NuxtLink>
             <button
-              class="btn btn-ghost btn-square btn-sm text-error"
+              class="btn btn-ghost btn-square btn-sm text-error sm:block hidden"
               title="ออกจากระบบ"
               aria-label="ออกจากระบบ"
               @click="onSignOut"
@@ -281,11 +281,16 @@
         <div class="flex flex-1 flex-col gap-6 p-5">
           <NuxtLink
             to="/profile"
-            class="flex items-center gap-3 rounded-2xl bg-primary/8 p-4 transition-colors hover:bg-primary/12"
+            class="flex items-center gap-3 rounded-2xl p-4 transition-colors hover:bg-primary/12"
+            :class="
+              route.path === '/profile'
+                ? 'bg-neutral text-neutral-content!'
+                : 'bg-primary/8'
+            "
             @click="isDrawerOpen = false"
           >
             <div
-              class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-primary"
+              class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full text-primary"
             >
               <img
                 v-if="lineProfileImageUrl && !hasLineProfileImageError"
@@ -300,14 +305,18 @@
               <p class="truncate font-semibold">
                 {{ user?.firstname }} {{ user?.lastname }}
               </p>
-              <p class="truncate text-xs text-base-content/55">
+              <p class="truncate text-xs">
                 {{ user?.email }}
               </p>
             </div>
             <Icon
               name="lucide:chevron-right"
               size="18"
-              class="text-base-content/40"
+              :class="
+                route.path === '/profile'
+                  ? 'text-neutral-content'
+                  : 'text-base-content/40'
+              "
             />
           </NuxtLink>
 
@@ -335,19 +344,36 @@
             </p>
             <ul class="menu w-full gap-1 p-0">
               <li>
-                <NuxtLink to="/shopping-basket" :class="route.path === '/shopping-basket' ? 'menu-active' : ''" @click="isDrawerOpen = false">
+                <NuxtLink
+                  to="/shopping-basket"
+                  :class="
+                    route.path === '/shopping-basket' ? 'menu-active' : ''
+                  "
+                  @click="isDrawerOpen = false"
+                >
                   <Icon
                     name="material-symbols:shopping-cart-outline-rounded"
                     size="19"
                   />
                   <span class="flex-1">ตะกร้าสินค้า</span>
-                  <span class="badge badge-sm rounded-full" :class="route.path === '/shopping-basket' ? 'badge-accent' : 'badge-secondary'">
+                  <span
+                    class="badge badge-sm rounded-full"
+                    :class="
+                      route.path === '/shopping-basket'
+                        ? 'badge-accent'
+                        : 'badge-secondary'
+                    "
+                  >
                     {{ itemCount }}
                   </span>
                 </NuxtLink>
               </li>
               <li>
-                <NuxtLink to="/orders" :class="route.path === '/orders' ? 'menu-active' : ''" @click="isDrawerOpen = false">
+                <NuxtLink
+                  to="/orders"
+                  :class="route.path === '/orders' ? 'menu-active' : ''"
+                  @click="isDrawerOpen = false"
+                >
                   <Icon
                     name="material-symbols:local-shipping-outline-rounded"
                     size="19"
@@ -356,7 +382,11 @@
                 </NuxtLink>
               </li>
               <li>
-                <NuxtLink to="/contact" :class="route.path === '/contact' ? 'menu-active' : ''" @click="isDrawerOpen = false">
+                <NuxtLink
+                  to="/contact"
+                  :class="route.path === '/contact' ? 'menu-active' : ''"
+                  @click="isDrawerOpen = false"
+                >
                   <Icon
                     name="material-symbols:chat-outline-rounded"
                     size="19"
