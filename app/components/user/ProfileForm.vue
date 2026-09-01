@@ -14,32 +14,30 @@
   </div>
 
   <form class="mt-4 space-y-4" @submit.prevent="saveProfile">
-    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">ชื่อ</legend>
-        <input
-          v-model.trim="profileForm.firstname"
-          type="text"
-          required
-          maxlength="100"
-          class="input input-sm w-full"
-          placeholder="ชื่อ"
-          :disabled="isSavingProfile"
-        />
-      </fieldset>
-      <fieldset class="fieldset">
-        <legend class="fieldset-legend">นามสกุล</legend>
-        <input
-          v-model.trim="profileForm.lastname"
-          type="text"
-          required
-          maxlength="100"
-          class="input input-sm w-full"
-          placeholder="นามสกุล"
-          :disabled="isSavingProfile"
-        />
-      </fieldset>
-    </div>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">ชื่อ</legend>
+      <input
+        v-model.trim="profileForm.firstname"
+        type="text"
+        required
+        maxlength="100"
+        class="input input-sm w-full"
+        placeholder="ชื่อ"
+        :disabled="isSavingProfile"
+      />
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">นามสกุล</legend>
+      <input
+        v-model.trim="profileForm.lastname"
+        type="text"
+        required
+        maxlength="100"
+        class="input input-sm w-full"
+        placeholder="นามสกุล"
+        :disabled="isSavingProfile"
+      />
+    </fieldset>
 
     <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
       <fieldset class="fieldset">

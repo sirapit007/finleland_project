@@ -69,6 +69,8 @@ export default defineNuxtConfig({
     shippingRoutingBaseUrl:
       process.env.SHIPPING_ROUTING_BASE_URL ||
       "https://router.project-osrm.org",
+    shippingStoreLatitude: process.env.SHIPPING_STORE_LATITUDE || "",
+    shippingStoreLongitude: process.env.SHIPPING_STORE_LONGITUDE || "",
     shippingMapUserAgent:
       process.env.SHIPPING_MAP_USER_AGENT || "FinlelandShoppingBasket/1.0",
     thaiBulkSmsOtpKey: process.env.THAIBULKSMS_OTP_KEY,

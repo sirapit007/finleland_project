@@ -316,7 +316,7 @@ const loadShippingAddresses = async (userUuid: string, requestId: number) => {
 
   try {
     const response = await $fetch<RowsResponse<ShippingAddress>>(
-      "/api/user/shipping-addresses",
+      "/api/user/smart-shipping-addresses",
       {
         query: { user_uuid: userUuid, page: 1, pageSize: 100 },
       },
@@ -404,3 +404,4 @@ const loadBankAccounts = async (userUuid: string, requestId: number) => {
 
 defineExpose({ onCreate, onEdit, onSubmit });
 </script>
+

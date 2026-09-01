@@ -119,7 +119,7 @@
                 :class="
                   !selectedCategory
                     ? 'badge-primary'
-                    : 'badge-outline text-base-content/50'
+                    : 'badge-soft text-base-content/50'
                 "
               >
                 {{ totalOwnerCount }}
@@ -145,7 +145,7 @@
                 :class="
                   selectedCategory === value.category_name
                     ? 'badge-primary'
-                    : 'badge-outline text-base-content/50'
+                    : 'badge-soft text-base-content/50'
                 "
               >
                 {{ value.qty_count }}

@@ -8,6 +8,10 @@ type BasketItem = {
   product_code?: string | null;
   product_name?: string | null;
   product_selling_price?: number | string | null;
+  product_shipping_weight_grams?: number | string | null;
+  product_shipping_length_cm?: number | string | null;
+  product_shipping_width_cm?: number | string | null;
+  product_shipping_height_cm?: number | string | null;
   promotion_uuid?: string | null;
   promotion_name?: string | null;
   promotion_discounted_price?: number | string | null;
@@ -48,7 +52,10 @@ export function useBasket() {
   const items = useState<BasketItem[]>("basket-items", () => []);
   const itemCount = useState<number>("basket-item-count", () => 0);
   const isLoading = useState<boolean>("basket-loading", () => false);
-  const updatingItemUuids = useState<string[]>("basket-updating-items", () => []);
+  const updatingItemUuids = useState<string[]>(
+    "basket-updating-items",
+    () => [],
+  );
 
   // Hide an expired item locally without requiring a polling request.
   const activeItems = computed(() =>
@@ -90,7 +97,10 @@ export function useBasket() {
     }
   }
 
-  async function addToBasket(product: Record<string, unknown>, quantity: number) {
+  async function addToBasket(
+    product: Record<string, unknown>,
+    quantity: number,
+  ) {
     const user = getStoredUser();
     const productUuid = String(product.uuid || "").trim();
     const price = Number(product.product_selling_price || 0);
@@ -100,7 +110,12 @@ export function useBasket() {
       throw new Error("Please sign in before adding products to the basket.");
     }
 
-    if (!productUuid || !Number.isFinite(price) || price <= 0 || !basketQuantity) {
+    if (
+      !productUuid ||
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      !basketQuantity
+    ) {
       throw new Error("The product or quantity is invalid.");
     }
 
@@ -115,7 +130,8 @@ export function useBasket() {
         method: "PUT",
         body: {
           basket_product: productUuid,
-          basket_quantity: Number(existingItem.basket_quantity) + basketQuantity,
+          basket_quantity:
+            Number(existingItem.basket_quantity) + basketQuantity,
           basket_total:
             Number(existingItem.product_selling_price || price) *
             (Number(existingItem.basket_quantity) + basketQuantity),

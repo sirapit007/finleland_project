@@ -76,6 +76,18 @@
         >
           {{ order.order_shipping_phone }}
         </p>
+        <a
+          v-if="mapUrl"
+          :href="mapUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn btn-outline btn-primary btn-xs mt-3 max-w-full"
+          aria-label="เปิดจุดจัดส่งใน Google Maps"
+        >
+          <Icon name="lucide:map-pinned" size="14" />
+          เปิดจุดจัดส่งในแผนที่
+          <Icon name="lucide:external-link" size="12" />
+        </a>
         <p
           v-if="order.order_shipping_note"
           class="mt-2 rounded-lg bg-warning/10 px-2.5 py-2 text-xs leading-5 text-base-content/70"
@@ -162,6 +174,12 @@ const deliveryMeta = computed(() => {
   if (method === "express") {
     return { icon: "lucide:bike", iconClass: "text-secondary" };
   }
+  if (method === "thailand_post_ems") {
+    return { icon: "lucide:mail-check", iconClass: "text-accent" };
+  }
+  if (method === "flash_bulky") {
+    return { icon: "lucide:package-check", iconClass: "text-info" };
+  }
   return { icon: "lucide:map-pin", iconClass: "text-primary" };
 });
 
@@ -183,6 +201,37 @@ const shippingAddressLine = computed(() =>
     .filter(Boolean)
     .join(", "),
 );
+
+const mapUrl = computed(() => {
+  const rawLatitude = props.order.order_shipping_latitude;
+  const rawLongitude = props.order.order_shipping_longitude;
+  if (
+    rawLatitude === null ||
+    rawLatitude === undefined ||
+    rawLatitude === "" ||
+    rawLongitude === null ||
+    rawLongitude === undefined ||
+    rawLongitude === ""
+  ) {
+    return "";
+  }
+
+  const latitude = Number(rawLatitude);
+  const longitude = Number(rawLongitude);
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return "";
+  }
+
+  const query = encodeURIComponent(`${latitude},${longitude}`);
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+});
 
 const promotionDiscount = computed(() =>
   Math.abs(Number(props.order.order_discount || 0)),

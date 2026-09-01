@@ -39,9 +39,10 @@ export default defineEventHandler(async (event) => {
     condition += ` AND base.order_user = $${params.length}`;
   }
 
-  condition += actor.isAdmin && query.deleted
-    ? " AND base.deleted_at IS NOT NULL"
-    : " AND base.deleted_at IS NULL";
+  condition +=
+    actor.isAdmin && query.deleted
+      ? " AND base.deleted_at IS NOT NULL"
+      : " AND base.deleted_at IS NULL";
 
   if (query.q) {
     params.push(`%${String(query.q).trim()}%`);
@@ -70,6 +71,14 @@ export default defineEventHandler(async (event) => {
   params.push(pageSize, offset);
   const result = await db.query(
     `SELECT base.*,
+            COALESCE(
+              base.order_shipping_latitude,
+              shipping_location.shipping_latitude
+            ) AS order_shipping_latitude,
+            COALESCE(
+              base.order_shipping_longitude,
+              shipping_location.shipping_longitude
+            ) AS order_shipping_longitude,
             concat_ws(' ', customer.firstname, customer.lastname) AS order_customer_current_name,
             (
               SELECT COUNT(*)
@@ -82,6 +91,9 @@ export default defineEventHandler(async (event) => {
             concat_ws(' ', user_u.firstname, user_u.lastname) AS updated_username,
             concat_ws(' ', user_d.firstname, user_d.lastname) AS deleted_username
      FROM tb_shopping_orders AS base
+     LEFT JOIN tb_user_shipping_addresses AS shipping_location
+       ON shipping_location.uuid::text = base.order_shipping_address_uuid
+      AND shipping_location.shipping_user = base.order_user
      LEFT JOIN tb_users AS customer ON customer.uuid::text = base.order_user
      LEFT JOIN tb_users AS user_c ON user_c.uuid::text = base.created_by
      LEFT JOIN tb_users AS user_u ON user_u.uuid::text = base.updated_by

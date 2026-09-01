@@ -10,6 +10,18 @@ export type ShippingAddressForm = {
   shipping_postcode: string;
   shipping_note: string;
   shipping_is_default: boolean;
+  shipping_latitude: number | null;
+  shipping_longitude: number | null;
+  shipping_location_provider: string | null;
+  shipping_place_id: string | null;
+  shipping_location_source:
+    | "map_pin"
+    | "current_location"
+    | "address_search"
+    | "manual"
+    | null;
+  shipping_location_accuracy: "exact" | "approximate" | "area" | null;
+  shipping_location_confirmed_at: string | null;
 };
 
 export type ShippingAddress = ShippingAddressForm & {
@@ -30,6 +42,12 @@ function toBoolean(value: unknown) {
   return value === true || value === "true" || value === 1 || value === "1";
 }
 
+function toNullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 export function createShippingAddressForm(
   initial: Partial<ShippingAddressForm> = {},
 ): ShippingAddressForm {
@@ -45,34 +63,27 @@ export function createShippingAddressForm(
     shipping_postcode: String(initial.shipping_postcode || ""),
     shipping_note: String(initial.shipping_note || ""),
     shipping_is_default: toBoolean(initial.shipping_is_default),
+    shipping_latitude: toNullableNumber(initial.shipping_latitude),
+    shipping_longitude: toNullableNumber(initial.shipping_longitude),
+    shipping_location_provider: initial.shipping_location_provider || null,
+    shipping_place_id: initial.shipping_place_id || null,
+    shipping_location_source: initial.shipping_location_source || null,
+    shipping_location_accuracy: initial.shipping_location_accuracy || null,
+    shipping_location_confirmed_at:
+      initial.shipping_location_confirmed_at || null,
   };
 }
 
 export function toShippingAddressForm(
   address?: Partial<ShippingAddress> | null,
 ): ShippingAddressForm {
-  return createShippingAddressForm({
-    shipping_user: address?.shipping_user || "",
-    shipping_label: address?.shipping_label || "",
-    shipping_recipient: address?.shipping_recipient || "",
-    shipping_phone: address?.shipping_phone || "",
-    shipping_address: address?.shipping_address || "",
-    shipping_subdistrict: address?.shipping_subdistrict || "",
-    shipping_district: address?.shipping_district || "",
-    shipping_province: address?.shipping_province || "",
-    shipping_postcode: address?.shipping_postcode || "",
-    shipping_note: address?.shipping_note || "",
-    shipping_is_default: Boolean(address?.shipping_is_default),
-  });
+  return createShippingAddressForm(address || {});
 }
 
 export async function fetchShippingAddresses(shippingUser: string) {
-  if (!shippingUser) {
-    return [];
-  }
-
+  if (!shippingUser) return [];
   const response = await $fetch<{ rows: ShippingAddress[] }>(
-    "/api/user/shipping-addresses",
+    "/api/user/smart-shipping-addresses",
     {
       query: {
         shipping_user: shippingUser,
@@ -81,7 +92,6 @@ export async function fetchShippingAddresses(shippingUser: string) {
       },
     },
   );
-
   return response.rows || [];
 }
 
@@ -89,13 +99,13 @@ export async function createShippingAddress(
   form: ShippingAddressForm,
   user?: object,
 ) {
-  return $fetch<{ row: ShippingAddress }>("/api/user/shipping-addresses", {
-    method: "POST",
-    body: {
-      ...form,
-      user,
+  return $fetch<{ row: ShippingAddress }>(
+    "/api/user/smart-shipping-addresses",
+    {
+      method: "POST",
+      body: { ...form, user },
     },
-  });
+  );
 }
 
 export async function updateShippingAddress(
@@ -104,22 +114,17 @@ export async function updateShippingAddress(
   user?: object,
 ) {
   return $fetch<{ row: ShippingAddress }>(
-    `/api/user/shipping-addresses/${uuid}`,
+    `/api/user/smart-shipping-addresses/${uuid}`,
     {
       method: "PUT",
-      body: {
-        ...form,
-        user,
-      },
+      body: { ...form, user },
     },
   );
 }
 
 export async function deleteShippingAddress(uuid: string, user?: object) {
-  return $fetch(`/api/user/shipping-addresses/${uuid}`, {
+  return $fetch(`/api/user/smart-shipping-addresses/${uuid}`, {
     method: "DELETE",
-    body: {
-      user,
-    },
+    body: { user },
   });
 }

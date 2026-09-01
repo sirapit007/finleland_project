@@ -7,6 +7,7 @@ import {
   normalizeProductSubcategoryIds,
   syncProductSubcategories,
 } from "@@/server/utils/productSubcategories";
+import { normalizeProductShippingMeasurements } from "@@/server/utils/productShipping";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
@@ -18,6 +19,10 @@ type ProductBody = {
   product_subcategories?: unknown;
   product_cost_price?: number;
   product_selling_price?: number;
+  product_shipping_weight_grams?: unknown;
+  product_shipping_length_cm?: unknown;
+  product_shipping_width_cm?: unknown;
+  product_shipping_height_cm?: unknown;
   image_url?: unknown;
 };
 
@@ -36,6 +41,7 @@ export default defineEventHandler(async (event) => {
   const productCostPrice = Number(body.product_cost_price || 0);
   const productSellingPrice = Number(body.product_selling_price || 0);
   const imageUrl = serializeProductImageUrls(body.image_url);
+  const shipping = normalizeProductShippingMeasurements(body);
 
   if (!productCode || !productName || !productCategory) {
     throw createError({
@@ -58,7 +64,14 @@ export default defineEventHandler(async (event) => {
   try {
     await client.query("BEGIN");
     const result = await client.query(
-      "INSERT INTO tb_master_products (product_code, product_name, product_description, product_supplier, product_category, product_cost_price, product_selling_price, image_url, created_by) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      `INSERT INTO tb_master_products (
+        product_code, product_name, product_description, product_supplier,
+        product_category, product_cost_price, product_selling_price, image_url,
+        product_shipping_weight_grams, product_shipping_length_cm,
+        product_shipping_width_cm, product_shipping_height_cm, created_by
+      ) VALUES(
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+      ) RETURNING *`,
       [
         productCode,
         productName,
@@ -68,6 +81,10 @@ export default defineEventHandler(async (event) => {
         productCostPrice,
         productSellingPrice,
         imageUrl,
+        shipping.weightGrams,
+        shipping.lengthCm,
+        shipping.widthCm,
+        shipping.heightCm,
         admin.uuid,
       ],
     );

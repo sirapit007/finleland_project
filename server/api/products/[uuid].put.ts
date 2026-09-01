@@ -7,6 +7,7 @@ import {
   normalizeProductSubcategoryIds,
   syncProductSubcategories,
 } from "@@/server/utils/productSubcategories";
+import { normalizeProductShippingMeasurements } from "@@/server/utils/productShipping";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type ProductBody = {
@@ -18,6 +19,10 @@ type ProductBody = {
   product_subcategories?: unknown;
   product_cost_price?: number;
   product_selling_price?: number;
+  product_shipping_weight_grams?: unknown;
+  product_shipping_length_cm?: unknown;
+  product_shipping_width_cm?: unknown;
+  product_shipping_height_cm?: unknown;
   image_url?: unknown;
 };
 
@@ -49,6 +54,7 @@ export default defineEventHandler(async (event) => {
   const productCostPrice = Number(body.product_cost_price || 0);
   const productSellingPrice = Number(body.product_selling_price || 0);
   const imageUrl = serializeProductImageUrls(body.image_url);
+  const shipping = normalizeProductShippingMeasurements(body);
 
   if (!productCode || !productName || !productCategory) {
     throw createError({
@@ -71,7 +77,25 @@ export default defineEventHandler(async (event) => {
   try {
     await client.query("BEGIN");
     const result = await client.query(
-      "UPDATE tb_master_products SET product_code = $1, product_name = $2, product_description = $3, product_supplier = $4, product_category = $5, product_cost_price = $6, product_selling_price = $7, image_url = $8, updated_by = $9, updated_at = NOW(), deleted_by = NULL, deleted_at = NULL WHERE uuid = $10::uuid RETURNING *",
+      `UPDATE tb_master_products
+       SET product_code = $1,
+           product_name = $2,
+           product_description = $3,
+           product_supplier = $4,
+           product_category = $5,
+           product_cost_price = $6,
+           product_selling_price = $7,
+           image_url = $8,
+           product_shipping_weight_grams = $9,
+           product_shipping_length_cm = $10,
+           product_shipping_width_cm = $11,
+           product_shipping_height_cm = $12,
+           updated_by = $13,
+           updated_at = NOW(),
+           deleted_by = NULL,
+           deleted_at = NULL
+       WHERE uuid = $14::uuid
+       RETURNING *`,
       [
         productCode,
         productName,
@@ -81,6 +105,10 @@ export default defineEventHandler(async (event) => {
         productCostPrice,
         productSellingPrice,
         imageUrl,
+        shipping.weightGrams,
+        shipping.lengthCm,
+        shipping.widthCm,
+        shipping.heightCm,
         admin.uuid,
         uuid,
       ],

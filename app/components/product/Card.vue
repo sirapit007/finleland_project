@@ -64,6 +64,13 @@
         >
           รหัสสินค้า {{ props.object.product_code }}
         </p>
+        <p
+          v-if="shippingDetails.hasDetails"
+          class="flex items-center gap-1 truncate text-[11px] text-base-content/60"
+        >
+          <Icon name="lucide:package" class="shrink-0" size="12" />
+          <span class="truncate">{{ shippingDetails.compact }}</span>
+        </p>
         <div v-if="user" class="pt-1">
           <p
             v-if="hasDiscount"
@@ -143,6 +150,14 @@
           class="truncate text-xs text-base-content/50 sm:block hidden"
         >
           รหัสสินค้า {{ props.object.product_code }}
+        </p>
+        <p
+          v-if="shippingDetails.hasDetails"
+          class="hidden items-center gap-1.5 truncate text-xs text-base-content/60 sm:flex"
+          :title="shippingDetails.compact"
+        >
+          <Icon name="lucide:package" class="shrink-0" size="14" />
+          <span class="truncate">{{ shippingDetails.compact }}</span>
         </p>
       </div>
     </NuxtLink>
@@ -400,6 +415,39 @@
               <span class="font-semibold">รหัสสินค้า: </span>
               {{ props.object.product_code || "-" }}
             </div>
+            <div
+              v-if="shippingDetails.hasDetails"
+              class="rounded-xl border border-base-300 bg-base-100 p-3"
+            >
+              <div class="mb-2 flex items-center gap-2 font-semibold">
+                <Icon
+                  name="lucide:package-check"
+                  class="text-primary"
+                  size="17"
+                />
+                ข้อมูลสำหรับจัดส่ง
+              </div>
+              <div class="grid gap-2 text-xs">
+                <div
+                  v-if="shippingDetails.weight"
+                  class="flex items-center justify-between gap-3"
+                >
+                  <span class="text-base-content/60">น้ำหนักหลังแพ็ก</span>
+                  <span class="font-medium">{{ shippingDetails.weight }}</span>
+                </div>
+                <div
+                  v-if="shippingDetails.dimensions"
+                  class="flex items-start justify-between gap-3"
+                >
+                  <span class="text-base-content/60">
+                    ขนาด (ยาว × กว้าง × สูง)
+                  </span>
+                  <span class="text-right font-medium">
+                    {{ shippingDetails.dimensions }}
+                  </span>
+                </div>
+              </div>
+            </div>
             <div>
               <span class="font-semibold">รายละเอียดสินค้า:</span>
               <p
@@ -432,6 +480,7 @@
 
 <script setup lang="ts">
 import { normalizeProductImageUrls } from "~/utils/productImages";
+import { getProductShippingSummary } from "~/utils/productShipping";
 
 const props = defineProps<{ object: Record<string, any>; ranking?: number }>();
 type SignModalHandle = {
@@ -457,6 +506,7 @@ const selectedProductImage = computed(() =>
     ? activeProductImage.value
     : imageSrc.value,
 );
+const shippingDetails = computed(() => getProductShippingSummary(props.object));
 
 const originalPrice = computed(() =>
   Number(props.object.product_selling_price || 0),

@@ -49,7 +49,7 @@
           เนื่องจากร้านเรามีสินค้าพร้อมส่ง
         </div>
         <button
-          class="btn btn-link no-underline lg:btn-md sm:btn-sm btn-xs btn-primary sm:w-fit w-full"
+          class="btn btn-link no-underline hover:underline lg:btn-md sm:btn-sm btn-xs text-base-content/75 hover:text-primary sm:w-fit w-full"
           @click="openMap"
         >
           <Icon name="lucide:map-pinned" size="18" /> แผนที่ร้าน
