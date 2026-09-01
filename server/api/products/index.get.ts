@@ -96,6 +96,10 @@ export default defineEventHandler(async (event) => {
     const currentResult = await db.query(
       `
       SELECT base.*, product.product_description,
+      product.product_shipping_weight_grams,
+      product.product_shipping_length_cm,
+      product.product_shipping_width_cm,
+      product.product_shipping_height_cm,
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -133,6 +137,10 @@ export default defineEventHandler(async (event) => {
     `SELECT 
       base.*,
       product.product_description,
+      product.product_shipping_weight_grams,
+      product.product_shipping_length_cm,
+      product.product_shipping_width_cm,
+      product.product_shipping_height_cm,
       COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(

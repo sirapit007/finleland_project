@@ -5,9 +5,11 @@ import {
   calculateOrderItemPricing,
   toMoney,
 } from "@@/server/utils/orderPricing";
+import { createShippingQuote } from "@@/server/utils/shippingQuote";
 import { requireCurrentUser } from "@@/server/utils/session";
 
-type DeliveryMethod = "pickup" | "normal" | "express";
+type DeliveryMethod =
+  "pickup" | "express" | "thailand_post_ems" | "flash_bulky";
 
 type OrderBody = {
   order_shipping_address_uuid?: string;
@@ -17,26 +19,12 @@ type OrderBody = {
   order_stock_terms_accepted?: boolean;
 };
 
-const deliveryOptions: Record<
-  DeliveryMethod,
-  { label: string; description: string; fee: number }
-> = {
-  pickup: {
-    label: "รับสินค้าด้วยตัวเอง",
-    description: "รับสินค้าได้ที่หน้าร้านหรือจุดรับสินค้า",
-    fee: 0,
-  },
-  normal: {
-    label: "จัดส่งทั่วประเทศ",
-    description: "2 - 4 วันทำการ",
-    fee: 35,
-  },
-  express: {
-    label: "ส่งด่วนใกล้บ้าน",
-    description: "ภายใน 1 - 2 ชม.",
-    fee: 39,
-  },
-};
+const deliveryMethods = new Set<DeliveryMethod>([
+  "pickup",
+  "express",
+  "thailand_post_ems",
+  "flash_bulky",
+]);
 
 const createOrderNumber = () =>
   `ORD-${Date.now().toString(36).toUpperCase()}-${randomUUID()
@@ -70,14 +58,13 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  if (!Object.hasOwn(deliveryOptions, deliveryMethod)) {
+  if (!deliveryMethods.has(deliveryMethod as DeliveryMethod)) {
     throw createError({
       statusCode: 400,
       statusMessage: "Delivery method is invalid",
     });
   }
 
-  const selectedDelivery = deliveryOptions[deliveryMethod as DeliveryMethod];
   const db = useDb();
   const client = await db.connect();
 
@@ -122,7 +109,9 @@ export default defineEventHandler(async (event) => {
                 shipping_district,
                 shipping_province,
                 shipping_postcode,
-                shipping_note
+                shipping_note,
+                shipping_latitude,
+                shipping_longitude
          FROM tb_user_shipping_addresses
          WHERE uuid::text = $1
            AND shipping_user = $2
@@ -255,7 +244,69 @@ export default defineEventHandler(async (event) => {
     );
     const merchandiseTotal = toMoney(subtotal - discount);
 
-    if (merchandiseTotal < 1500) {
+    let selectedDelivery = {
+      label: "รับสินค้าด้วยตัวเอง",
+      description: "รับสินค้าได้ที่หน้าร้านหรือจุดรับสินค้า",
+      fee: 0,
+    };
+    let shippingProvider: string | null = null;
+    let shippingServiceCode: string | null = "pickup";
+    let shippingRateVersion: string | null = null;
+    let shippingQuoteSnapshot: Record<string, any> = {};
+
+    if (deliveryMethod !== "pickup") {
+      const config = useRuntimeConfig();
+      const shippingQuote = await createShippingQuote(
+        client,
+        userUuid,
+        shippingAddressUuid,
+        {
+          geocodingBaseUrl: config.shippingGeocodingBaseUrl,
+          routingBaseUrl: config.shippingRoutingBaseUrl,
+          userAgent: config.shippingMapUserAgent,
+          referer: getRequestURL(event).origin,
+        },
+        deliveryMethod === "express",
+      );
+      const selectedQuote = shippingQuote.options.find(
+        (option) => option.id === deliveryMethod,
+      );
+
+      if (
+        !selectedQuote ||
+        !selectedQuote.available ||
+        selectedQuote.price === null
+      ) {
+        throw createError({
+          statusCode: 422,
+          statusMessage:
+            selectedQuote?.unavailableReason ||
+            "วิธีจัดส่งนี้ไม่พร้อมใช้งานสำหรับคำสั่งซื้อ",
+        });
+      }
+
+      selectedDelivery = {
+        label: selectedQuote.label,
+        description: selectedQuote.description,
+        fee: selectedQuote.price,
+      };
+      shippingProvider = selectedQuote.provider;
+      shippingServiceCode = selectedQuote.serviceCode;
+      shippingRateVersion = selectedQuote.rateVersion;
+      shippingQuoteSnapshot = {
+        calculatedAt: shippingQuote.calculatedAt,
+        distanceMeters: shippingQuote.distanceMeters,
+        distanceKm: shippingQuote.distanceKm,
+        durationMinutes: shippingQuote.durationMinutes,
+        approximate: shippingQuote.approximate,
+        option: selectedQuote,
+      };
+    }
+
+    const requiresMinimumOrder =
+      deliveryMethod === "pickup" || deliveryMethod === "express";
+
+    if (requiresMinimumOrder && merchandiseTotal < 1500) {
       throw createError({
         statusCode: 400,
         statusMessage: "Minimum order total after promotions is 1,500 THB",
@@ -294,10 +345,17 @@ export default defineEventHandler(async (event) => {
         order_grand_total,
         order_customer_note,
         order_status,
-        created_by
+        created_by,
+        order_shipping_provider,
+        order_shipping_service_code,
+        order_shipping_rate_version,
+        order_shipping_quote,
+        order_shipping_latitude,
+        order_shipping_longitude
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-        $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
+        $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
+        $27, $28, $29, $30::jsonb, $31, $32
       )
       RETURNING *`,
       [
@@ -327,6 +385,12 @@ export default defineEventHandler(async (event) => {
         customerNote,
         "pending",
         userUuid,
+        shippingProvider,
+        shippingServiceCode,
+        shippingRateVersion,
+        JSON.stringify(shippingQuoteSnapshot),
+        shippingAddress?.shipping_latitude || null,
+        shippingAddress?.shipping_longitude || null,
       ],
     );
     const order = orderResult.rows[0];

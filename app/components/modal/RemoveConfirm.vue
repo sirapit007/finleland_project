@@ -58,7 +58,7 @@
                 <p class="text-xs text-base-content/55">ที่อยู่จัดส่ง</p>
                 <span
                   v-if="shippingAddress.label"
-                  class="badge badge-xs badge-outline"
+                  class="badge badge-xs badge-soft"
                 >
                   {{ shippingAddress.label }}
                 </span>
@@ -165,7 +165,7 @@ const props = withDefaults(
     icon?: string;
     loading?: boolean;
     shippingAddress?: ConfirmShippingAddress | null;
-    deliveryMethod?: ConfirmDeliveryMethod | null;
+    deliveryMethod?: any | null;
   }>(),
   {
     modelValue: false,

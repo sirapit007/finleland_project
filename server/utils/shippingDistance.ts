@@ -17,10 +17,12 @@ export type ShippingDistanceResult = {
   durationSeconds: number;
 };
 
-type Coordinate = {
+export type ShippingCoordinate = {
   latitude: number;
   longitude: number;
 };
+
+type Coordinate = ShippingCoordinate;
 
 type NominatimResult = {
   lat?: string;
@@ -401,4 +403,21 @@ export async function calculateShippingDistance(
   ]);
 
   return routeBetween(originCoordinate, destinationCoordinate, config);
+}
+
+export async function calculateShippingDistanceToCoordinate(
+  origin: ShippingAddressArea,
+  destination: ShippingCoordinate,
+  config: ShippingDistanceConfig,
+) {
+  const originCoordinate = await geocodeArea(origin, config);
+  return routeBetween(originCoordinate, destination, config);
+}
+
+export async function calculateShippingDistanceBetweenCoordinates(
+  origin: ShippingCoordinate,
+  destination: ShippingCoordinate,
+  config: ShippingDistanceConfig,
+) {
+  return routeBetween(origin, destination, config);
 }

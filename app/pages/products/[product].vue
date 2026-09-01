@@ -176,6 +176,44 @@
           <span class="font-semibold">รหัสสินค้า: </span
           >{{ base.object.product_code }}
         </div>
+        <div
+          v-if="shippingDetails.hasDetails"
+          class="rounded-xl border border-base-300 bg-base-200/50 p-3 sm:p-4"
+        >
+          <div class="mb-3 flex items-center gap-2 font-semibold">
+            <Icon name="lucide:package-check" class="text-primary" size="18" />
+            ข้อมูลสำหรับจัดส่ง
+          </div>
+          <div class="grid gap-3 text-sm sm:grid-cols-2 lg:text-base">
+            <div v-if="shippingDetails.weight" class="flex items-start gap-2">
+              <Icon
+                name="lucide:weight"
+                class="mt-0.5 shrink-0 text-base-content/55"
+                size="17"
+              />
+              <div>
+                <div class="text-xs text-base-content/55">น้ำหนักหลังแพ็ก</div>
+                <div class="font-medium">{{ shippingDetails.weight }}</div>
+              </div>
+            </div>
+            <div
+              v-if="shippingDetails.dimensions"
+              class="flex items-start gap-2"
+            >
+              <Icon
+                name="lucide:box"
+                class="mt-0.5 shrink-0 text-base-content/55"
+                size="17"
+              />
+              <div>
+                <div class="text-xs text-base-content/55">
+                  ขนาดหลังแพ็ก (ยาว × กว้าง × สูง)
+                </div>
+                <div class="font-medium">{{ shippingDetails.dimensions }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="text-sm lg:text-base">
           <span class="font-semibold">รายละเอียดสินค้า:</span>
           <p
@@ -234,6 +272,7 @@
 
 <script setup lang="ts">
 import { normalizeProductImageUrls } from "~/utils/productImages";
+import { getProductShippingSummary } from "~/utils/productShipping";
 type SignModalHandle = {
   onSignIn: () => void;
 };
@@ -256,6 +295,9 @@ const selectedProductImage = computed(() =>
   productImages.value.includes(activeProductImage.value)
     ? activeProductImage.value
     : productImages.value[0] || "",
+);
+const shippingDetails = computed(() =>
+  getProductShippingSummary(base.value.object),
 );
 
 const rows = ref<any>({

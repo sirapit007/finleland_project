@@ -29,17 +29,6 @@
       </div>
 
       <div
-        v-if="
-          currentUser?.uuid && !isShippingLoading && !shippingAddresses.length
-        "
-        role="alert"
-        class="alert alert-warning text-sm"
-      >
-        <Icon name="lucide:triangle-alert" size="18" />
-        <span>ต้องเพิ่มที่อยู่ก่อนจึงจะบันทึกคำสั่งซื้อได้</span>
-      </div>
-
-      <div
         v-if="shouldShowLineConnectNotice"
         role="alert"
         class="alert alert-info text-sm"
@@ -72,282 +61,189 @@
       >
         {{ taxError }}
       </p>
+
       <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
         <section class="min-w-0 space-y-4">
-          <section
-            class="rounded-xl border border-base-300 bg-base-200/40 p-4 sm:p-5"
-          >
-            <div
-              class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-            >
-              <div class="flex gap-3">
-                <div
-                  class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-                >
-                  <Icon name="lucide:map-pin" size="21" />
-                </div>
-                <div>
-                  <div class="mb-1 flex flex-wrap items-center gap-2">
-                    <h2 class="font-bold">ที่อยู่จัดส่ง</h2>
-                    <span class="text-xs text-primary font-semibold">
-                      ( {{ shippingAddresses.length }} ที่อยู่ )
-                    </span>
-                    <span
-                      v-if="selectedShippingAddress"
-                      class="badge badge-sm badge-soft badge-success"
-                    >
-                      กำลังใช้งาน
-                    </span>
-                  </div>
+          <ShoppingShippingAddressSelection
+            :current-user="currentUser"
+            :selectedShippingAddress="selectedShippingAddress"
+            :isShippingLoading="isShippingLoading"
+            v-model:shippingAddresses="shippingAddresses"
+            v-model:selectedShippingAddressId="selectedShippingAddressId"
+            v-model:shippingError="shippingError"
+            :formatShippingAddress="formatShippingAddress"
+            :loadShippingAddresses="loadShippingAddresses"
+          />
 
-                  <template v-if="selectedShippingAddress">
-                    <p class="text-sm font-semibold">
-                      {{ selectedShippingAddress.shipping_label }}:
-                      {{ selectedShippingAddress.shipping_recipient }}
-                    </p>
-                    <p
-                      class="mt-1 max-w-3xl text-sm leading-6 text-base-content/65"
-                    >
-                      {{ formatShippingAddress(selectedShippingAddress) }}
-                    </p>
-                    <p class="text-sm text-base-content/65">
-                      {{ selectedShippingAddress.shipping_phone }}
-                    </p>
-                    <p
-                      v-if="selectedShippingAddress.shipping_note"
-                      class="mt-1 text-xs text-base-content/55"
-                    >
-                      หมายเหตุ: {{ selectedShippingAddress.shipping_note }}
-                    </p>
-                  </template>
-                  <template v-else>
-                    <p class="text-sm font-semibold text-base-content/70">
-                      ยังไม่มีที่อยู่จัดส่ง
-                    </p>
-                    <p class="mt-1 text-sm text-base-content/55">
-                      เพิ่มที่อยู่ไว้ก่อนเพื่อใช้ตอนสั่งซื้อ
-                    </p>
-                  </template>
-                </div>
-              </div>
-
-              <div class="flex shrink-0 flex-wrap gap-2">
-                <button
-                  class="btn btn-outline sm:btn-sm btn-xs sm:w-fit w-full"
-                  :disabled="isShippingLoading"
-                  @click="openSelectAddressModal"
-                >
-                  <Icon name="lucide:map-pinned" size="16" /> เลือกที่อยู่
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <div class="overflow-x-auto rounded-xl border border-base-300">
-            <table
-              class="table border-separate border-spacing-0"
-              :class="basketRows.length ? 'min-w-200' : 'min-w-full'"
-            >
-              <thead>
-                <tr class="bg-base-200/80 text-xs text-base-content/70">
-                  <th class="w-[52%] px-5 py-4">สินค้า</th>
-                  <th class="px-4 py-4 text-right">ราคา</th>
-                  <th class="px-4 py-4 text-center">จำนวน</th>
-                  <th class="px-5 py-4 text-right">รวม</th>
-                </tr>
-              </thead>
-              <tbody>
-                <SkeletonTableRows
-                  v-if="isLoading && !basketRows.length"
-                  :columns="4"
-                  :rows="4"
-                  :image-column="0"
-                />
-                <tr v-else-if="!basketRows.length">
-                  <td colspan="4" class="py-14 text-center">
-                    <Icon
-                      name="lucide:shopping-basket"
-                      size="34"
-                      class="mx-auto mb-3 text-base-content/30"
-                    />
-                    <p class="font-semibold">ยังไม่มีสินค้าในตะกร้า</p>
-                    <p class="mt-1 text-sm text-base-content/55">
-                      เลือกสินค้าที่ต้องการ แล้วกลับมาดำเนินการสั่งซื้อได้ที่นี่
-                    </p>
-                  </td>
-                </tr>
-                <tr
-                  v-for="basket in basketRows"
-                  :key="basket.uuid"
-                  class="border-base-300 last:border-0"
-                >
-                  <td class="border-t border-base-300 px-5 py-4">
-                    <div class="flex min-w-90 items-center gap-4">
-                      <img
-                        v-if="productImage(basket)"
-                        :src="productImage(basket)"
-                        class="size-20 shrink-0 rounded-xl border border-base-300 bg-base-100 object-contain"
-                      />
-                      <img
-                        v-else
-                        src="@/assets/images/blank.png"
-                        class="size-20 shrink-0 rounded-xl border border-base-300 bg-base-100 object-contain"
-                      />
-                      <div class="min-w-0">
-                        <p class="truncate font-bold text-base-content">
-                          {{ basket.product_name || basket.basket_product }}
-                        </p>
-                        <p
-                          v-if="basket.product_code"
-                          class="mt-1 text-xs text-base-content/55"
-                        >
-                          รหัสสินค้า {{ basket.product_code }}
-                        </p>
-                        <p v-else class="mt-1 text-xs text-base-content/55">
-                          สินค้าในตะกร้า
-                        </p>
-                        <div
-                          v-if="pricingFor(basket).hasPromotion"
-                          class="mt-2 rounded-lg border px-2.5 py-2 text-xs"
-                          :class="
-                            pricingFor(basket).isEligible
-                              ? 'border-success/30 bg-success/10 text-success-content'
-                              : 'border-warning/30 bg-warning/10 text-warning-content'
-                          "
-                        >
-                          <p class="flex items-center gap-1 font-semibold">
-                            <Icon
-                              :name="
-                                pricingFor(basket).isEligible
-                                  ? 'lucide:badge-check'
-                                  : 'lucide:circle-alert'
-                              "
-                              size="14"
-                            />
-                            {{
-                              pricingFor(basket).isEligible
-                                ? "ใช้ราคาพิเศษแล้ว"
-                                : "ยังไม่ถึงเงื่อนไขส่วนลด"
-                            }}
-                          </p>
-                          <p class="mt-1 leading-5">
-                            {{ pricingFor(basket).message }}
-                          </p>
-                        </div>
-                        <button
-                          class="btn btn-ghost btn-xs mt-2 -ml-2 text-base-content/55 hover:text-error"
-                          :disabled="isItemUpdating(basket.uuid)"
-                          @click="requestRemoveBasketItem(basket)"
-                        >
-                          <Icon name="lucide:trash-2" size="14" /> ลบรายการ
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                  <td class="border-t border-base-300 px-4 py-4 text-right">
-                    <p
-                      v-if="pricingFor(basket).isEligible"
-                      class="text-xs text-base-content/45 line-through"
-                    >
-                      ฿{{ formatPrice(pricingFor(basket).normalUnitPrice) }}
-                    </p>
-                    <p
-                      class="font-bold"
-                      :class="
-                        pricingFor(basket).isEligible
-                          ? 'text-error'
-                          : 'text-primary'
-                      "
-                    >
-                      ฿{{ formatPrice(pricingFor(basket).unitPrice) }}
-                    </p>
-                    <span
-                      v-if="pricingFor(basket).isEligible"
-                      class="badge badge-xs badge-error badge-soft mt-1"
-                    >
-                      ราคาพิเศษ
-                    </span>
-                  </td>
-                  <td class="border-t border-base-300 px-4 py-4 text-center">
-                    <div class="join">
-                      <button
-                        class="btn btn-sm join-item"
-                        :disabled="isItemUpdating(basket.uuid)"
-                        @click="onChangeQuantity(basket, -1)"
-                      >
-                        <Icon name="lucide:minus" size="16" />
-                      </button>
-                      <span
-                        class="btn btn-sm join-item pointer-events-none w-12 bg-base-100 font-semibold"
-                      >
-                        <Icon
-                          v-if="isItemUpdating(basket.uuid)"
-                          name="lucide:loader-circle"
-                          size="15"
-                          class="animate-spin"
-                        />
-                        <template v-else>{{ basket.basket_quantity }}</template>
-                      </span>
-                      <button
-                        class="btn btn-sm join-item"
-                        :disabled="isItemUpdating(basket.uuid)"
-                        @click="onChangeQuantity(basket, 1)"
-                      >
-                        <Icon name="lucide:plus" size="16" />
-                      </button>
-                    </div>
-                  </td>
-                  <td class="border-t border-base-300 px-5 py-4 text-right">
-                    <p
-                      v-if="pricingFor(basket).discount > 0"
-                      class="text-xs text-base-content/45 line-through"
-                    >
-                      ฿{{ formatPrice(pricingFor(basket).originalTotal) }}
-                    </p>
-                    <p
-                      class="text-lg font-bold"
-                      :class="
-                        pricingFor(basket).discount > 0
-                          ? 'text-error'
-                          : 'text-primary'
-                      "
-                    >
-                      ฿{{ formatPrice(pricingFor(basket).total) }}
-                    </p>
-                    <p
-                      v-if="pricingFor(basket).discount > 0"
-                      class="mt-1 text-xs font-semibold text-success"
-                    >
-                      ประหยัด ฿{{ formatPrice(pricingFor(basket).discount) }}
-                    </p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ShoppingBasketLists
+            :isClearing="isClearing"
+            v-model:basketRows="basketRows"
+            v-model:errorMessage="errorMessage"
+            v-model:confirmBasketTarget="confirmBasketTarget"
+            v-model:confirmAction="confirmAction"
+            v-model:isConfirmModalOpen="isConfirmModalOpen"
+            :pricingFor="pricingFor"
+            :formatPrice="formatPrice"
+          />
 
           <div
-            class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between"
+            class="mt-6 rounded-xl border border-base-300 bg-base-200 p-4 sm:p-5"
           >
-            <button
-              class="btn btn-outline btn-error btn-sm"
-              :disabled="!basketRows.length || isClearing"
-              @click="requestClearBasket"
+            <h2 class="mb-3 sm:text-base text-sm font-bold">ตัวเลือกการจัดส่ง</h2>
+            <div class="grid gap-4 sm:grid-cols-1 grid-cols-1">
+              <label
+                v-for="option in deliveryOptions"
+                :key="option.id"
+                class="relative block cursor-pointer"
+              >
+                <input
+                  v-model="delivery"
+                  type="radio"
+                  :value="option.id"
+                  class="peer sr-only"
+                  :disabled="!option.active"
+                />
+                <div
+                  class="flex items-center gap-3 rounded-lg border border-base-300 p-3 transition peer-checked:bg-base-100 peer-checked:ring-1 peer-checked:ring-base-200"
+                  :class="!option.active ? 'opacity-50 cursor-not-allowed' : ''"
+                >
+                  <Icon
+                    :name="option.icon"
+                    size="23"
+                    :class="
+                      option.id === 'express'
+                        ? 'text-secondary'
+                        : option.id === 'thailand_post_ems'
+                          ? 'text-accent'
+                          : option.id === 'flash_bulky'
+                            ? 'text-info'
+                            : 'text-primary'
+                    "
+                  />
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-bold">{{ option.label }}</p>
+                    <p class="text-xs text-base-content/55">
+                      {{ option.description }}
+                    </p>
+                    <p
+                      v-if="!option.active && option.unavailableReason"
+                      class="mt-1 text-[11px] leading-4 text-warning"
+                    >
+                      {{ option.unavailableReason }}
+                    </p>
+                    <p
+                      v-else-if="option.parcelCount"
+                      class="mt-1 text-[11px] text-base-content/45"
+                    >
+                      {{ option.parcelCount }} พัสดุ
+                    </p>
+                  </div>
+                  <p class="text-right text-sm font-bold">
+                    {{
+                      !option.active
+                        ? isShippingDistanceLoading
+                          ? "กำลังคำนวณ"
+                          : "ไม่พร้อม"
+                        : option.price === null
+                          ? "เลือกเพื่อคำนวณ"
+                          : option.price === 0
+                            ? "ฟรี"
+                            : `฿${formatPrice(option.price || 0)}`
+                    }}
+                  </p>
+                </div>
+              </label>
+            </div>
+            <div
+              v-if="delivery === 'express' && selectedShippingAddress"
+              class="mt-4 space-y-2"
             >
-              <Icon name="lucide:trash-2" size="16" /> ลบสินค้าทั้งหมด
-            </button>
-            <button
-              class="btn btn-outline btn-primary btn-sm"
-              :disabled="isLoading"
-              @click="onRefreshBasket"
+              <p
+                v-if="isShippingDistanceLoading"
+                class="flex items-center gap-2 text-xs text-base-content/60"
+                aria-hidden="true"
+              >
+                <span class="skeleton h-4 w-4 rounded-full" />
+                <span class="skeleton h-3 w-56 max-w-full" />
+              </p>
+              <div
+                v-else-if="shippingDistanceQuote?.isOverWarningDistance"
+                role="alert"
+                class="alert alert-warning alert-dash text-secondary py-3"
+              >
+                <Icon name="lucide:clock-alert" size="20" />
+                <div>
+                  <p class="text-sm font-bold">อยู่นอกพื้นที่ส่งด่วน</p>
+                  <p class="mt-0.5 text-xs">
+                    ระยะทางตามถนนโดยประมาณ
+                    {{ formattedShippingDistance }} กม. จากสาขาเวียงสา
+                    (ให้บริการไม่เกิน 10 กม.)
+                  </p>
+                </div>
+              </div>
+              <p
+                v-else-if="shippingDistanceQuote"
+                class="flex items-center gap-2 text-xs text-base-content/60"
+              >
+                <Icon name="lucide:route" size="15" class="text-primary" />
+                ระยะทางตามถนนโดยประมาณ {{ formattedShippingDistance }} กม.
+                จากสาขาเวียงสา
+              </p>
+              <p
+                v-else-if="shippingDistanceError"
+                role="status"
+                class="flex items-start gap-2 text-xs text-warning"
+              >
+                <Icon
+                  name="lucide:triangle-alert"
+                  size="15"
+                  class="mt-0.5 shrink-0"
+                />
+                {{ shippingDistanceError }}
+              </p>
+              <p
+                v-if="shippingDistanceQuote || shippingDistanceError"
+                class="text-[10px] text-base-content/45"
+              >
+                ข้อมูลแผนที่
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="link link-hover"
+                >
+                  © OpenStreetMap contributors
+                </a>
+              </p>
+            </div>
+            <div
+              v-if="
+                selectedDeliveryQuote &&
+                delivery !== 'express' &&
+                delivery !== 'pickup'
+              "
+              class="mt-4 rounded-lg border border-base-300 bg-base-200/50 p-3"
             >
-              <Icon
-                name="lucide:refresh-cw"
-                size="16"
-                :class="isLoading ? 'animate-spin' : ''"
-              />
-              อัปเดตตะกร้า
-            </button>
+              <p class="flex items-center gap-2 text-xs font-semibold">
+                <Icon
+                  name="lucide:package-search"
+                  size="15"
+                  class="text-primary"
+                />
+                คำนวณจาก {{ selectedDeliveryQuote.parcelCount }} พัสดุ
+              </p>
+              <p
+                v-if="selectedDeliveryQuote.parcels[0]"
+                class="mt-1 text-[11px] leading-5 text-base-content/55"
+              >
+                {{ selectedDeliveryQuote.parcels[0].productName }}:
+                น้ำหนักคิดค่าจัดส่ง
+                {{ selectedDeliveryQuote.parcels[0].billableWeightKg }} กก.
+                <template v-if="selectedDeliveryQuote.parcels.length > 1">
+                  และอีก {{ selectedDeliveryQuote.parcels.length - 1 }} รายการ
+                </template>
+              </p>
+            </div>
           </div>
         </section>
 
@@ -356,7 +252,7 @@
         >
           <h2 class="text-xl font-bold">สรุปคำสั่งซื้อ</h2>
 
-          <div class="mt-5 rounded-xl bg-base-200/80 p-4">
+          <!-- <div class="mt-5 rounded-xl bg-base-200/80 p-4">
             <div class="flex items-center gap-2">
               <Icon name="lucide:map-pin" size="18" class="text-primary" />
               <p class="font-semibold">ที่อยู่จัดส่ง</p>
@@ -378,7 +274,13 @@
                 ยังไม่ได้เลือกที่อยู่จัดส่ง
               </p>
             </template>
-          </div>
+          </div> -->
+
+          <template v-if="!selectedShippingAddress">
+            <p class="mt-3 text-sm text-base-content/55">
+              ยังไม่ได้เลือกที่อยู่จัดส่ง
+            </p>
+          </template>
 
           <div class="mt-5 space-y-3 text-sm">
             <div class="flex justify-between gap-4 text-base-content/70">
@@ -427,7 +329,7 @@
             <input
               v-model="requestTaxInvoice"
               type="checkbox"
-              class="checkbox checkbox-primary md:checkbox-md checkbox-sm sm:mt-1 mt-2"
+              class="checkbox checkbox-primary sm:checkbox-sm checkbox-xs sm:mt-1 mt-2"
             />
             <div class="w-full">
               <div class="flex items-center justify-between gap-2">
@@ -478,154 +380,54 @@
             </div>
           </label>
 
-          <div class="my-5 border-t border-base-300" />
+          <div class="mt-5 border-t border-base-300" />
 
-          <h3 class="mb-3 text-sm font-bold">ตัวเลือกการจัดส่ง</h3>
-          <div class="space-y-2">
-            <label
-              v-for="option in deliveryOptions"
-              :key="option.id"
-              class="relative block cursor-pointer"
+          <div class="grid lg:grid-cols-1 sm:grid-cols-2 grid-cols-1 gap-4">
+            <section
+              class="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4"
+              aria-labelledby="wiang-sa-contact-title"
             >
-              <input
-                v-model="delivery"
-                type="radio"
-                :value="option.id"
-                class="peer sr-only"
-              />
-              <div
-                class="flex items-center gap-3 rounded-lg border border-base-300 p-3 transition peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:ring-1 peer-checked:ring-primary"
-              >
+              <div class="flex items-start gap-3">
                 <Icon
-                  :name="option.icon"
-                  size="23"
-                  :class="
-                    option.id === 'express'
-                      ? 'text-secondary'
-                      : option.id === 'normal'
-                        ? 'text-primary'
-                        : 'text-accent'
-                  "
+                  name="lucide:store"
+                  size="20"
+                  class="mt-0.5 shrink-0 text-primary"
                 />
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-bold">{{ option.label }}</p>
-                  <p class="text-xs text-base-content/55">
-                    {{ option.description }}
+                  <h3 id="wiang-sa-contact-title" class="text-sm font-bold">
+                    ติดต่อร้านค้าสาขาเวียงสา
+                  </h3>
+                  <p class="mt-1 text-xs leading-5 text-base-content/60">
+                    เปิดทุกวัน 08:00 - 20:00 น. หากต้องการสอบถามสถานะสินค้า
+                    ติดต่อทางร้านได้ก่อนสั่งซื้อ
                   </p>
-                </div>
-                <p class="text-right text-sm font-bold">
-                  {{ option.price === 0 ? "ฟรี" : `฿${option.price}` }}
-                </p>
-              </div>
-            </label>
-          </div>
-
-          <div
-            v-if="delivery === 'express' && selectedShippingAddress"
-            class="mt-4 space-y-2"
-          >
-            <p
-              v-if="isShippingDistanceLoading"
-              class="flex items-center gap-2 text-xs text-base-content/60"
-              aria-hidden="true"
-            >
-              <span class="skeleton h-4 w-4 rounded-full" />
-              <span class="skeleton h-3 w-56 max-w-full" />
-            </p>
-            <div
-              v-else-if="shippingDistanceQuote?.isOverWarningDistance"
-              role="alert"
-              class="alert alert-warning alert-dash text-secondary py-3"
-            >
-              <Icon name="lucide:clock-alert" size="20" />
-              <div>
-                <p class="text-sm font-bold">อาจใช้เวลานานกว่า 2 ชม.</p>
-                <p class="mt-0.5 text-xs">
-                  ระยะทางตามถนนโดยประมาณ
-                  {{ formattedShippingDistance }} กม. จากสาขาเวียงสา
-                </p>
-              </div>
-            </div>
-            <p
-              v-else-if="shippingDistanceQuote"
-              class="flex items-center gap-2 text-xs text-base-content/60"
-            >
-              <Icon name="lucide:route" size="15" class="text-primary" />
-              ระยะทางตามถนนโดยประมาณ {{ formattedShippingDistance }} กม.
-              จากสาขาเวียงสา
-            </p>
-            <p
-              v-else-if="shippingDistanceError"
-              role="status"
-              class="flex items-start gap-2 text-xs text-warning"
-            >
-              <Icon
-                name="lucide:triangle-alert"
-                size="15"
-                class="mt-0.5 shrink-0"
-              />
-              {{ shippingDistanceError }}
-            </p>
-            <p
-              v-if="shippingDistanceQuote || shippingDistanceError"
-              class="text-[10px] text-base-content/45"
-            >
-              ข้อมูลแผนที่
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="link link-hover"
-              >
-                © OpenStreetMap contributors
-              </a>
-            </p>
-          </div>
-
-          <section
-            class="mt-5 rounded-xl border border-primary/20 bg-primary/5 p-4"
-            aria-labelledby="wiang-sa-contact-title"
-          >
-            <div class="flex items-start gap-3">
-              <Icon
-                name="lucide:store"
-                size="20"
-                class="mt-0.5 shrink-0 text-primary"
-              />
-              <div class="min-w-0 flex-1">
-                <h3 id="wiang-sa-contact-title" class="text-sm font-bold">
-                  ติดต่อร้านค้าสาขาเวียงสา
-                </h3>
-                <p class="mt-1 text-xs leading-5 text-base-content/60">
-                  เปิดทุกวัน 08:00 - 20:00 น. หากต้องการสอบถามสถานะสินค้า
-                  ติดต่อทางร้านได้ก่อนสั่งซื้อ
-                </p>
-                <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                  <a
-                    href="tel:+66930166996"
-                    class="btn btn-outline btn-primary btn-xs"
-                  >
-                    <Icon name="lucide:phone" size="14" /> 093-0166996
-                  </a>
-                  <a
-                    href="tel:+66955979995"
-                    class="btn btn-outline btn-primary btn-xs"
-                  >
-                    <Icon name="lucide:phone" size="14" /> 095-5979995
-                  </a>
-                  <a
-                    href="https://www.facebook.com/Fillyland.Sa"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="btn btn-outline btn-primary btn-xs sm:col-span-2"
-                  >
-                    <Icon name="ri:facebook-fill" size="14" />
-                    ฟินลี่แลนด์ พลาซ่า เวียงสา
-                  </a>
+                  <div class="mt-3 grid gap-2 md:grid-cols-2">
+                    <a
+                      href="tel:+66930166996"
+                      class="btn btn-outline btn-primary btn-xs"
+                    >
+                      <Icon name="lucide:phone" size="14" /> 093-0166996
+                    </a>
+                    <a
+                      href="tel:+66955979995"
+                      class="btn btn-outline btn-primary btn-xs"
+                    >
+                      <Icon name="lucide:phone" size="14" /> 095-5979995
+                    </a>
+                    <a
+                      href="https://www.facebook.com/Fillyland.Sa"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="btn btn-outline btn-primary btn-xs md:col-span-2"
+                    >
+                      <Icon name="ri:facebook-fill" size="14" />
+                      ฟินลี่แลนด์ พลาซ่า เวียงสา
+                    </a>
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
 
           <label
             class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition"
@@ -665,8 +467,9 @@
           <button
             class="btn btn-primary mt-5 w-full"
             :disabled="
-              subtotal < 1500 ||
+              (requiresMinimumOrder && subtotal < 1500) ||
               (delivery !== 'pickup' && !selectedShippingAddress) ||
+              !selectedDeliveryOption?.active ||
               (requestTaxInvoice && !selectedTaxProfile) ||
               !acceptOrderConditions ||
               isShippingDistanceLoading ||
@@ -678,7 +481,7 @@
             <Icon name="lucide:arrow-right" size="18" />
           </button>
           <p
-            v-if="subtotal < 1500"
+            v-if="requiresMinimumOrder && subtotal < 1500"
             class="mt-2 text-center text-xs text-base-content/55"
           >
             ยอดสั่งซื้อขั้นต่ำ ฿1,500.00
@@ -717,7 +520,7 @@
         <div
           v-for="benefit in benefits"
           :key="benefit.title"
-          class="flex items-center gap-3 rounded-xl bg-base-200/80 p-3"
+          class="flex items-center gap-3 rounded-xl bg-base-200 border border-base-300 p-3"
         >
           <Icon :name="benefit.icon" size="27" class="text-primary" />
           <div>
@@ -730,77 +533,6 @@
       </div>
     </div>
   </div>
-
-  <dialog ref="selectAddressModal" class="modal">
-    <div class="modal-box max-w-3xl p-0">
-      <div
-        class="flex items-center justify-between border-b border-base-300 px-5 py-4 sm:px-6"
-      >
-        <div>
-          <h2 class="text-xl font-bold">เลือกที่อยู่จัดส่ง</h2>
-          <p class="mt-1 text-sm text-base-content/60">
-            เลือกที่อยู่ที่ต้องการใช้สำหรับการสั่งซื้อครั้งนี้
-          </p>
-        </div>
-        <button
-          class="btn btn-circle btn-ghost btn-sm"
-          type="button"
-          @click="selectAddressModal?.close()"
-        >
-          <Icon name="lucide:x" size="18" />
-        </button>
-      </div>
-
-      <div class="max-h-[78vh] space-y-5 overflow-y-auto p-5 sm:p-6">
-        <div class="flex flex-wrap justify-between gap-2">
-          <button
-            class="btn btn-primary btn-sm"
-            type="button"
-            @click="openCreateAddressModal"
-          >
-            <Icon name="lucide:plus" size="16" /> เพิ่มที่อยู่ใหม่
-          </button>
-          <button
-            class="btn btn-outline btn-sm"
-            type="button"
-            @click="loadShippingAddresses"
-          >
-            <Icon name="lucide:refresh-cw" size="16" /> โหลดข้อมูลใหม่
-          </button>
-        </div>
-
-        <div v-if="isShippingLoading" class="space-y-3">
-          <SkeletonAddressCards />
-        </div>
-
-        <div v-else-if="!shippingAddresses.length" class="py-8 text-center">
-          <Icon
-            name="lucide:map-pin-off"
-            size="32"
-            class="mx-auto mb-3 text-base-content/30"
-          />
-          <p class="font-semibold">ยังไม่มีที่อยู่จัดส่ง</p>
-          <p class="mt-1 text-sm text-base-content/55">
-            กดเพิ่มที่อยู่ใหม่เพื่อสร้างรายการแรก
-          </p>
-        </div>
-
-        <div v-else class="space-y-3">
-          <ShippingAddressCard
-            v-for="address in shippingAddresses"
-            :key="address.uuid"
-            :shipping-address="address"
-            :selected="selectedShippingAddressId === address.uuid"
-            selectable
-            @select="selectShippingAddress($event.uuid)"
-          />
-        </div>
-      </div>
-    </div>
-    <form method="dialog" class="modal-backdrop">
-      <button>ปิด</button>
-    </form>
-  </dialog>
 
   <dialog ref="selectTaxProfileModal" class="modal">
     <div class="modal-box max-w-3xl p-0">
@@ -907,11 +639,6 @@
     <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
   </dialog>
 
-  <ShippingAddressFormModal
-    ref="shippingAddressFormModal"
-    @saved="handleShippingAddressSaved"
-  />
-
   <TaxProfileFormModal
     ref="taxProfileFormModal"
     @saved="handleTaxProfileSaved"
@@ -931,23 +658,41 @@
 </template>
 
 <script setup lang="ts">
+type ShippingQuoteOption = {
+  id: string;
+  serviceCode: string;
+  provider: string;
+  label: string;
+  description: string;
+  available: boolean;
+  unavailableReason: string | null;
+  price: number | null;
+  estimatedDaysMin: number | null;
+  estimatedDaysMax: number | null;
+  rateVersion: string;
+  parcelCount: number;
+  parcels: Array<Record<string, any>>;
+  missingProducts: Array<Record<string, any>>;
+};
+
 type ShippingDistanceQuote = {
   addressUuid: string;
   store: {
     label: string;
     address: string;
   };
-  distanceMeters: number;
-  distanceKm: number;
-  durationMinutes: number;
+  distanceMeters: number | null;
+  distanceKm: number | null;
+  durationMinutes: number | null;
   isOverWarningDistance: boolean;
   warningDistanceKm: number;
   approximate: boolean;
   calculatedAt: string;
   attribution: string;
+  options: ShippingQuoteOption[];
 };
 
-const delivery = ref("normal");
+const delivery = ref("pickup");
 const requestTaxInvoice = ref(false);
 const acceptOrderConditions = ref(false);
 const orderConditionsError = ref("");
@@ -968,11 +713,11 @@ const isShippingDistanceLoading = ref(false);
 const shippingDistanceError = ref("");
 const shippingDistanceQuoteCache = new Map<string, ShippingDistanceQuote>();
 let shippingDistanceAbortController: AbortController | null = null;
-const isShippingLoading = ref(false);
 const isTaxLoading = ref(false);
 const isConfirmModalOpen = ref(false);
 const confirmAction = ref<"remove" | "clear" | "checkout" | "">("");
 const confirmBasketTarget = ref<any>(null);
+const isShippingLoading = ref(false);
 
 const shouldShowLineConnectNotice = computed(
   () =>
@@ -981,12 +726,7 @@ const shouldShowLineConnectNotice = computed(
     !lineAccounts.value.some((account) => account.line_is_connected),
 );
 
-const selectAddressModal = ref<HTMLDialogElement | null>(null);
 const selectTaxProfileModal = ref<HTMLDialogElement | null>(null);
-const shippingAddressFormModal = ref<{
-  onCreate: (initial?: Partial<ShippingAddressForm>) => void;
-  onEdit: (address: ShippingAddress) => void;
-} | null>(null);
 const taxProfileFormModal = ref<{
   onCreate: (initial?: Partial<TaxProfileForm>) => void;
   onEdit: (profile: TaxProfile) => void;
@@ -1015,29 +755,89 @@ const benefits = [
   },
 ];
 
-const deliveryOptions = [
+const quotedDeliveryDefaults = [
+  {
+    id: "express",
+    label: "ส่งด่วนใกล้บ้าน",
+    description: "ภายใน 1 - 2 ชม. · ไม่เกิน 10 กม. จากร้าน",
+    icon: "lucide:bike",
+  },
+  {
+    id: "thailand_post_ems",
+    label: "ไปรษณีย์ไทย EMS",
+    description: "จัดส่งต่างจังหวัดตามน้ำหนักหลังแพ็ก",
+    icon: "lucide:package-check",
+  },
+  {
+    id: "flash_bulky",
+    label: "Flash Express Bulky",
+    description: "คิดจากน้ำหนักจริงหรือน้ำหนักปริมาตร",
+    icon: "lucide:truck",
+  },
+] as const;
+
+const deliveryOptions = computed(() => [
   {
     id: "pickup",
     label: "รับสินค้าด้วยตัวเอง",
     description: "รับสินค้าได้ที่หน้าร้านหรือจุดรับสินค้า",
     price: 0,
     icon: "lucide:store",
+    active: true,
+    unavailableReason: null,
+    parcelCount: 0,
+    rateVersion: null,
   },
-  {
-    id: "normal",
-    label: "จัดส่งทั่วประเทศ",
-    description: "2 - 4 วันทำการ",
-    price: 35,
-    icon: "lucide:truck",
-  },
-  {
-    id: "express",
-    label: "ส่งด่วนใกล้บ้าน",
-    description: "ภายใน 1 - 2 ชม.",
-    price: 39,
-    icon: "lucide:bike",
-  },
-];
+  ...quotedDeliveryDefaults.map((defaultOption) => {
+    const quote = shippingDistanceQuote.value?.options.find(
+      (option) => option.id === defaultOption.id,
+    );
+    const canRequestQuote = Boolean(
+      selectedShippingAddress.value && basketRows.value.length,
+    );
+
+    return {
+      ...defaultOption,
+      description: quote?.description || defaultOption.description,
+      price: quote?.price ?? null,
+      active: quote
+        ? quote.available
+        : canRequestQuote && !shippingDistanceError.value,
+      unavailableReason:
+        quote?.unavailableReason ||
+        (!selectedShippingAddress.value
+          ? "เลือกที่อยู่เพื่อคำนวณค่าจัดส่ง"
+          : isShippingDistanceLoading.value
+            ? "กำลังคำนวณค่าจัดส่ง"
+            : shippingDistanceError.value || null),
+      parcelCount: quote?.parcelCount || 0,
+      rateVersion: quote?.rateVersion || null,
+    };
+  }),
+]);
+
+const selectedDeliveryOption = computed(() =>
+  deliveryOptions.value.find((option) => option.id === delivery.value),
+);
+const selectedDeliveryQuote = computed(() =>
+  shippingDistanceQuote.value?.options.find(
+    (option) => option.id === delivery.value,
+  ),
+);
+const requiresMinimumOrder = computed(
+  () => delivery.value === "pickup" || delivery.value === "express",
+);
+
+const formatShippingAddress = (address: ShippingAddress) =>
+  [
+    address.shipping_address,
+    address.shipping_subdistrict,
+    address.shipping_district,
+    address.shipping_province,
+    address.shipping_postcode,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
 const confirmShippingAddress = computed(() => {
   const address = selectedShippingAddress.value;
@@ -1063,7 +863,7 @@ const confirmDeliveryMethod = computed(() => {
     return null;
   }
 
-  const option = deliveryOptions.find(
+  const option = deliveryOptions.value.find(
     (deliveryOption) => deliveryOption.id === delivery.value,
   );
 
@@ -1122,10 +922,8 @@ const {
   activeItems,
   clearBasket,
   isItemUpdating,
-  isLoading,
   refreshBasket,
   removeBasketItem,
-  updateBasketQuantity,
 } = useBasket();
 const { showToast } = useToast();
 
@@ -1239,6 +1037,19 @@ const selectedShippingAddressQuoteKey = computed(() => {
     address.shipping_district,
     address.shipping_province,
     address.shipping_postcode,
+    address.shipping_latitude,
+    address.shipping_longitude,
+    delivery.value,
+    ...basketRows.value.map((basket) =>
+      [
+        basket.uuid,
+        basket.basket_quantity,
+        basket.product_shipping_weight_grams,
+        basket.product_shipping_length_cm,
+        basket.product_shipping_width_cm,
+        basket.product_shipping_height_cm,
+      ].join(":"),
+    ),
   ]
     .map((value) => String(value || "").trim())
     .join("|");
@@ -1246,7 +1057,9 @@ const selectedShippingAddressQuoteKey = computed(() => {
 
 const shouldLoadShippingDistance = computed(
   () =>
-    delivery.value !== "pickup" && Boolean(selectedShippingAddress.value?.uuid),
+    delivery.value !== "pickup" &&
+    Boolean(selectedShippingAddress.value?.uuid) &&
+    basketRows.value.length > 0,
 );
 
 const totalQuantity = computed(() =>
@@ -1278,10 +1091,7 @@ const subtotal = computed(() =>
 );
 
 const shippingFee = computed(() =>
-  basketRows.value.length
-    ? (deliveryOptions.find((option) => option.id === delivery.value)?.price ??
-      0)
-    : 0,
+  basketRows.value.length ? (selectedDeliveryOption.value?.price ?? 0) : 0,
 );
 
 const grandTotal = computed(() => subtotal.value + shippingFee.value);
@@ -1296,39 +1106,11 @@ const formattedShippingDistance = computed(() => {
   }).format(distance);
 });
 
-const productImage = (basket: any) => {
-  if (Array.isArray(basket.image_url)) {
-    return basket.image_url[0] || "";
-  }
-
-  if (typeof basket.image_url !== "string") {
-    return "";
-  }
-
-  try {
-    const images = JSON.parse(basket.image_url);
-    return Array.isArray(images) ? images[0] || "" : basket.image_url;
-  } catch {
-    return basket.image_url;
-  }
-};
-
 const formatPrice = (value: number | string) =>
   new Intl.NumberFormat("th-TH", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
-
-const formatShippingAddress = (address: ShippingAddress) =>
-  [
-    address.shipping_address,
-    address.shipping_subdistrict,
-    address.shipping_district,
-    address.shipping_province,
-    address.shipping_postcode,
-  ]
-    .filter(Boolean)
-    .join(", ");
 
 const loadShippingDistance = async () => {
   shippingDistanceAbortController?.abort();
@@ -1358,6 +1140,7 @@ const loadShippingDistance = async () => {
       method: "POST",
       body: {
         shipping_address_uuid: address.uuid,
+        delivery_method: delivery.value,
       },
       signal: controller.signal,
     });
@@ -1388,28 +1171,6 @@ const loadShippingDistance = async () => {
   }
 };
 
-const pickSelectedShippingAddress = () => {
-  if (!shippingAddresses.value.length) {
-    selectedShippingAddressId.value = "";
-    return;
-  }
-
-  if (
-    selectedShippingAddressId.value &&
-    shippingAddresses.value.some(
-      (address) => address.uuid === selectedShippingAddressId.value,
-    )
-  ) {
-    return;
-  }
-
-  selectedShippingAddressId.value =
-    shippingAddresses.value.find((address) => address.shipping_is_default)
-      ?.uuid ||
-    shippingAddresses.value[0]?.uuid ||
-    "";
-};
-
 const loadCurrentUser = () => {
   if (!import.meta.client) {
     return;
@@ -1435,30 +1196,6 @@ const loadLineConnection = async () => {
   }
 };
 
-const loadShippingAddresses = async () => {
-  shippingError.value = "";
-
-  if (!currentUser.value?.uuid) {
-    shippingAddresses.value = [];
-    selectedShippingAddressId.value = "";
-    shippingError.value = "กรุณาเข้าสู่ระบบเพื่อจัดการที่อยู่จัดส่ง";
-    return;
-  }
-
-  isShippingLoading.value = true;
-
-  try {
-    shippingAddresses.value = await fetchShippingAddresses(
-      currentUser.value.uuid,
-    );
-    pickSelectedShippingAddress();
-  } catch {
-    shippingError.value = "ไม่สามารถโหลดข้อมูลที่อยู่จัดส่งได้";
-  } finally {
-    isShippingLoading.value = false;
-  }
-};
-
 const pickSelectedTaxProfile = () => {
   if (!taxProfiles.value.length) {
     selectedTaxProfileId.value = "";
@@ -1473,6 +1210,52 @@ const pickSelectedTaxProfile = () => {
   selectedTaxProfileId.value =
     taxProfiles.value.find((profile) => profile.tax_profile_is_default)?.uuid ||
     taxProfiles.value[0]?.uuid ||
+    "";
+};
+
+const loadShippingAddresses = async () => {
+  shippingError.value = "";
+
+  if (!currentUser.value?.uuid) {
+    shippingAddresses.value = [];
+    selectedShippingAddressId.value = "";
+    shippingError.value = "กรุณาเข้าสู่ระบบเพื่อจัดการที่อยู่จัดส่ง";
+    return;
+  }
+
+  isShippingLoading.value = true;
+
+  try {
+    shippingAddresses.value = await fetchShippingAddresses(
+      currentUser.value?.uuid,
+    );
+    pickSelectedShippingAddress();
+  } catch {
+    shippingError.value = "ไม่สามารถโหลดข้อมูลที่อยู่จัดส่งได้";
+  } finally {
+    isShippingLoading.value = false;
+  }
+};
+
+const pickSelectedShippingAddress = () => {
+  if (!shippingAddresses.value.length) {
+    selectedShippingAddressId.value = "";
+    return;
+  }
+
+  if (
+    selectedShippingAddressId.value &&
+    shippingAddresses.value.some(
+      (address) => address.uuid === selectedShippingAddressId.value,
+    )
+  ) {
+    return;
+  }
+
+  selectedShippingAddressId.value =
+    shippingAddresses.value.find((address) => address.shipping_is_default)
+      ?.uuid ||
+    shippingAddresses.value[0]?.uuid ||
     "";
 };
 
@@ -1548,76 +1331,6 @@ const handleTaxProfileSaved = async (
   );
 };
 
-const openSelectAddressModal = async () => {
-  await loadShippingAddresses();
-  if (!selectAddressModal.value?.open) {
-    selectAddressModal.value?.showModal();
-  }
-};
-
-const openCreateAddressModal = async () => {
-  if (!currentUser.value?.uuid) {
-    shippingError.value = "กรุณาเข้าสู่ระบบก่อนเพิ่มที่อยู่จัดส่ง";
-    return;
-  }
-
-  shippingError.value = "";
-  selectAddressModal.value?.close();
-  await nextTick();
-  shippingAddressFormModal.value?.onCreate({
-    shipping_user: currentUser.value.uuid,
-    shipping_recipient:
-      `${currentUser.value.firstname || ""} ${currentUser.value.lastname || ""}`.trim(),
-    shipping_phone: currentUser.value.phone || "",
-    shipping_is_default:
-      shippingAddresses.value.length === 0 ||
-      !shippingAddresses.value.some((address) => address.shipping_is_default),
-  });
-};
-
-const openEditAddressModal = async (address: ShippingAddress) => {
-  selectAddressModal.value?.close();
-  await nextTick();
-  shippingAddressFormModal.value?.onEdit(address);
-};
-
-const selectShippingAddress = (addressUuid: string) => {
-  selectedShippingAddressId.value = addressUuid;
-  selectAddressModal.value?.close();
-  showToast("เลือกที่อยู่จัดส่งเรียบร้อยแล้ว");
-};
-
-const handleShippingAddressSaved = async (
-  mode: "create" | "edit",
-  address: ShippingAddress,
-) => {
-  await loadShippingAddresses();
-  selectedShippingAddressId.value = address.uuid;
-  showToast(
-    mode === "create"
-      ? "เพิ่มที่อยู่จัดส่งเรียบร้อยแล้ว"
-      : "บันทึกการแก้ไขที่อยู่เรียบร้อยแล้ว",
-  );
-};
-
-const onRefreshBasket = async () => {
-  errorMessage.value = "";
-  try {
-    await refreshBasket();
-  } catch {
-    errorMessage.value = "ไม่สามารถโหลดตะกร้าสินค้าได้";
-  }
-};
-
-const onChangeQuantity = async (basket: any, amount: number) => {
-  errorMessage.value = "";
-  try {
-    await updateBasketQuantity(basket, Number(basket.basket_quantity) + amount);
-  } catch {
-    errorMessage.value = "ไม่สามารถอัปเดตจำนวนสินค้าได้";
-  }
-};
-
 const onRemoveBasketItem = async (basket: any) => {
   errorMessage.value = "";
   try {
@@ -1625,12 +1338,6 @@ const onRemoveBasketItem = async (basket: any) => {
   } catch {
     errorMessage.value = "ไม่สามารถลบสินค้าออกจากตะกร้าได้";
   }
-};
-
-const requestRemoveBasketItem = (basket: any) => {
-  confirmBasketTarget.value = basket;
-  confirmAction.value = "remove";
-  isConfirmModalOpen.value = true;
 };
 
 const onClearBasket = async () => {
@@ -1645,14 +1352,21 @@ const onClearBasket = async () => {
   }
 };
 
-const requestClearBasket = () => {
-  confirmAction.value = "clear";
-  isConfirmModalOpen.value = true;
-};
-
 const requestCheckout = () => {
   orderConditionsError.value = "";
   if (isShippingDistanceLoading.value) return;
+
+  if (!selectedDeliveryOption.value?.active) {
+    shippingError.value =
+      selectedDeliveryOption.value?.unavailableReason ||
+      "วิธีจัดส่งที่เลือกไม่พร้อมใช้งาน";
+    return;
+  }
+
+  if (delivery.value !== "pickup" && !selectedDeliveryQuote.value) {
+    shippingError.value = "กรุณารอระบบคำนวณค่าจัดส่งก่อนดำเนินการ";
+    return;
+  }
 
   if (!acceptOrderConditions.value) {
     orderConditionsError.value = "กรุณาอ่านและยอมรับเงื่อนไขการสั่งซื้อ";
@@ -1777,6 +1491,19 @@ watch(
   },
   { immediate: true },
 );
+
+watch(shippingDistanceQuote, (quote) => {
+  if (!quote || delivery.value === "pickup") return;
+
+  const selectedQuote = quote.options.find(
+    (option) => option.id === delivery.value,
+  );
+  if (!selectedQuote?.available) {
+    shippingError.value =
+      selectedQuote?.unavailableReason ||
+      "วิธีจัดส่งที่เลือกไม่พร้อมใช้งานสำหรับที่อยู่นี้";
+  }
+});
 
 onBeforeUnmount(() => {
   shippingDistanceAbortController?.abort();

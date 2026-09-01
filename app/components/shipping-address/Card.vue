@@ -18,9 +18,9 @@
     <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <div class="flex flex-wrap items-center gap-2">
-          <h3 class="truncate font-bold">
+          <h2 class="truncate font-bold">
             {{ shippingAddress.shipping_label }}
-          </h3>
+          </h2>
           <span
             v-if="shippingAddress.shipping_is_default"
             class="badge badge-success sm:py-2 py-1.5 badge-xs"

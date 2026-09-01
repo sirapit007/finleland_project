@@ -65,6 +65,10 @@ export default defineEventHandler(async (event) => {
       product.product_code,
       product.image_url,
       product.product_selling_price,
+      shipping_product.product_shipping_weight_grams,
+      shipping_product.product_shipping_length_cm,
+      shipping_product.product_shipping_width_cm,
+      shipping_product.product_shipping_height_cm,
       promotion.uuid::text AS promotion_uuid,
       promotion.promotion_name,
       promotion.promotion_discounted_price,
@@ -76,6 +80,8 @@ export default defineEventHandler(async (event) => {
       user_d.username AS deleted_username
     FROM ${tableName} AS base
     LEFT JOIN vw_master_products AS product ON product.uuid::text = base.basket_product
+    LEFT JOIN tb_master_products AS shipping_product
+      ON shipping_product.uuid::text = base.basket_product
     LEFT JOIN LATERAL (
       SELECT promotion.*
       FROM tb_event_promotions AS promotion

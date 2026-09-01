@@ -196,6 +196,75 @@
                 :disabled="formDisabled"
               />
             </fieldset>
+
+            <div class="sm:col-span-2 mt-2 border-t border-base-300 pt-4">
+              <div class="flex items-start gap-2">
+                <Icon
+                  name="lucide:package-open"
+                  size="18"
+                  class="mt-0.5 text-primary"
+                />
+                <div>
+                  <h4 class="text-sm font-bold">ข้อมูลจัดส่งหลังแพ็ก</h4>
+                  <p class="mt-1 text-xs leading-5 text-base-content/55">
+                    กรอกให้ครบทั้ง 4 ค่าเพื่อเปิดใช้ EMS และ Flash Bulky
+                    โดยข้อมูลนี้คิดต่อสินค้า 1 ชิ้น
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">น้ำหนักหลังแพ็ก (กรัม)</legend>
+              <input
+                v-model="form.product_shipping_weight_grams"
+                type="number"
+                min="0.001"
+                step="0.001"
+                class="input input-sm w-full"
+                placeholder="เช่น 1500"
+                :disabled="formDisabled"
+              />
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">ความยาว (ซม.)</legend>
+              <input
+                v-model="form.product_shipping_length_cm"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="input input-sm w-full"
+                placeholder="เช่น 40"
+                :disabled="formDisabled"
+              />
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">ความกว้าง (ซม.)</legend>
+              <input
+                v-model="form.product_shipping_width_cm"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="input input-sm w-full"
+                placeholder="เช่น 30"
+                :disabled="formDisabled"
+              />
+            </fieldset>
+
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend">ความสูง (ซม.)</legend>
+              <input
+                v-model="form.product_shipping_height_cm"
+                type="number"
+                min="0.01"
+                step="0.01"
+                class="input input-sm w-full"
+                placeholder="เช่น 20"
+                :disabled="formDisabled"
+              />
+            </fieldset>
           </section>
         </div>
 
@@ -387,6 +456,10 @@ type ProductForm = {
   product_subcategories?: any[];
   product_cost_price?: number | string;
   product_selling_price?: number | string;
+  product_shipping_weight_grams?: number | string;
+  product_shipping_length_cm?: number | string;
+  product_shipping_width_cm?: number | string;
+  product_shipping_height_cm?: number | string;
 };
 
 type PromotionRow = {

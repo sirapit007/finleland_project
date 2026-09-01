@@ -219,9 +219,9 @@
             </div>
             <NuxtLink
               to="/profile"
-              class="flex min-w-0 items-center gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-base-200"
+              class="flex min-w-0 items-center gap-2 rounded-xl px-2 py-1.5 transition-colors"
               :class="
-                route.path === '/profile' ? 'bg-primary/10 text-primary' : ''
+                route.path === '/profile' ? 'bg-primary/10 text-primary' : 'hover:bg-base-200'
               "
               title="โปรไฟล์"
             >

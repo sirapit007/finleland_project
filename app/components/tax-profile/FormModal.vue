@@ -7,7 +7,7 @@
   >
     <div class="modal-box max-w-3xl p-0">
       <div
-        class="flex items-center justify-between border-b border-base-300 px-5 py-6 sm:px-6"
+        class="flex items-center justify-between border-b border-base-300 px-5 py-6 sm:px-6 relative"
       >
         <div>
           <h2 class="text-xl font-bold">
@@ -22,7 +22,7 @@
           </p>
         </div>
         <button
-          class="btn btn-circle btn-ghost btn-sm"
+          class="absolute right-4 top-4 btn btn-circle btn-ghost btn-sm"
           type="button"
           @click="close"
         >
@@ -37,7 +37,7 @@
       </p>
 
       <form @submit.prevent="requestSave">
-        <div class="max-h-[76vh] space-y-2.5 overflow-y-auto p-5 sm:p-6">
+        <div class="max-h-[70vh] space-y-2.5 overflow-y-auto p-5 sm:p-6">
           <div class="grid gap-4 sm:grid-cols-2">
             <fieldset class="fieldset">
               <legend class="fieldset-legend">ชื่อรายการ</legend>
@@ -262,7 +262,7 @@
 
         <div class="modal-action gap-3 p-5 sm:p-6">
           <button
-            class="btn flex-1"
+            class="btn sm:btn-sm btn-xs flex-1"
             type="button"
             :disabled="isSaving"
             @click="close"
@@ -270,7 +270,7 @@
             ปิด
           </button>
           <button
-            class="btn btn-primary flex-1"
+            class="btn sm:btn-sm btn-xs btn-primary flex-1"
             type="submit"
             :disabled="isSaving"
           >

@@ -20,7 +20,7 @@
         <h2 class="font-semibold">สาขาท่าวังผา</h2>
         <p>30 ม.2 ต.ท่าวังผา อ.ท่าวังผา จ.น่าน 55110</p>
         <p>เปิดทุกวัน เวลา 08.00-20.00 น.</p>
-        <button class="btn btn-link no-underline sm:btn-sm btn-xs px-0 text-base-content/75" @click="openMap1">
+        <button class="btn btn-link no-underline hover:underline hover:text-primary sm:btn-sm btn-xs px-0 text-base-content/75" @click="openMap1">
           <Icon name="lucide:map-pinned" size="17" /> แผนที่ร้าน
         </button>
       </section>
@@ -29,7 +29,7 @@
         <h2 class="font-semibold">สาขาเมืองน่าน</h2>
         <p>37/21-22 ต.ในเวียง อ.เมือง จ.น่าน 55000</p>
         <p>เปิดทุกวัน เวลา 08.00-20.30 น.</p>
-        <button class="btn btn-link no-underline sm:btn-sm btn-xs px-0 text-base-content/75" @click="openMap2">
+        <button class="btn btn-link no-underline hover:underline hover:text-primary sm:btn-sm btn-xs px-0 text-base-content/75" @click="openMap2">
           <Icon name="lucide:map-pinned" size="17" /> แผนที่ร้าน
         </button>
       </section>
@@ -38,7 +38,7 @@
         <h2 class="font-semibold">สาขาเวียงสา</h2>
         <p>728 ม.4 ต.กลางเวียง อ.เวียงสา จ.น่าน 55110</p>
         <p>เปิดทุกวัน เวลา 08.00-20.00 น.</p>
-        <button class="btn btn-link no-underline sm:btn-sm btn-xs px-0 text-base-content/75" @click="openMap3">
+        <button class="btn btn-link no-underline hover:underline hover:text-primary sm:btn-sm btn-xs px-0 text-base-content/75" @click="openMap3">
           <Icon name="lucide:map-pinned" size="17" /> แผนที่ร้าน
         </button>
       </section>
@@ -46,14 +46,14 @@
       <section class="space-y-3 sm:text-sm text-xs text-base-content/75">
         <h2 class="font-semibold">ช่องทางติดต่อ</h2>
         <button
-          class="flex items-center gap-2 text-left transition-colors hover:text-primary hover:underline"
+          class="flex items-center gap-2 text-left transition-colors cursor-pointer hover:text-primary hover:underline"
           @click="openFacebook"
         >
           <Icon name="ri:facebook-fill" size="17" />
           ฟินลี่แลนด์ พลาซ่า เวียงสา
         </button>
         <button
-          class="flex items-center gap-2 text-left transition-colors hover:text-primary hover:underline"
+          class="flex items-center gap-2 text-left transition-colors cursor-pointer hover:text-primary hover:underline"
           @click="openTiktok"
         >
           <Icon name="ri:tiktok-fill" size="17" />

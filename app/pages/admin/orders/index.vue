@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-full p-4 pb-6">
-    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
+  <div class="min-h-full w-full min-w-0 max-w-full overflow-hidden p-4 pb-6">
+    <div class="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-sm">
       <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
         <div class="space-x-3 flex flex-col items-start">
           <span class="font-bold sm:text-lg text-base text-primary"
@@ -19,7 +19,10 @@
         />
         <TablePagination v-model:page="page" :disabled="pending" :data="data" />
       </div>
-      <div class="relative my-1" :class="pending ? 'overflow-hidden' : 'overflow-auto'">
+      <div
+        class="order-table-viewport relative my-1 w-full min-w-0 max-w-full"
+        :class="pending ? 'overflow-hidden' : 'overflow-auto'"
+      >
         <p v-if="error" class="p-4 text-error">{{ error.message }}</p>
         <table
           class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-xs table-pin-rows table-pin-cols"
@@ -75,7 +78,11 @@
                       class="text-accent"
                     />
                     <Icon
-                      v-if="order.order_delivery_method === 'normal'"
+                      v-if="
+                        ['normal', 'thailand_post_ems'].includes(
+                          order.order_delivery_method,
+                        )
+                      "
                       name="lucide:truck"
                       size="14"
                       class="text-primary"
@@ -85,6 +92,12 @@
                       name="lucide:bike"
                       size="14"
                       class="text-secondary"
+                    />
+                    <Icon
+                      v-if="order.order_delivery_method === 'flash_bulky'"
+                      name="lucide:package-check"
+                      size="14"
+                      class="text-info"
                     />
                     {{ order.order_delivery_label || "-" }}
                   </p>
@@ -135,41 +148,51 @@
                 </th>
               </tr>
               <tr v-if="expandedOrderUuid === order.uuid">
-                <td colspan="9" class="bg-base-200/40 p-0">
-                  <SkeletonOrderDetail
-                    v-if="detailLoadingOrderUuid === order.uuid"
-                  />
-                  <div v-else class="space-y-5 p-4">
-                    <OrderItemsSection
-                      :order="order"
-                      :detail="detailByOrder[order.uuid]"
+                <td
+                  colspan="9"
+                  class="order-detail-cell bg-base-200/40 p-0"
+                >
+                  <div class="order-detail-shell">
+                    <SkeletonOrderDetail
+                      v-if="detailLoadingOrderUuid === order.uuid"
                     />
-
-                    <div
-                      class="grid gap-5 lg:grid-cols-4 sm:grid-cols-2 grid-cols-1 space-y-5"
-                    >
-                      <OrderSummarySection
-                        :order="order"
-                        :total-quantity="orderTotalQuantity(order)"
-                      />
-                      <OrderPaymentDetailsSection
-                        admin
-                        :payment="
-                          detailByOrder[order.uuid]?.payments?.[0] || null
-                        "
-                        @refreshed="reloadOrder(order.uuid)"
-                      />
-                      <OrderStatusSection
+                    <div v-else class="min-w-0 max-w-full space-y-5 p-4">
+                      <OrderItemsSection
+                        class="min-w-0 max-w-full"
                         :order="order"
                         :detail="detailByOrder[order.uuid]"
-                        editable
-                        show-actor
                       />
-                      <OrderAdjustmentHistorySection
-                        :adjustments="
-                          detailByOrder[order.uuid]?.adjustments || []
-                        "
-                      />
+
+                      <div
+                        class="order-detail-grid grid min-w-0 max-w-full grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4"
+                      >
+                        <OrderSummarySection
+                          class="min-w-0 max-w-full"
+                          :order="order"
+                          :total-quantity="orderTotalQuantity(order)"
+                        />
+                        <OrderPaymentDetailsSection
+                          class="min-w-0 max-w-full"
+                          admin
+                          :payment="
+                            detailByOrder[order.uuid]?.payments?.[0] || null
+                          "
+                          @refreshed="reloadOrder(order.uuid)"
+                        />
+                        <OrderStatusSection
+                          class="min-w-0 max-w-full"
+                          :order="order"
+                          :detail="detailByOrder[order.uuid]"
+                          editable
+                          show-actor
+                        />
+                        <OrderAdjustmentHistorySection
+                          class="min-w-0 max-w-full"
+                          :adjustments="
+                            detailByOrder[order.uuid]?.adjustments || []
+                          "
+                        />
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -315,3 +338,28 @@ const reloadOrder = async (orderUuid: string) => {
   await Promise.all([refresh(), loadDetails(orderUuid, true)]);
 };
 </script>
+
+<style scoped>
+.order-table-viewport {
+  container-type: inline-size;
+}
+
+.order-detail-cell {
+  max-width: 0;
+}
+
+.order-detail-shell {
+  position: sticky;
+  left: 0;
+  width: 100cqw;
+  max-width: 100cqw;
+  min-width: 0;
+  overflow: hidden;
+  contain: inline-size;
+}
+
+.order-detail-grid > * {
+  min-width: 0;
+  max-width: 100%;
+}
+</style>

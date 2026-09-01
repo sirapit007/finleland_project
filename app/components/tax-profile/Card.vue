@@ -13,7 +13,7 @@
             class="badge badge-success sm:py-2 py-1.5 badge-xs"
             >Default</span
           >
-          <span class="badge badge-outline badge-primary sm:py-2 py-1.5 badge-xs">{{
+          <span class="badge badge-soft badge-primary sm:py-2 py-1.5 badge-xs">{{
             taxProfile.taxpayer_type === "company" ? "นิติบุคคล" : "บุคคลธรรมดา"
           }}</span>
         </div>
