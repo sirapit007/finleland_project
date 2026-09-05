@@ -7,6 +7,7 @@ import {
 } from "@@/server/utils/orderPricing";
 import { createShippingQuote } from "@@/server/utils/shippingQuote";
 import { requireCurrentUser } from "@@/server/utils/session";
+import { LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT } from "@@/shared/utils/localExpress";
 
 type DeliveryMethod =
   "pickup" | "express" | "thailand_post_ems" | "flash_bulky";
@@ -244,6 +245,16 @@ export default defineEventHandler(async (event) => {
     );
     const merchandiseTotal = toMoney(subtotal - discount);
 
+    if (
+      deliveryMethod === "express" &&
+      merchandiseTotal < LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT
+    ) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: `ส่งด่วนใกล้บ้านมียอดสินค้าสุทธิขั้นต่ำ ${LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT.toLocaleString("th-TH")} บาท`,
+      });
+    }
+
     let selectedDelivery = {
       label: "รับสินค้าด้วยตัวเอง",
       description: "รับสินค้าได้ที่หน้าร้านหรือจุดรับสินค้า",
@@ -301,16 +312,6 @@ export default defineEventHandler(async (event) => {
         approximate: shippingQuote.approximate,
         option: selectedQuote,
       };
-    }
-
-    const requiresMinimumOrder =
-      deliveryMethod === "pickup" || deliveryMethod === "express";
-
-    if (requiresMinimumOrder && merchandiseTotal < 1500) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: "Minimum order total after promotions is 1,500 THB",
-      });
     }
 
     const shippingFee = selectedDelivery.fee;
