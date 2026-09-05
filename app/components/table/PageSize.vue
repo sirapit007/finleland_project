@@ -1,17 +1,12 @@
 <template>
-  <div
-    class="flex-1 flex shrink-0 items-center gap-1 sm:gap-2"
-  >
-    <label
-      class="whitespace-nowrap text-[10px] font-semibold text-base-content/65 sm:text-xs"
-      :for="selectId"
-    >
+  <div class="admin-table-page-size">
+    <label class="whitespace-nowrap" :for="selectId">
       {{ label }}
     </label>
     <select
       :id="selectId"
       v-model.number="pageSizeModel"
-      class="select select-xs w-16 border-base-content/10 bg-base-200 font-semibold shadow-sm sm:w-20 sm:select-sm"
+      class="select"
       :disabled="disabled"
     >
       <option v-for="option in normalizedOptions" :key="option" :value="option">

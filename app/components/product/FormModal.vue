@@ -279,7 +279,7 @@
 
         <section
           v-if="showPromotions"
-          class="mt-6 border-t border-base-300 pt-5"
+          class="admin-table-surface mt-6 border-t border-base-300 pt-5"
         >
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -290,7 +290,7 @@
             </div>
             <button
               v-if="!isDeleted"
-              class="btn btn-secondary btn-xs"
+              class="admin-table-create"
               type="button"
               :disabled="saving || loadingPromotions"
               @click="onCreatePromotion"
@@ -300,8 +300,8 @@
             </button>
           </div>
 
-          <div class="overflow-x-auto rounded-xl border border-base-300">
-            <table class="table table-zebra table-xs min-w-max">
+          <div class="admin-table-viewport">
+            <table class="admin-data-table">
               <thead>
                 <tr class="text-xs">
                   <th>#</th>
@@ -312,7 +312,9 @@
                   <th>วันที่สิ้นสุด</th>
                   <th>สร้างโดย / เมื่อ</th>
                   <th>แก้ไขโดย / เมื่อ</th>
-                  <th v-if="!isDeleted" />
+                  <th v-if="!isDeleted" scope="col" class="admin-table-actions">
+                    ดำเนินการ
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -326,14 +328,10 @@
                     </span>
                   </td>
                 </tr>
-                <tr v-else-if="!promotions.length">
-                  <td
-                    :colspan="isDeleted ? 8 : 9"
-                    class="py-8 text-center text-base-content/45"
-                  >
-                    ไม่พบโปรโมชั่นของสินค้านี้
-                  </td>
-                </tr>
+                <TableStateRow
+                  v-else-if="!promotions.length"
+                  :columns="isDeleted ? 8 : 9"
+                />
                 <tr
                   v-for="(row, index) in promotions"
                   v-else
@@ -364,23 +362,21 @@
                       {{ row.updated_at || "-" }}
                     </div>
                   </td>
-                  <td v-if="!isDeleted" class="text-right">
-                    <button
-                      class="btn btn-xs btn-link"
-                      type="button"
+                  <td v-if="!isDeleted" class="admin-table-actions">
+                    <TableAction
+                      label="แก้ไข"
+                      icon="lucide:square-pen"
+                      tone="primary"
                       :disabled="saving"
                       @click="onEditPromotion(row)"
-                    >
-                      แก้ไข
-                    </button>
-                    <button
-                      class="btn btn-error btn-xs btn-link no-underline"
-                      type="button"
+                    />
+                    <TableAction
+                      label="ลบ"
+                      icon="lucide:trash-2"
+                      tone="danger"
                       :disabled="saving"
                       @click="onRemovePromotion(row)"
-                    >
-                      ลบ
-                    </button>
+                    />
                   </td>
                 </tr>
               </tbody>

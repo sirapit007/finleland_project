@@ -1,115 +1,103 @@
 <template>
-  <div class="min-h-full p-4 pb-6">
-    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-      <div class="m-3 flex justify-between gap-3 md:flex-row md:items-center">
-        <div class="flex flex-col items-start space-x-3">
-          <span class="text-lg font-bold text-primary sm:text-xl">
-            Manage Subcategories
-          </span>
-          <span class="text-sm font-semibold text-secondary sm:text-base">
-            จัดการรายการหมวดหมู่ย่อย
-          </span>
-        </div>
-        <button
-          class="btn btn-primary btn-xs flex-none shadow-sm sm:btn-sm"
+  <div class="admin-table-page">
+    <TablePanel
+      title="จัดการรายการหมวดหมู่ย่อย"
+      v-model:q="q"
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :data="data"
+      :pending="pending"
+      search-placeholder="ค้นหาหมวดหมู่หลักหรือหมวดหมู่ย่อย..."
+      @refresh="refresh"
+    >
+      <template #actions
+        ><button
+          class="admin-table-create"
+          type="button"
           @click="subcategoryFormModal?.onCreate()"
         >
-          <Icon name="lucide:plus" size="16" />
+          <Icon name="lucide:circle-plus" size="16" />
           เพิ่มหมวดหมู่ย่อย
-        </button>
-      </div>
+        </button></template
+      >
 
-      <div class="flex flex-wrap items-center p-1 sm:p-2 lg:p-3">
-        <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
-        <TableSearch
-          v-model="q"
-          placeholder="ค้นหาหมวดหมู่หลักหรือหมวดหมู่ย่อย..."
-        />
-        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
-      </div>
-
-      <div class="relative my-1" :class="pending ? 'overflow-hidden' : 'overflow-auto'">
-        <p v-if="error" class="px-3 text-error">{{ error.message }}</p>
-        <table
-          class="table table-xs table-pin-cols table-pin-rows table-zebra min-w-max bg-base-100 text-xs sm:table-sm"
-        >
-          <thead class="text-xs">
-            <tr>
-              <td>#</td>
-              <td>รูปภาพ</td>
-              <td>หมวดหมู่หลัก</td>
-              <td>ชื่อหมวดหมู่ย่อย</td>
-              <td>ใช้อยู่</td>
-              <td>สร้างโดย / เมื่อ</td>
-              <td>แก้ไขโดย / เมื่อ</td>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <SkeletonTableRows v-if="pending" :columns="8" :image-column="1" />
-            <tr
-              v-for="row in data?.rows"
-              v-else
-              :key="row.id"
-              class="hover:bg-primary/5"
-            >
-              <td>{{ row.id }}</td>
-              <td>
-                <div
-                  v-if="row.image_url"
-                  class="size-12 cursor-pointer"
-                  @click="imagePreviewModal?.onOpen(row.image_url)"
-                >
-                  <img :src="row.image_url" class="size-full object-cover" />
-                </div>
-                <img
-                  v-else
-                  src="@/assets/images/blank.png"
-                  class="size-12 object-cover"
-                />
-              </td>
-              <td>{{ row.category_name || "-" }}</td>
-              <td>{{ row.subcategory_name }}</td>
-              <td>{{ row.qty_count }}</td>
-              <td>
-                <div>{{ row.created_username || row.created_by || "-" }}</div>
-                <div>{{ formatDate(row.created_at) }}</div>
-              </td>
-              <td>
-                <div>{{ row.updated_username || row.updated_by || "-" }}</div>
-                <div>{{ formatDate(row.updated_at) }}</div>
-              </td>
-              <th class="text-end">
-                <button
-                  class="btn btn-link btn-xs"
-                  @click="subcategoryFormModal?.onEdit(row)"
-                >
-                  แก้ไข
-                </button>
-                <button
-                  class="btn btn-error btn-link btn-xs no-underline"
-                  :disabled="Number(row.qty_count) > 0"
-                  @click="
-                    removeConfirmModal?.onRemove(row, '/api/subcategories')
-                  "
-                >
-                  ลบ
-                </button>
-              </th>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="flex flex-wrap items-center p-1 sm:p-2 lg:p-3">
-        <TablePageSize
-          v-model:page-size="pageSize"
-          :disabled="pending"
-          @update:page-size="page = 1"
-        />
-        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
-      </div>
-    </div>
+      <table class="admin-data-table">
+        <thead class="text-xs">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">รูปภาพ</th>
+            <th scope="col">หมวดหมู่หลัก</th>
+            <th scope="col">ชื่อหมวดหมู่ย่อย</th>
+            <th scope="col">ใช้อยู่</th>
+            <th scope="col">สร้างโดย / เมื่อ</th>
+            <th scope="col">แก้ไขโดย / เมื่อ</th>
+            <th scope="col" class="admin-table-actions">ดำเนินการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <SkeletonTableRows v-if="pending" :columns="8" :image-column="1" />
+          <TableStateRow
+            v-else-if="error || !data?.rows?.length"
+            :columns="8"
+            :error="!!error"
+            :filtered="!!q"
+            @retry="refresh"
+          />
+          <tr
+            v-for="row in data?.rows"
+            v-else
+            :key="row.id"
+            class="hover:bg-primary/5"
+          >
+            <td>{{ row.id }}</td>
+            <td>
+              <div
+                v-if="row.image_url"
+                class="size-12 cursor-pointer"
+                @click="imagePreviewModal?.onOpen(row.image_url)"
+              >
+                <img :src="row.image_url" class="size-full object-cover" />
+              </div>
+              <img
+                v-else
+                src="@/assets/images/blank.png"
+                class="size-12 object-cover"
+              />
+            </td>
+            <td>{{ row.category_name || "-" }}</td>
+            <td>{{ row.subcategory_name }}</td>
+            <td>{{ row.qty_count }}</td>
+            <td>
+              <div>{{ row.created_username || row.created_by || "-" }}</div>
+              <div class="admin-cell-meta">
+                {{ formatDate(row.created_at) }}
+              </div>
+            </td>
+            <td>
+              <div>{{ row.updated_username || row.updated_by || "-" }}</div>
+              <div class="admin-cell-meta">
+                {{ formatDate(row.updated_at) }}
+              </div>
+            </td>
+            <td class="admin-table-actions">
+              <TableAction
+                label="แก้ไข"
+                icon="lucide:square-pen"
+                tone="primary"
+                @click="subcategoryFormModal?.onEdit(row)"
+              />
+              <TableAction
+                label="ลบ"
+                icon="lucide:trash-2"
+                tone="danger"
+                :disabled="Number(row.qty_count) > 0"
+                @click="removeConfirmModal?.onRemove(row, '/api/subcategories')"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </TablePanel>
   </div>
 
   <ModalImagePreview ref="imagePreviewModal" />

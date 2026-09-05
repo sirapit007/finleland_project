@@ -1,11 +1,6 @@
 <template>
-  <div
-    class="min-w-0 flex-1 whitespace-nowrap text-[10px] font-semibold text-base-content/65 sm:text-xs"
-    aria-live="polite"
-  >
-    แสดง {{ rangeStart }} - {{ rangeEnd }} จากทั้งหมด
-    <br class="md:hidden block" />
-    <span class="text-sm text-primary sm:text-base">{{ total }}</span> รายการ
+  <div class="admin-table-result-summary" aria-live="polite">
+    {{ rangeStart }}–{{ rangeEnd }} จาก {{ total }} รายการ
   </div>
 </template>
 

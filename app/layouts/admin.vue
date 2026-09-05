@@ -177,6 +177,7 @@
 </template>
 
 <script setup lang="ts">
+import "~/assets/css/admin-tables.css";
 const isSidebarOpen = ref(false);
 const { syncFromStorage, user } = useCurrentUser();
 
