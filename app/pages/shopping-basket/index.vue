@@ -89,7 +89,9 @@
           <div
             class="mt-6 rounded-xl border border-base-300 bg-base-200 p-4 sm:p-5"
           >
-            <h2 class="mb-3 sm:text-base text-sm font-bold">ตัวเลือกการจัดส่ง</h2>
+            <h2 class="mb-3 sm:text-base text-sm font-bold">
+              ตัวเลือกการจัดส่ง
+            </h2>
             <div class="grid gap-4 sm:grid-cols-1 grid-cols-1">
               <label
                 v-for="option in deliveryOptions"
@@ -467,7 +469,7 @@
           <button
             class="btn btn-primary mt-5 w-full"
             :disabled="
-              (requiresMinimumOrder && subtotal < 1500) ||
+              expressMinimumNotMet ||
               (delivery !== 'pickup' && !selectedShippingAddress) ||
               !selectedDeliveryOption?.active ||
               (requestTaxInvoice && !selectedTaxProfile) ||
@@ -481,10 +483,12 @@
             <Icon name="lucide:arrow-right" size="18" />
           </button>
           <p
-            v-if="requiresMinimumOrder && subtotal < 1500"
+            v-if="expressMinimumNotMet"
             class="mt-2 text-center text-xs text-base-content/55"
           >
-            ยอดสั่งซื้อขั้นต่ำ ฿1,500.00
+            ส่งด่วนใกล้บ้านมียอดสินค้าสุทธิขั้นต่ำ ฿{{
+              formatPrice(LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT)
+            }}
           </p>
           <p
             v-else-if="delivery !== 'pickup' && !selectedShippingAddress"
@@ -658,6 +662,8 @@
 </template>
 
 <script setup lang="ts">
+import { LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT } from "~~/shared/utils/localExpress";
+
 type ShippingQuoteOption = {
   id: string;
   serviceCode: string;
@@ -759,7 +765,8 @@ const quotedDeliveryDefaults = [
   {
     id: "express",
     label: "ส่งด่วนใกล้บ้าน",
-    description: "ภายใน 1 - 2 ชม. · ไม่เกิน 10 กม. จากร้าน",
+    description:
+      "ภายใน 1–2 ชม. · ขั้นต่ำ 500 บาท · ค่าขนส่ง 5% ของยอดสินค้าสุทธิ · ไม่เกิน 10 กม. จากร้าน",
     icon: "lucide:bike",
   },
   {
@@ -824,8 +831,10 @@ const selectedDeliveryQuote = computed(() =>
     (option) => option.id === delivery.value,
   ),
 );
-const requiresMinimumOrder = computed(
-  () => delivery.value === "pickup" || delivery.value === "express",
+const expressMinimumNotMet = computed(
+  () =>
+    delivery.value === "express" &&
+    subtotal.value < LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT,
 );
 
 const formatShippingAddress = (address: ShippingAddress) =>
@@ -1040,6 +1049,7 @@ const selectedShippingAddressQuoteKey = computed(() => {
     address.shipping_latitude,
     address.shipping_longitude,
     delivery.value,
+    subtotal.value,
     ...basketRows.value.map((basket) =>
       [
         basket.uuid,
@@ -1356,6 +1366,11 @@ const requestCheckout = () => {
   orderConditionsError.value = "";
   if (isShippingDistanceLoading.value) return;
 
+  if (expressMinimumNotMet.value) {
+    shippingError.value = `ส่งด่วนใกล้บ้านมียอดสินค้าสุทธิขั้นต่ำ ${LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT.toLocaleString("th-TH")} บาท`;
+    return;
+  }
+
   if (!selectedDeliveryOption.value?.active) {
     shippingError.value =
       selectedDeliveryOption.value?.unavailableReason ||
@@ -1502,7 +1517,13 @@ watch(shippingDistanceQuote, (quote) => {
     shippingError.value =
       selectedQuote?.unavailableReason ||
       "วิธีจัดส่งที่เลือกไม่พร้อมใช้งานสำหรับที่อยู่นี้";
+  } else {
+    shippingError.value = "";
   }
+});
+
+watch(delivery, () => {
+  shippingError.value = "";
 });
 
 onBeforeUnmount(() => {

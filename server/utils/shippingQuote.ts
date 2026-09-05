@@ -7,6 +7,14 @@ import {
   loadActiveShippingRateServices,
   type ShippingProduct,
 } from "@@/server/utils/shippingPricing";
+import {
+  calculateOrderItemPricing,
+  toMoney,
+} from "@@/server/utils/orderPricing";
+import {
+  calculateLocalExpressShippingFee,
+  LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT,
+} from "@@/shared/utils/localExpress";
 
 type Queryable = {
   query: (
@@ -23,7 +31,6 @@ export type ShippingQuoteConfig = {
 };
 
 export const LOCAL_EXPRESS_MAX_DISTANCE_METERS = 10_000;
-export const LOCAL_EXPRESS_FEE = 39;
 
 export const STORE_ADDRESS = {
   label: "สาขาเวียงสา",
@@ -75,14 +82,33 @@ export async function createShippingQuote(
       `SELECT product.uuid::text AS product_uuid,
               product.product_code,
               product.product_name,
-              product.product_shipping_weight_grams,
-              product.product_shipping_length_cm,
-              product.product_shipping_width_cm,
-              product.product_shipping_height_cm,
-              basket.basket_quantity
+              product.product_selling_price,
+              shipping_product.product_shipping_weight_grams,
+              shipping_product.product_shipping_length_cm,
+              shipping_product.product_shipping_width_cm,
+              shipping_product.product_shipping_height_cm,
+              basket.basket_quantity,
+              promotion.uuid::text AS promotion_uuid,
+              promotion.promotion_name,
+              promotion.promotion_discounted_price,
+              promotion.promotion_bundle_price,
+              promotion.promotion_min_quantity,
+              promotion.promotion_min_purchase_amount
        FROM tb_shopping_basket AS basket
-       INNER JOIN tb_master_products AS product
+       INNER JOIN vw_master_products AS product
          ON product.uuid::text = basket.basket_product
+       INNER JOIN tb_master_products AS shipping_product
+         ON shipping_product.uuid::text = basket.basket_product
+       LEFT JOIN LATERAL (
+         SELECT promotion.*
+         FROM tb_event_promotions AS promotion
+         WHERE promotion.promotion_product = basket.basket_product
+           AND promotion.promotion_is_active = TRUE
+           AND promotion.deleted_at IS NULL
+           AND CURRENT_DATE BETWEEN promotion.promotion_start_date AND promotion.promotion_end_date
+         ORDER BY promotion.promotion_start_date DESC, promotion.id DESC
+         LIMIT 1
+       ) AS promotion ON TRUE
        WHERE basket.created_by = $1
          AND basket.deleted_at IS NULL
          AND basket.basket_expire > NOW()
@@ -109,6 +135,15 @@ export async function createShippingQuote(
   }
 
   const products = toShippingProducts(basketResult.rows);
+  const merchandiseTotal = toMoney(
+    basketResult.rows.reduce((total, row) => {
+      const pricing = calculateOrderItemPricing(
+        row,
+        Number(row.basket_quantity),
+      );
+      return total + pricing.total;
+    }, 0),
+  );
   const parcelOptions = calculateParcelDeliveryQuotes(products, services);
   let route:
     | {
@@ -151,14 +186,21 @@ export async function createShippingQuote(
     }
   }
 
+  const meetsExpressMinimum =
+    merchandiseTotal >= LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT;
   const expressAvailable = Boolean(
-    route && route.distanceMeters <= LOCAL_EXPRESS_MAX_DISTANCE_METERS,
+    meetsExpressMinimum &&
+    route &&
+    route.distanceMeters <= LOCAL_EXPRESS_MAX_DISTANCE_METERS,
   );
-  const expressReason = routeError
-    ? routeError
-    : expressAvailable
-      ? null
-      : `ให้บริการเฉพาะระยะทางไม่เกิน ${LOCAL_EXPRESS_MAX_DISTANCE_METERS / 1_000} กม. จากร้าน`;
+  const expressReason = !meetsExpressMinimum
+    ? `ยอดสินค้าสุทธิขั้นต่ำ ${LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT.toLocaleString("th-TH")} บาท`
+    : routeError
+      ? routeError
+      : expressAvailable
+        ? null
+        : `ให้บริการเฉพาะระยะทางไม่เกิน ${LOCAL_EXPRESS_MAX_DISTANCE_METERS / 1_000} กม. จากร้าน`;
+  const expressFee = calculateLocalExpressShippingFee(merchandiseTotal);
 
   return {
     addressUuid: String(address.uuid),
@@ -196,13 +238,14 @@ export async function createShippingQuote(
               serviceCode: "local_express",
               provider: "store_local",
               label: "ส่งด่วนใกล้บ้าน",
-              description: "ภายใน 1 - 2 ชม. · ไม่เกิน 10 กม. จากร้าน",
+              description:
+                "ภายใน 1–2 ชม. · ขั้นต่ำ 500 บาท · ค่าขนส่ง 5% ของยอดสินค้าสุทธิ · ไม่เกิน 10 กม. จากร้าน",
               available: expressAvailable,
               unavailableReason: expressReason,
-              price: expressAvailable ? LOCAL_EXPRESS_FEE : null,
+              price: expressAvailable ? expressFee : null,
               estimatedDaysMin: 0,
               estimatedDaysMax: 0,
-              rateVersion: "local-express-v1",
+              rateVersion: "local-express-5-percent-v2",
               parcelCount: products.reduce(
                 (total, product) => total + product.quantity,
                 0,
