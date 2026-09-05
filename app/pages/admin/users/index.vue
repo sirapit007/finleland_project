@@ -1,113 +1,101 @@
 <template>
-  <div class="min-h-full p-4 pb-6">
-    <div class="rounded-2xl border border-base-300 bg-base-100 shadow-sm">
-      <div class="flex justify-between gap-3 md:flex-row md:items-center m-3">
-        <div class="space-x-3 flex flex-col items-start">
-          <span class="font-bold sm:text-lg text-base text-primary"
-            >Take care of system users</span
-          ><span class="font-semibold sm:text-base text-sm text-secondary"
-            >ดูแลผู้ใช้งานระบบ</span
-          >
-        </div>
-        <button
-          class="flex-none btn btn-xs shadow-sm sm:btn-sm btn-primary"
+  <div class="admin-table-page">
+    <TablePanel
+      title="ดูแลผู้ใช้งานระบบ"
+      v-model:q="q"
+      v-model:page="page"
+      v-model:page-size="pageSize"
+      :data="data"
+      :pending="pending"
+      search-placeholder="ค้นหาชื่อผู้ใช้งานระบบ หรือคำค้นหาอื่นๆ..."
+      @refresh="refresh"
+    >
+      <template #actions
+        ><button
+          class="admin-table-create"
+          type="button"
           @click="userFormModal?.onCreate()"
         >
-          <Icon name="lucide:plus" size="16" />
+          <Icon name="lucide:circle-plus" size="16" />
           เพิ่มผู้ใช้งานระบบ
-        </button>
-      </div>
+        </button></template
+      >
 
-      <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
-        <TableResultSummary :page="page" :page-size="pageSize" :data="data" />
-        <TableSearch
-          v-model="q"
-          placeholder="ค้นหาชื่อผู้ใช้งานระบบ หรือคำค้นหาอื่นๆ..."
-        />
-        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
-      </div>
-      <div class="relative my-1" :class="pending ? 'overflow-hidden' : 'overflow-auto'">
-        <p v-if="error" class="text-error">{{ error.message }}</p>
-
-        <table
-          class="table min-w-max table-zebra bg-base-100 text-xs sm:table-sm table-xs table-pin-rows table-pin-cols"
-        >
-          <thead class="text-xs">
-            <tr>
-              <td>#</td>
-              <td>ชื่อ</td>
-              <td>นามสกุล</td>
-              <td>เบอร์โทรศัพท์</td>
-              <td>อีเมล</td>
-              <td>บทบาท</td>
-              <td>สร้างโดย / เมื่อ</td>
-              <td>แก้ไขโดย / เมื่อ</td>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <SkeletonTableRows v-if="pending" :columns="9" />
-            <tr
-              v-else
-              v-for="row in data?.rows"
-              :key="row.id"
-              class="hover:bg-primary/5"
-            >
-              <td>{{ row.id }}</td>
-              <td>{{ row.firstname }}</td>
-              <td>{{ row.lastname }}</td>
-              <td>{{ row.phone }}</td>
-              <td>{{ row.email }}</td>
-              <td>
-                <div
-                  :class="`badge badge-xs font-semibold ${row.role === 'User' ? 'badge-info' : row.role === 'Superuser' ? 'badge-warning' : 'badge-success'}`"
-                >
-                  {{ row.role }}
-                </div>
-              </td>
-              <td>
-                <div>{{ row.created_username ?? row.created_by }}</div>
-                <div>
-                  {{ dayjs(row.created_at).format("YYYY-MM-DD HH:mm:ss") }}
-                </div>
-              </td>
-              <td>
-                <div>{{ row.updated_username ?? row.updated_by }}</div>
-                <div>
-                  {{
-                    row.updated_at
-                      ? dayjs(row.updated_at).format("YYYY-MM-DD HH:mm:ss")
-                      : ""
-                  }}
-                </div>
-              </td>
-              <th class="text-end">
-                <button
-                  class="btn btn-xs btn-link"
-                  @click="userFormModal?.onEdit(row)"
-                >
-                  แก้ไข
-                </button>
-                <button
-                  class="btn btn-xs btn-link btn-error no-underline"
-                  @click="removeConfirmModal?.onRemove(row, '/api/user')"
-                >
-                  ลบ
-                </button>
-              </th>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="flex flex-wrap items-center lg:p-3 sm:p-2 p-1">
-        <TablePageSize
-          v-model:page-size="pageSize"
-          :disabled="pending"
-          @update:page-size="page = 1"
-        />
-        <TablePagination v-model:page="page" :disabled="pending" :data="data" />
-      </div>
-    </div>
+      <table class="admin-data-table">
+        <thead class="text-xs">
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">ชื่อ</th>
+            <th scope="col">นามสกุล</th>
+            <th scope="col">เบอร์โทรศัพท์</th>
+            <th scope="col">อีเมล</th>
+            <th scope="col">บทบาท</th>
+            <th scope="col">สร้างโดย / เมื่อ</th>
+            <th scope="col">แก้ไขโดย / เมื่อ</th>
+            <th scope="col" class="admin-table-actions">ดำเนินการ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <SkeletonTableRows v-if="pending" :columns="9" />
+          <TableStateRow
+            v-else-if="error || !data?.rows?.length"
+            :columns="9"
+            :error="!!error"
+            :filtered="!!q"
+            @retry="refresh"
+          />
+          <tr
+            v-else
+            v-for="row in data?.rows"
+            :key="row.id"
+            class="hover:bg-primary/5"
+          >
+            <td>{{ row.id }}</td>
+            <td>{{ row.firstname }}</td>
+            <td>{{ row.lastname }}</td>
+            <td>{{ row.phone }}</td>
+            <td>{{ row.email }}</td>
+            <td>
+              <div
+                :class="`badge badge-xs font-semibold ${row.role === 'User' ? 'badge-info' : row.role === 'Superuser' ? 'badge-warning' : 'badge-success'}`"
+              >
+                {{ row.role }}
+              </div>
+            </td>
+            <td>
+              <div>{{ row.created_username ?? row.created_by }}</div>
+              <div class="admin-cell-meta">
+                {{ dayjs(row.created_at).format("YYYY-MM-DD HH:mm:ss") }}
+              </div>
+            </td>
+            <td>
+              <div>{{ row.updated_username ?? row.updated_by }}</div>
+              <div class="admin-cell-meta">
+                {{
+                  row.updated_at
+                    ? dayjs(row.updated_at).format("YYYY-MM-DD HH:mm:ss")
+                    : ""
+                }}
+              </div>
+            </td>
+            <td class="admin-table-actions">
+              <TableAction
+                label="แก้ไข"
+                icon="lucide:square-pen"
+                tone="primary"
+                @click="userFormModal?.onEdit(row)"
+              />
+              <TableAction
+                label="ลบ"
+                icon="lucide:trash-2"
+                tone="danger"
+                @click="removeConfirmModal?.onRemove(row, '/api/user')"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </TablePanel>
   </div>
 
   <UserFormModal ref="userFormModal" @changed="onRefresh" />

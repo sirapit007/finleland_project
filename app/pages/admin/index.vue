@@ -1,581 +1,329 @@
 <template>
-  <div class="space-y-5 p-4 md:p-6">
-    <section
-      class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm md:p-5"
-    >
-      <div
-        class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"
-      >
+  <div class="admin-dashboard">
+    <section aria-labelledby="overview-heading">
+      <header class="dashboard-section-header">
         <div>
-          <h1 class="mt-1 text-xl font-bold md:text-2xl">ภาพรวมประจำวัน</h1>
-          <p class="mt-1 text-sm text-base-content/60">
-            {{ formatOverviewDate(overviewDate) }}
-          </p>
+          <h1 id="overview-heading">ภาพรวมประจำวัน</h1>
+          <p>{{ formatOverviewDate(overviewDate) }}</p>
         </div>
-        <div class="flex flex-wrap items-end gap-2">
-          <div class="join">
-            <button
-              class="join-item btn btn-sm rounded-l-s, cursor-not-allowed disabled:text-primary"
-              disabled
-            >
-              เลือกวันที่
-            </button>
+        <form class="dashboard-filters" @submit.prevent="refreshOverview()">
+          <label class="dashboard-date-field">
+            <span>เลือกวันที่</span>
             <input
               v-model="overviewDate"
               type="date"
-              class="join-item input input-sm"
+              required
+              aria-label="วันที่ภาพรวม"
             />
-          </div>
+          </label>
           <button
-            type="button"
-            class="btn btn-primary btn-sm"
+            type="submit"
+            class="dashboard-filter-button"
             :disabled="isOverviewLoading"
-            @click="refreshOverview()"
           >
-            <span
-              v-if="isOverviewLoading"
-              class="loading loading-spinner loading-xs"
+            <Icon
+              :name="
+                isOverviewLoading ? 'lucide:loader-circle' : 'lucide:refresh-cw'
+              "
+              size="16"
+              :class="{ 'animate-spin': isOverviewLoading }"
+              aria-hidden="true"
             />
-            <Icon v-else name="lucide:refresh-cw" size="15" />
             อัปเดตภาพรวม
           </button>
+        </form>
+      </header>
+
+      <div
+        class="dashboard-metric-group dashboard-metric-group--cyan"
+        :aria-busy="isOverviewLoading"
+      >
+        <div class="dashboard-group-heading">
+          <h2>ภาพรวมยอดขาย</h2>
+          <span>ข้อมูลประจำวันที่เลือก</span>
+        </div>
+        <div v-if="overviewError" class="dashboard-error" role="alert">
+          <Icon name="lucide:cloud-alert" size="22" aria-hidden="true" />
+          <p>โหลดภาพรวมไม่สำเร็จ กรุณาลองอัปเดตภาพรวมอีกครั้ง</p>
+        </div>
+        <div v-else class="dashboard-metric-grid">
+          <DashboardMetricCard
+            v-for="card in overviewCards"
+            :key="card.label"
+            v-bind="card"
+            :loading="isOverviewLoading"
+          />
         </div>
       </div>
 
-      <p v-if="overviewError" class="mt-4 text-sm text-error">
-        {{ overviewError.message }}
-      </p>
-
-      <div
-        v-else-if="isOverviewLoading"
-        class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-        aria-hidden="true"
-      >
-        <article
-          v-for="item in 4"
-          :key="item"
-          class="rounded-xl border border-base-300 p-4"
-        >
-          <div class="skeleton h-4 w-2/3" />
-          <div class="mt-3 skeleton h-8 w-1/2" />
-          <div class="mt-3 skeleton h-3 w-4/5" />
-        </article>
-      </div>
-
-      <div v-else class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article class="rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div class="flex items-start justify-between gap-3">
+      <div v-if="!overviewError" class="dashboard-chart-grid">
+        <article class="dashboard-chart-card h-full">
+          <header class="dashboard-card-heading">
             <div>
-              <p class="text-sm text-base-content/60">ยอดขายประจำวัน</p>
-              <p class="mt-2 text-2xl font-bold text-primary">
-                ฿{{ formatMoney(overviewSummary.daily_net_sales) }}
-              </p>
+              <h2>ยอดขาย 7 วันล่าสุด</h2>
+              <p>สิ้นสุด ณ วันที่ที่เลือก</p>
             </div>
-            <Icon
-              name="lucide:badge-dollar-sign"
-              size="22"
-              class="text-primary"
-            />
-          </div>
-          <p class="mt-2 text-xs text-base-content/50">
-            จาก {{ Number(overviewSummary.daily_completed_order_count || 0) }}
-            ออเดอร์ที่ปิดงาน
-          </p>
-        </article>
-
-        <article class="rounded-xl border border-base-300 bg-base-100 p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm text-base-content/60">ยอดขายเดือนนี้</p>
-              <p class="mt-2 text-2xl font-bold">
-                ฿{{ formatMoney(overviewSummary.monthly_net_sales) }}
-              </p>
-            </div>
-            <Icon name="lucide:calendar-range" size="22" class="text-info" />
-          </div>
-          <p class="mt-2 text-xs text-base-content/50">
-            ยอดรวมของเดือนที่เลือก
-          </p>
-        </article>
-
-        <article class="rounded-xl border border-base-300 bg-base-100 p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm text-base-content/60">ออเดอร์ประจำวัน</p>
-              <p class="mt-2 text-2xl font-bold">
-                {{ Number(overviewSummary.order_count || 0) }}
-              </p>
-            </div>
-            <Icon name="lucide:package-check" size="22" class="text-warning" />
-          </div>
-          <p class="mt-2 text-xs text-base-content/50">
-            รอดำเนินการ {{ Number(overviewSummary.active_order_count || 0) }}
-            รายการ
-          </p>
-        </article>
-
-        <article class="rounded-xl border border-success/25 bg-success/5 p-4">
-          <div class="flex items-start justify-between gap-3">
-            <div>
-              <p class="text-sm text-base-content/60">กำไรโดยประมาณ</p>
-              <p class="mt-2 text-2xl font-bold text-success">
-                ฿{{ formatMoney(overviewSummary.daily_gross_profit) }}
-              </p>
-            </div>
-            <Icon name="lucide:trending-up" size="22" class="text-success" />
-          </div>
-          <p class="mt-2 text-xs text-base-content/50">
-            Margin {{ overviewProfitMargin }}%
-          </p>
-        </article>
-      </div>
-
-      <div class="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <article class="rounded-xl border border-base-300 p-4">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <h2 class="font-bold">ยอดขาย 7 วันล่าสุด</h2>
-              <p class="text-sm text-base-content/55">
-                สิ้นสุด ณ วันที่ที่เลือก
-              </p>
-            </div>
-            <p class="text-sm font-semibold text-primary">
-              รวม ฿{{ formatMoney(overviewSevenDayTotal) }}
-            </p>
-          </div>
-
+            <span class="dashboard-chart-total"
+              >รวม ฿{{ formatMoney(overviewSevenDayTotal) }}</span
+            >
+          </header>
           <div
             v-if="isOverviewLoading"
-            class="mt-5 grid h-56 grid-cols-7 items-end gap-3"
+            class="dashboard-week-chart"
             aria-hidden="true"
           >
             <div
               v-for="height in [45, 70, 52, 86, 62, 78, 58]"
               :key="height"
-              class="skeleton w-full rounded-t-lg"
-              :style="{ height: `${height}%` }"
+              class="skeleton dashboard-chart-skeleton"
+              :style="{ height: height + '%' }"
             />
           </div>
-          <div
-            v-else
-            class="mt-5 grid h-56 grid-cols-7 items-end gap-2 sm:gap-3"
-          >
+          <div v-else class="dashboard-week-chart">
             <div
               v-for="day in overview?.last7Days || []"
               :key="day.sale_date"
-              class="flex h-full min-w-0 flex-col justify-end"
+              class="dashboard-day-column"
             >
               <p
-                class="mb-2 truncate text-center text-[10px] font-semibold text-base-content/55 sm:text-xs"
-                :title="`฿${formatMoney(day.net_sales)}`"
+                class="dashboard-day-value"
+                :title="'฿' + formatMoney(day.net_sales)"
               >
                 {{ formatCompactMoney(day.net_sales) }}
               </p>
-              <div
-                class="flex min-h-0 flex-1 items-end overflow-hidden rounded-t-lg bg-base-200"
-              >
+              <div class="dashboard-day-track">
                 <div
-                  class="w-full rounded-t-lg bg-primary/75 transition-all duration-500"
-                  :style="{ height: `${overviewBarHeight(day.net_sales)}%` }"
+                  class="dashboard-day-bar"
+                  :style="{ height: overviewBarHeight(day.net_sales) + '%' }"
                 />
               </div>
-              <p
-                class="mt-2 text-center text-[10px] text-base-content/60 sm:text-xs"
-              >
+              <p class="dashboard-day-label">
                 {{ formatDayLabel(day.sale_date) }}
               </p>
             </div>
           </div>
         </article>
 
-        <article class="rounded-xl border border-base-300 p-4">
-          <div class="flex items-center justify-between gap-3">
+        <article class="dashboard-chart-card">
+          <header class="dashboard-card-heading">
             <div>
-              <h2 class="font-bold">สินค้าขายดีประจำวัน</h2>
-              <p class="text-sm text-base-content/55">เรียงตามยอดขายสุทธิ</p>
+              <h2>สินค้าขายดีประจำวัน</h2>
+              <p>เรียงตามยอดขายสุทธิ</p>
             </div>
-            <Icon name="lucide:trophy" size="20" class="text-warning" />
+            <Icon name="lucide:trophy" size="22" aria-hidden="true" />
+          </header>
+          <div
+            v-if="isOverviewLoading"
+            class="dashboard-list-skeleton"
+            aria-hidden="true"
+          >
+            <div v-for="item in 4" :key="item" class="skeleton h-10 w-full" />
           </div>
-          <ol class="mt-3 divide-y divide-base-200">
+          <ol
+            v-else-if="overview?.topProducts?.length"
+            class="dashboard-ranking"
+          >
             <li
-              v-for="item in isOverviewLoading ? 5 : 0"
-              :key="`overview-skeleton-${item}`"
-              class="flex items-center gap-3 py-3"
-              aria-hidden="true"
+              v-for="(product, index) in overview.topProducts"
+              :key="product.order_item_transaction_product_code + '-' + index"
             >
-              <div class="skeleton size-8 shrink-0 rounded-lg" />
-              <div class="min-w-0 flex-1 space-y-2">
-                <div class="skeleton h-3 w-3/4" />
-                <div class="skeleton h-3 w-1/3" />
-              </div>
-              <div class="skeleton h-4 w-20" />
-            </li>
-            <li
-              v-if="!isOverviewLoading"
-              v-for="(product, index) in overview?.topProducts || []"
-              :key="`${product.order_item_transaction_product_code}-${index}`"
-              class="flex items-center gap-3 py-3"
-            >
-              <span
-                class="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-xs font-bold text-primary"
-              >
-                {{ (index as number) + 1 }}
-              </span>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold">
+              <span class="dashboard-rank">{{ Number(index) + 1 }}</span>
+              <div class="dashboard-product-name">
+                <p :title="product.order_item_transaction_product_name">
                   {{ product.order_item_transaction_product_name }}
                 </p>
-                <p class="text-xs text-base-content/50">
-                  ขาย {{ product.quantity }} ชิ้น
-                </p>
+                <span>ขาย {{ product.quantity }} ชิ้น</span>
               </div>
-              <p class="text-sm font-bold text-primary">
-                ฿{{ formatMoney(product.net_sales) }}
-              </p>
-            </li>
-            <li
-              v-if="!isOverviewLoading && !(overview?.topProducts || []).length"
-              class="grid min-h-48 place-items-center text-sm text-base-content/50"
-            >
-              ยังไม่มีข้อมูลสินค้าสำหรับวันนี้
+              <span class="dashboard-product-sales"
+                >฿{{ formatMoney(product.net_sales) }}</span
+              >
             </li>
           </ol>
+          <TableEmptyState v-else />
         </article>
       </div>
     </section>
 
-    <section
-      class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm"
-    >
-      <div
-        class="flex xl:flex-row flex-col gap-4 xl:items-end lg:justify-between"
-      >
+    <section aria-labelledby="report-heading">
+      <header class="dashboard-section-header">
         <div>
-          <h1 class="mt-1 text-xl font-bold md:text-2xl">
-            รายงานกำไรจากการขาย
-          </h1>
-          <p class="mt-1 text-sm text-base-content/60">
-            แสดงเฉพาะคำสั่งซื้อที่ปิดงานแล้ว และยึดต้นทุน ณ วันที่ปิดงาน
-          </p>
+          <h2 id="report-heading">รายงานกำไรจากการขาย</h2>
+          <p>คำสั่งซื้อที่ปิดงานแล้ว คำนวณจากต้นทุน ณ วันที่ปิดงาน</p>
         </div>
-        <div
-          class="flex sm:flex-row flex-col gap-3 sm:items-center items-start"
-        >
-          <div class="join">
-            <button
-              class="join-item btn btn-sm rounded-l-s, cursor-not-allowed disabled:text-primary"
-              disabled
-            >
-              ตั้งแต่วันที่
-            </button>
+        <form class="dashboard-filters" @submit.prevent="refreshReport()">
+          <label class="dashboard-date-field">
+            <span>ตั้งแต่วันที่</span>
             <input
               v-model="dateFrom"
               type="date"
-              class="join-item input input-sm w-full"
+              required
+              :max="dateTo || undefined"
+              aria-label="รายงานตั้งแต่วันที่"
             />
-          </div>
-          <div class="join">
-            <button
-              class="join-item btn btn-sm rounded-l-s, cursor-not-allowed disabled:text-primary"
-              disabled
-            >
-              ถึงวันที่
-            </button>
+          </label>
+          <label class="dashboard-date-field">
+            <span>ถึงวันที่</span>
             <input
               v-model="dateTo"
               type="date"
-              class="join-item input input-sm w-full"
+              required
+              :min="dateFrom || undefined"
+              aria-label="รายงานถึงวันที่"
             />
-          </div>
+          </label>
           <button
-            class="btn btn-primary btn-sm"
+            type="submit"
+            class="dashboard-filter-button"
             :disabled="isReportLoading"
-            @click="refreshReport()"
           >
-            <span
-              v-if="isReportLoading"
-              class="loading loading-spinner loading-xs"
+            <Icon
+              :name="isReportLoading ? 'lucide:loader-circle' : 'lucide:filter'"
+              size="16"
+              :class="{ 'animate-spin': isReportLoading }"
+              aria-hidden="true"
             />
-            <Icon v-else name="lucide:filter" size="15" />
             กรองรายงาน
           </button>
-        </div>
-      </div>
+        </form>
+      </header>
 
-      <p v-if="reportError" class="mt-4 text-sm text-error">
-        {{ reportError.message }}
-      </p>
-      <div v-else class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article class="rounded-xl bg-primary p-4 text-primary-content">
-          <p class="text-sm opacity-80">ยอดขายสุทธิ</p>
-          <p class="mt-2 text-2xl font-bold">
-            ฿{{ formatMoney(reportSummary.net_sales) }}
-          </p>
-          <p class="mt-2 text-xs opacity-75">ก่อนหักต้นทุน</p>
-        </article>
-        <article class="rounded-xl bg-base-200 p-4">
-          <p class="text-sm text-base-content/60">ต้นทุนสินค้า</p>
-          <p class="mt-2 text-2xl font-bold">
-            ฿{{ formatMoney(reportSummary.total_cost) }}
-          </p>
-          <p class="mt-2 text-xs text-base-content/50">
-            จากต้นทุนที่ snapshot ไว้
-          </p>
-        </article>
-        <article class="rounded-xl bg-success p-4 text-success-content">
-          <p class="text-sm opacity-80">กำไรขั้นต้น</p>
-          <p class="mt-2 text-2xl font-bold">
-            ฿{{ formatMoney(reportSummary.gross_profit) }}
-          </p>
-          <p class="mt-2 text-xs opacity-75">
-            {{ profitMargin }}% ของยอดขายสุทธิ
-          </p>
-        </article>
-        <article class="rounded-xl bg-base-200 p-4">
-          <p class="text-sm text-base-content/60">คำสั่งซื้อที่ปิดงาน</p>
-          <p class="mt-2 text-2xl font-bold">
-            {{ Number(reportSummary.order_count || 0) }}
-          </p>
-          <p class="mt-2 text-xs text-base-content/50">
-            {{ Number(reportSummary.quantity || 0) }} ชิ้น /
-            {{ Number(reportSummary.item_line_count || 0) }} รายการ
-          </p>
-        </article>
-      </div>
-    </section>
-
-    <section class="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-      <article
-        class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm"
+      <div
+        class="dashboard-metric-group dashboard-metric-group--blue"
+        :aria-busy="isReportLoading"
       >
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h2 class="font-bold">ยอดขายและกำไรรายวัน</h2>
-            <p class="text-sm text-base-content/55">
-              สูงสุด 31 วันล่าสุดในช่วงที่เลือก
-            </p>
-          </div>
-          <Icon
-            name="lucide:chart-no-axes-combined"
-            size="20"
-            class="text-primary"
+        <div class="dashboard-group-heading">
+          <h2>ผลประกอบการ</h2>
+          <span>สรุปตามช่วงวันที่เลือก</span>
+        </div>
+        <div v-if="reportError" class="dashboard-error" role="alert">
+          <Icon name="lucide:cloud-alert" size="22" aria-hidden="true" />
+          <p>โหลดรายงานไม่สำเร็จ กรุณาลองกรองรายงานอีกครั้ง</p>
+        </div>
+        <div v-else class="dashboard-metric-grid">
+          <DashboardMetricCard
+            v-for="card in reportCards"
+            :key="card.label"
+            v-bind="card"
+            :loading="isReportLoading"
           />
         </div>
-        <div class="mt-4 space-y-3">
-          <div
-            v-for="item in isReportLoading ? 7 : 0"
-            :key="`day-skeleton-${item}`"
-            class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3"
-            aria-hidden="true"
-          >
-            <div class="skeleton h-3 w-16" />
-            <div class="skeleton h-2 w-full" />
-            <div class="skeleton h-4 w-20" />
-          </div>
-          <div
-            v-if="!isReportLoading"
-            v-for="day in report?.byDay || []"
-            :key="day.sale_date"
-            class="grid grid-cols-[5.5rem_1fr_auto] items-center gap-3 text-sm"
-          >
-            <span class="text-base-content/60">{{
-              formatShortDate(day.sale_date)
-            }}</span>
-            <div class="h-2 overflow-hidden rounded-full bg-base-200">
-              <div
-                class="h-full rounded-full bg-primary transition-all"
-                :style="{ width: `${salesBarWidth(day.net_sales)}%` }"
-              />
-            </div>
-            <span class="font-semibold text-primary"
-              >฿{{ formatMoney(day.net_sales) }}</span
-            >
-          </div>
-          <p
-            v-if="!isReportLoading && !(report?.byDay || []).length"
-            class="py-8 text-center text-sm text-base-content/50"
-          >
-            ยังไม่มีรายการขายในช่วงวันที่เลือก
-          </p>
-        </div>
-      </article>
+      </div>
 
-      <article
-        class="rounded-2xl border border-base-300 bg-base-100 p-4 shadow-sm"
-      >
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <h2 class="font-bold">สินค้าขายดี</h2>
-            <p class="text-sm text-base-content/55">จัดอันดับตามยอดขายสุทธิ</p>
-          </div>
-          <Icon name="lucide:trophy" size="20" class="text-warning" />
-        </div>
-        <ol class="mt-3 divide-y divide-base-200">
-          <li
-            v-for="item in isReportLoading ? 5 : 0"
-            :key="`report-product-skeleton-${item}`"
-            class="flex items-center gap-3 py-3"
+      <div v-if="!reportError" class="dashboard-chart-grid">
+        <article class="dashboard-chart-card">
+          <header class="dashboard-card-heading">
+            <div>
+              <h2>ยอดขายรายวัน</h2>
+              <p>สูงสุด 31 วันล่าสุดในช่วงที่เลือก</p>
+            </div>
+            <Icon
+              name="lucide:chart-no-axes-combined"
+              size="22"
+              aria-hidden="true"
+            />
+          </header>
+          <div
+            v-if="isReportLoading"
+            class="dashboard-list-skeleton"
             aria-hidden="true"
           >
-            <div class="skeleton size-7 shrink-0 rounded-full" />
-            <div class="min-w-0 flex-1 space-y-2">
-              <div class="skeleton h-3 w-3/4" />
-              <div class="skeleton h-3 w-1/2" />
-            </div>
-            <div class="skeleton h-4 w-20" />
-          </li>
-          <li
-            v-if="!isReportLoading"
-            v-for="(product, index) in report?.topProducts || []"
-            :key="`${product.order_item_transaction_product_code}-${index}`"
-            class="flex items-center gap-3 py-3"
-          >
-            <span
-              class="grid h-7 w-7 place-items-center rounded-full bg-primary/10 text-xs font-bold text-primary"
-              >{{ (index as number) + 1 }}</span
+            <div v-for="item in 7" :key="item" class="skeleton h-5 w-full" />
+          </div>
+          <div v-else-if="report?.byDay?.length" class="dashboard-sales-list">
+            <div
+              v-for="day in report.byDay"
+              :key="day.sale_date"
+              class="dashboard-sales-row"
             >
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-sm font-semibold">
-                {{ product.order_item_transaction_product_name }}
-              </p>
-              <p class="text-xs text-base-content/50">
-                {{ product.quantity }} ชิ้น · กำไร ฿{{
-                  formatMoney(product.gross_profit)
-                }}
-              </p>
+              <span>{{ formatShortDate(day.sale_date) }}</span>
+              <div class="dashboard-sales-track">
+                <div :style="{ width: salesBarWidth(day.net_sales) + '%' }" />
+              </div>
+              <span class="dashboard-product-sales"
+                >฿{{ formatMoney(day.net_sales) }}</span
+              >
             </div>
-            <p class="text-sm font-bold text-primary">
-              ฿{{ formatMoney(product.net_sales) }}
-            </p>
-          </li>
-          <li
-            v-if="!isReportLoading && !(report?.topProducts || []).length"
-            class="py-8 text-center text-sm text-base-content/50"
+          </div>
+          <TableEmptyState v-else />
+        </article>
+
+        <article class="dashboard-chart-card">
+          <header class="dashboard-card-heading">
+            <div>
+              <h2>สินค้าขายดี</h2>
+              <p>จัดอันดับตามยอดขายสุทธิ</p>
+            </div>
+            <Icon name="lucide:trophy" size="22" aria-hidden="true" />
+          </header>
+          <div
+            v-if="isReportLoading"
+            class="dashboard-list-skeleton"
+            aria-hidden="true"
           >
-            ยังไม่มีข้อมูลสินค้า
-          </li>
-        </ol>
-      </article>
+            <div v-for="item in 4" :key="item" class="skeleton h-10 w-full" />
+          </div>
+          <ol v-else-if="report?.topProducts?.length" class="dashboard-ranking">
+            <li
+              v-for="(product, index) in report.topProducts"
+              :key="product.order_item_transaction_product_code + '-' + index"
+            >
+              <span class="dashboard-rank">{{ Number(index) + 1 }}</span>
+              <div class="dashboard-product-name">
+                <p :title="product.order_item_transaction_product_name">
+                  {{ product.order_item_transaction_product_name }}
+                </p>
+                <span
+                  >{{ product.quantity }} ชิ้น · กำไร ฿{{
+                    formatMoney(product.gross_profit)
+                  }}</span
+                >
+              </div>
+              <span class="dashboard-product-sales"
+                >฿{{ formatMoney(product.net_sales) }}</span
+              >
+            </li>
+          </ol>
+          <TableEmptyState v-else />
+        </article>
+      </div>
     </section>
 
-    <section>
-      <h2 class="mb-3 text-lg font-bold">ข้อมูลระบบ</h2>
-      <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <div
-          v-for="item in isTotalsLoading ? 6 : 0"
-          :key="`total-skeleton-${item}`"
-          class="flex items-center justify-between rounded-xl bg-base-100 p-4 shadow-sm"
-          aria-hidden="true"
-        >
-          <div class="skeleton h-4 w-2/3" />
-          <div class="skeleton h-6 w-12 rounded-lg" />
+    <section class="dashboard-system-section" aria-labelledby="system-heading">
+      <header class="dashboard-section-header">
+        <div>
+          <h2 id="system-heading">ข้อมูลระบบ</h2>
+          <p>จำนวนรายการทั้งหมดในระบบของคุณ</p>
         </div>
-        <div
-          v-show="!isTotalsLoading"
-          role="alert"
-          class="alert bg-base-100 shadow-sm flex justify-between items-center"
+      </header>
+      <div
+        v-if="totalsError"
+        class="dashboard-error dashboard-error--plain"
+        role="alert"
+      >
+        <Icon name="lucide:cloud-alert" size="22" aria-hidden="true" />
+        <p>{{ totalsError }}</p>
+        <button
+          type="button"
+          class="dashboard-filter-button"
+          @click="loadTotals()"
         >
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:users-round" size="20" class="text-info" /><span
-              class="font-semibold"
-              >จำนวนผู้ใช้งานระบบ</span
-            >
-          </div>
-          <div class="badge badge-info badge-md text-xs font-bold rounded-lg">
-            {{ total.users }}
-          </div>
-        </div>
-        <div
-          v-show="!isTotalsLoading"
-          role="alert"
-          class="alert bg-base-100 shadow-sm flex justify-between items-center"
-        >
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:package" size="20" class="text-success" /><span
-              class="font-semibold"
-              >จำนวนรายการสินค้า</span
-            >
-          </div>
-          <div
-            class="badge badge-success badge-md text-xs font-bold rounded-lg"
-          >
-            {{ total.products }}
-          </div>
-        </div>
-        <div
-          v-show="!isTotalsLoading"
-          role="alert"
-          class="alert bg-base-100 shadow-sm flex justify-between items-center"
-        >
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:tags" size="20" class="text-success" /><span
-              class="font-semibold"
-              >จำนวนรายการหมวดหมู่</span
-            >
-          </div>
-          <div
-            class="badge badge-success badge-md text-xs font-bold rounded-lg"
-          >
-            {{ total.categories }}
-          </div>
-        </div>
-        <div
-          v-show="!isTotalsLoading"
-          role="alert"
-          class="alert bg-base-100 shadow-sm flex justify-between items-center"
-        >
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:truck" size="20" class="text-success" /><span
-              class="font-semibold"
-              >จำนวนรายการผู้จัดจำหน่าย</span
-            >
-          </div>
-          <div
-            class="badge badge-success badge-md text-xs font-bold rounded-lg"
-          >
-            {{ total.suppliers }}
-          </div>
-        </div>
-        <div
-          v-show="!isTotalsLoading"
-          role="alert"
-          class="alert bg-base-100 shadow-sm flex justify-between items-center"
-        >
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:tags" size="20" class="text-success" /><span
-              class="font-semibold"
-              >จำนวนประเภทโปรโมชั่น</span
-            >
-          </div>
-          <div
-            class="badge badge-success badge-md text-xs font-bold rounded-lg"
-          >
-            {{ total.types }}
-          </div>
-        </div>
-        <div
-          v-show="!isTotalsLoading"
-          role="alert"
-          class="alert bg-base-100 shadow-sm flex justify-between items-center"
-        >
-          <div class="flex items-center gap-2">
-            <Icon name="lucide:gift" size="20" class="text-warning" /><span
-              class="font-semibold"
-              >จำนวนโปรโมชั่นที่ใช้งานอยู่</span
-            >
-          </div>
-          <div
-            class="badge badge-warning badge-md text-xs font-bold rounded-lg"
-          >
-            {{ total.promotion }}
-          </div>
-        </div>
+          ลองใหม่
+        </button>
+      </div>
+      <div v-else class="dashboard-system-grid">
+        <DashboardMetricCard
+          v-for="card in systemCards"
+          :key="card.label"
+          v-bind="card"
+          :loading="isTotalsLoading"
+        />
       </div>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
+import "~/assets/css/admin-dashboard.css";
 import { useDayjs } from "~~/composables/useDayjs";
 
 definePageMeta({ layout: "admin" });
@@ -586,6 +334,7 @@ const overviewDate = ref(today);
 const dateFrom = ref(dayjs().startOf("month").format("YYYY-MM-DD"));
 const dateTo = ref(today);
 const isTotalsLoading = ref(true);
+const totalsError = ref("");
 const total = ref({
   users: 0,
   products: 0,
@@ -670,10 +419,12 @@ const formatMoney = (value: number | string | undefined) =>
 const formatShortDate = (value: string) => dayjs(value).format("DD MMM");
 const asLocalDate = (value: string) =>
   new Date(`${String(value).slice(0, 10)}T12:00:00+07:00`);
-const formatOverviewDate = (value: string) =>
-  new Intl.DateTimeFormat("th-TH", {
-    dateStyle: "full",
-  }).format(asLocalDate(value));
+const formatOverviewDate = (value: string) => {
+  const date = asLocalDate(value);
+  return Number.isNaN(date.getTime())
+    ? "เลือกวันที่เพื่อดูภาพรวม"
+    : new Intl.DateTimeFormat("th-TH", { dateStyle: "full" }).format(date);
+};
 const formatDayLabel = (value: string) =>
   new Intl.DateTimeFormat("th-TH", {
     weekday: "short",
@@ -688,10 +439,9 @@ const overviewBarHeight = (value: number | string) =>
 const salesBarWidth = (value: number | string) =>
   Math.max(4, (Number(value || 0) / maxDailySales.value) * 100);
 
-onMounted(async () => {
-  void refreshOverview();
-  void refreshReport();
-
+async function loadTotals() {
+  isTotalsLoading.value = true;
+  totalsError.value = "";
   try {
     const [users, products, categories, suppliers, types, promotion] =
       await Promise.all([
@@ -711,8 +461,112 @@ onMounted(async () => {
       types: types.total,
       promotion: promotion.total,
     };
+  } catch {
+    totalsError.value = "โหลดข้อมูลระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
   } finally {
     isTotalsLoading.value = false;
   }
+}
+
+onMounted(() => {
+  void refreshOverview();
+  void refreshReport();
+  void loadTotals();
 });
+
+const overviewCards = computed(() => [
+  {
+    label: "ยอดขายประจำวัน",
+    value: "฿" + formatMoney(overviewSummary.value.daily_net_sales),
+    icon: "lucide:badge-dollar-sign",
+    detail:
+      "จาก " +
+      Number(overviewSummary.value.daily_completed_order_count || 0) +
+      " ออเดอร์ที่ปิดงาน",
+    tinted: true,
+  },
+  {
+    label: "ยอดขายเดือนนี้",
+    value: "฿" + formatMoney(overviewSummary.value.monthly_net_sales),
+    icon: "lucide:calendar-range",
+    detail: "ยอดรวมของเดือนที่เลือก",
+    tinted: true,
+  },
+  {
+    label: "ออเดอร์ประจำวัน",
+    value: Number(overviewSummary.value.order_count || 0),
+    icon: "lucide:package-check",
+    detail:
+      "รอดำเนินการ " +
+      Number(overviewSummary.value.active_order_count || 0) +
+      " รายการ",
+    tinted: true,
+  },
+  {
+    label: "กำไรโดยประมาณ",
+    value: "฿" + formatMoney(overviewSummary.value.daily_gross_profit),
+    icon: "lucide:trending-up",
+    detail: "อัตรากำไร " + overviewProfitMargin.value + "%",
+  },
+]);
+const reportCards = computed(() => [
+  {
+    label: "ยอดขายสุทธิ",
+    value: "฿" + formatMoney(reportSummary.value.net_sales),
+    icon: "lucide:wallet",
+    detail: "ก่อนหักต้นทุน",
+  },
+  {
+    label: "ต้นทุนสินค้า",
+    value: "฿" + formatMoney(reportSummary.value.total_cost),
+    icon: "lucide:package",
+    detail: "ต้นทุน ณ วันที่ปิดคำสั่งซื้อ",
+  },
+  {
+    label: "กำไรขั้นต้น",
+    value: "฿" + formatMoney(reportSummary.value.gross_profit),
+    icon: "lucide:chart-no-axes-combined",
+    detail: profitMargin.value + "% ของยอดขายสุทธิ",
+    tinted: true,
+  },
+  {
+    label: "คำสั่งซื้อที่ปิดงาน",
+    value: Number(reportSummary.value.order_count || 0),
+    icon: "lucide:clipboard-check",
+    detail:
+      Number(reportSummary.value.quantity || 0) +
+      " ชิ้น / " +
+      Number(reportSummary.value.item_line_count || 0) +
+      " รายการ",
+    tinted: true,
+  },
+]);
+const systemCards = computed(() => [
+  {
+    label: "ผู้ใช้งานระบบ",
+    value: total.value.users,
+    icon: "lucide:users-round",
+  },
+  {
+    label: "รายการสินค้า",
+    value: total.value.products,
+    icon: "lucide:package",
+  },
+  { label: "หมวดหมู่", value: total.value.categories, icon: "lucide:tags" },
+  {
+    label: "ผู้จัดจำหน่าย",
+    value: total.value.suppliers,
+    icon: "lucide:truck",
+  },
+  {
+    label: "ประเภทโปรโมชั่น",
+    value: total.value.types,
+    icon: "lucide:badge-percent",
+  },
+  {
+    label: "โปรโมชั่นที่ใช้งาน",
+    value: total.value.promotion,
+    icon: "lucide:gift",
+  },
+]);
 </script>

@@ -1,5 +1,7 @@
 <template>
-  <section class="rounded-xl border border-base-300 bg-base-100 p-4">
+  <section
+    class="admin-table-surface rounded-xl border border-base-300 bg-base-100 p-4"
+  >
     <div
       class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
     >
@@ -49,25 +51,27 @@
         <button
           v-if="!isTerminal"
           type="button"
-          class="btn btn-primary btn-xs"
+          class="admin-table-create"
           :disabled="actionLoading"
           @click="addItemModal?.open()"
         >
-          <Icon name="lucide:plus" size="15" />
+          <Icon name="lucide:circle-plus" size="15" />
           เพิ่มสินค้า
         </button>
       </div>
     </div>
 
-    <div class="overflow-x-auto">
-      <table class="table table-xs sm:table-sm">
+    <div class="admin-table-viewport">
+      <table class="admin-data-table">
         <thead>
           <tr class="text-xs sm:text-sm">
             <th>สินค้า</th>
             <th class="hidden sm:table-cell">ราคา</th>
             <th class="text-center">จำนวน</th>
             <th class="hidden text-right sm:table-cell">รวม</th>
-            <th v-if="!isTerminal" />
+            <th v-if="!isTerminal" scope="col" class="admin-table-actions">
+              ดำเนินการ
+            </th>
           </tr>
         </thead>
 
@@ -109,6 +113,7 @@
                 <button
                   type="button"
                   class="btn btn-xs join-item"
+                  aria-label="ลดจำนวนสินค้า"
                   :disabled="
                     Number(item.order_item_quantity) <= 1 || actionLoading
                   "
@@ -124,6 +129,7 @@
                 <button
                   type="button"
                   class="btn btn-xs join-item"
+                  aria-label="เพิ่มจำนวนสินค้า"
                   :disabled="actionLoading"
                   @click="changeQuantity(item, 1)"
                 >
@@ -138,26 +144,17 @@
             </td>
 
             <td v-if="!isTerminal" class="text-right">
-              <button
-                type="button"
-                class="btn btn-ghost btn-xs text-error"
+              <TableAction
+                label="ลบสินค้าออกจากคำสั่งซื้อ"
+                icon="lucide:trash-2"
+                tone="danger"
                 :disabled="actionLoading"
-                aria-label="ลบสินค้าออกจากคำสั่งซื้อ"
                 @click="askRemoveItem(item)"
-              >
-                <Icon name="lucide:trash-2" size="15" />
-              </button>
+              />
             </td>
           </tr>
 
-          <tr v-if="!items.length">
-            <td
-              colspan="5"
-              class="py-6 text-center text-sm text-base-content/50"
-            >
-              ไม่มีรายการสินค้า
-            </td>
-          </tr>
+          <TableStateRow v-if="!items.length" :columns="isTerminal ? 4 : 5" />
         </tbody>
       </table>
     </div>
