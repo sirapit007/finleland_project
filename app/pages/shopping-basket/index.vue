@@ -252,6 +252,87 @@
         <aside
           class="rounded-xl border border-base-300 bg-base-100 p-5 lg:sticky lg:top-6"
         >
+          <div class="mb-5 border-b border-base-300 pb-5">
+            <button
+              type="button"
+              class="btn btn-outline sm:btn-sm btn-xs btn-primary btn-dash w-full"
+              :disabled="isCheckingOut || isBasketMutating"
+              @click="openCouponModal"
+            >
+              <Icon name="lucide:ticket-percent" size="18" />
+              ใส่คูปองส่วนลด
+              <span
+                class="badge badge-primary badge-sm"
+                :aria-label="
+                  areCouponsLoaded
+                    ? 'คูปองที่ใช้ได้ ' + eligibleCouponCount + ' ใบ'
+                    : 'กำลังตรวจสอบคูปอง'
+                "
+              >
+                {{ areCouponsLoaded ? eligibleCouponCount : "—" }}
+              </span>
+            </button>
+            <p
+              v-if="claimableCouponCount > 0"
+              class="mt-2 text-center text-xs text-primary"
+            >
+              มีคูปองให้รับเพิ่ม {{ claimableCouponCount }} ใบ
+            </p>
+            <div
+              v-if="selectedCoupon"
+              class="mt-3 flex items-start gap-2 rounded-lg bg-success/10 p-3 text-sm"
+            >
+              <Icon
+                name="lucide:ticket-check"
+                size="17"
+                class="mt-0.5 shrink-0 text-success"
+              />
+              <div class="min-w-0 flex-1">
+                <p class="font-semibold">{{ selectedCoupon.coupon_name }}</p>
+                <p class="mt-1 text-xs text-base-content/60">
+                  {{
+                    couponBusy || isBasketMutating
+                      ? "กำลังตรวจสอบส่วนลด..."
+                      : "ลด ฿" + formatPrice(couponDiscount)
+                  }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-ghost btn-xs shrink-0"
+                :disabled="isCheckingOut || couponBusy || isBasketMutating"
+                @click="removeCoupon"
+              >
+                นำออก
+              </button>
+            </div>
+            <div
+              v-if="couponError"
+              role="alert"
+              class="mt-3 space-y-2 rounded-lg bg-warning/10 p-3 text-sm"
+            >
+              <p>{{ couponError }}</p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-xs"
+                  :disabled="couponBusy || isCheckingOut || isBasketMutating"
+                  @click="refreshCoupons"
+                >
+                  <Icon name="lucide:refresh-cw" size="13" /> ตรวจสอบอีกครั้ง
+                </button>
+                <button
+                  v-if="couponNeedsReview || selectedCouponUuid"
+                  type="button"
+                  class="btn btn-outline btn-xs"
+                  :disabled="couponBusy || isCheckingOut"
+                  @click="removeCoupon"
+                >
+                  ดำเนินการโดยไม่ใช้คูปอง
+                </button>
+              </div>
+            </div>
+          </div>
           <h2 class="text-xl font-bold">สรุปคำสั่งซื้อ</h2>
 
           <!-- <div class="mt-5 rounded-xl bg-base-200/80 p-4">
@@ -288,7 +369,11 @@
             <div class="flex justify-between gap-4 text-base-content/70">
               <span>ราคารวมสินค้า ({{ totalQuantity }} ชิ้น)</span>
               <span class="font-semibold text-base-content"
-                >฿{{ formatPrice(originalSubtotal) }}</span
+                >฿{{
+                  formatPrice(
+                    selectedCoupon?.basket.subtotal ?? originalSubtotal,
+                  )
+                }}</span
               >
             </div>
             <div class="flex justify-between gap-4 text-success">
@@ -296,7 +381,28 @@
                 <Icon name="lucide:badge-percent" size="15" /> ส่วนลดโปรโมชั่น
               </span>
               <span class="font-semibold"
-                >-฿{{ formatPrice(totalDiscount) }}</span
+                >-฿{{
+                  formatPrice(
+                    selectedCoupon?.basket.promotionDiscount ?? totalDiscount,
+                  )
+                }}</span
+              >
+            </div>
+            <div
+              v-if="selectedCouponUuid || couponDiscount > 0"
+              class="flex justify-between gap-4 text-success"
+              aria-live="polite"
+            >
+              <span class="flex items-center gap-1">
+                <Icon name="lucide:ticket-percent" size="15" /> ส่วนลดคูปอง
+              </span>
+              <span
+                v-if="couponBusy || isBasketMutating"
+                class="loading loading-dots loading-xs"
+                aria-label="กำลังคำนวณส่วนลด"
+              />
+              <span v-else class="font-semibold"
+                >-฿{{ formatPrice(couponDiscount) }}</span
               >
             </div>
             <div class="flex justify-between gap-4 text-base-content/70">
@@ -304,10 +410,6 @@
               <span class="font-semibold text-base-content"
                 >฿{{ formatPrice(shippingFee) }}</span
               >
-            </div>
-            <div class="flex justify-between gap-4 text-base-content/70">
-              <span>ส่วนลด</span>
-              <span class="font-semibold text-base-content">-฿0.00</span>
             </div>
           </div>
 
@@ -475,6 +577,9 @@
               (requestTaxInvoice && !selectedTaxProfile) ||
               !acceptOrderConditions ||
               isShippingDistanceLoading ||
+              isBasketMutating ||
+              couponCheckoutBlocked ||
+              !basketRows.length ||
               isCheckingOut
             "
             @click="requestCheckout"
@@ -508,13 +613,6 @@
           >
             กรุณาอ่านและยอมรับเงื่อนไขการสั่งซื้อ
           </p>
-          <button
-            class="btn btn-outline btn-primary btn-sm mt-3 w-full"
-            disabled
-          >
-            <Icon name="lucide:tag" size="14" /> ใส่โค้ดส่วนลด ( Coming Soon ...
-            )
-          </button>
         </aside>
       </div>
 
@@ -643,6 +741,23 @@
     <form method="dialog" class="modal-backdrop"><button>ปิด</button></form>
   </dialog>
 
+  <CouponSelectionModal
+    v-model="isCouponModalOpen"
+    :owned-coupons="ownedCoupons"
+    :eligible-coupons="eligibleCoupons"
+    :claimable-coupons="claimableCoupons"
+    :claimable-count="claimableCouponCount"
+    :selected-uuid="selectedCouponUuid"
+    :loading="isCouponsLoading"
+    :busy="couponBusy || isBasketMutating || isCheckingOut"
+    :claiming-uuid="claimingCouponUuid"
+    :error="couponError"
+    :notice="couponNotice"
+    @select="handleCouponSelected"
+    @claim="claimCoupon"
+    @refresh="refreshCoupons"
+  />
+
   <TaxProfileFormModal
     ref="taxProfileFormModal"
     @saved="handleTaxProfileSaved"
@@ -663,6 +778,7 @@
 
 <script setup lang="ts">
 import { LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT } from "~~/shared/utils/localExpress";
+import type { BasketCoupon } from "~/composables/useBasketCoupons";
 
 type ShippingQuoteOption = {
   id: string;
@@ -921,6 +1037,8 @@ const isConfirmLoading = computed(
   () =>
     isClearing.value ||
     isCheckingOut.value ||
+    couponBusy.value ||
+    isBasketMutating.value ||
     Boolean(
       confirmBasketTarget.value &&
       isItemUpdating(confirmBasketTarget.value.uuid),
@@ -930,6 +1048,7 @@ const isConfirmLoading = computed(
 const {
   activeItems,
   clearBasket,
+  isLoading: isBasketLoading,
   isItemUpdating,
   refreshBasket,
   removeBasketItem,
@@ -1104,7 +1223,81 @@ const shippingFee = computed(() =>
   basketRows.value.length ? (selectedDeliveryOption.value?.price ?? 0) : 0,
 );
 
-const grandTotal = computed(() => subtotal.value + shippingFee.value);
+const couponBasketKey = computed(() =>
+  JSON.stringify(
+    basketRows.value.map((basket) => [
+      basket.uuid,
+      basket.basket_product,
+      basket.basket_quantity,
+      basket.basket_total,
+      basket.product_selling_price,
+      basket.promotion_uuid,
+      basket.promotion_discounted_price,
+      basket.promotion_bundle_price,
+      basket.promotion_min_quantity,
+      basket.promotion_min_purchase_amount,
+      basket.basket_expire,
+    ]),
+  ),
+);
+const isBasketMutating = computed(
+  () =>
+    isClearing.value ||
+    isBasketLoading.value ||
+    basketRows.value.some((basket) => isItemUpdating(basket.uuid)),
+);
+const isCouponModalOpen = ref(false);
+const {
+  ownedCoupons,
+  eligibleCoupons,
+  claimableCoupons,
+  eligibleCouponCount,
+  claimableCouponCount,
+  selectedCoupon,
+  selectedCouponUuid,
+  couponDiscount,
+  couponOrderFields,
+  couponError,
+  couponNotice,
+  isCouponsLoading,
+  areCouponsLoaded,
+  claimingCouponUuid,
+  couponBusy,
+  couponNeedsReview,
+  couponCheckoutBlocked,
+  refreshCoupons,
+  selectCoupon,
+  claimCoupon,
+  removeCoupon,
+  verifyCoupon,
+} = useBasketCoupons(
+  computed(() => String(currentUser.value?.uuid || "")),
+  couponBasketKey,
+  isBasketMutating,
+);
+
+const openCouponModal = async () => {
+  isCouponModalOpen.value = true;
+  await refreshCoupons();
+};
+const handleCouponSelected = async (coupon: BasketCoupon) => {
+  if (await selectCoupon(coupon)) {
+    isCouponModalOpen.value = false;
+    showToast("เลือกคูปองแล้ว ระบบจะนับการใช้เมื่อสร้างคำสั่งซื้อสำเร็จ");
+  }
+};
+
+const grandTotal = computed(
+  () =>
+    Math.max(
+      Math.round(
+        ((selectedCoupon.value?.basket.merchandiseTotal ?? subtotal.value) -
+          couponDiscount.value) *
+          100,
+      ) / 100,
+      0,
+    ) + shippingFee.value,
+);
 
 const formattedShippingDistance = computed(() => {
   const distance = Number(shippingDistanceQuote.value?.distanceKm);
@@ -1362,9 +1555,15 @@ const onClearBasket = async () => {
   }
 };
 
-const requestCheckout = () => {
+const requestCheckout = async () => {
   orderConditionsError.value = "";
-  if (isShippingDistanceLoading.value) return;
+  if (
+    isShippingDistanceLoading.value ||
+    isCheckingOut.value ||
+    isBasketMutating.value
+  )
+    return;
+  if (!(await verifyCoupon())) return;
 
   if (expressMinimumNotMet.value) {
     shippingError.value = `ส่งด่วนใกล้บ้านมียอดสินค้าสุทธิขั้นต่ำ ${LOCAL_EXPRESS_MINIMUM_ORDER_AMOUNT.toLocaleString("th-TH")} บาท`;
@@ -1398,6 +1597,7 @@ const requestCheckout = () => {
 };
 
 const onCheckout = async () => {
+  if (isCheckingOut.value || isBasketMutating.value) return;
   errorMessage.value = "";
   shippingError.value = "";
   taxError.value = "";
@@ -1428,13 +1628,31 @@ const onCheckout = async () => {
     return;
   }
 
+  const confirmedTotal = grandTotal.value;
+  const confirmedCouponUuid = selectedCouponUuid.value;
   isCheckingOut.value = true;
 
   try {
+    if (!(await verifyCoupon())) {
+      errorMessage.value =
+        couponError.value || "กรุณาตรวจสอบคูปองอีกครั้งก่อนสั่งซื้อ";
+      isConfirmModalOpen.value = false;
+      return;
+    }
+    if (
+      confirmedTotal !== grandTotal.value ||
+      confirmedCouponUuid !== selectedCouponUuid.value
+    ) {
+      errorMessage.value =
+        "ส่วนลดมีการเปลี่ยนแปลง กรุณาตรวจสอบยอดสุทธิและยืนยันคำสั่งซื้ออีกครั้ง";
+      isConfirmModalOpen.value = false;
+      return;
+    }
     const response: any = await $fetch("/api/order", {
       method: "POST",
       body: {
         order_delivery_method: delivery.value,
+        ...couponOrderFields.value,
         order_stock_terms_accepted: acceptOrderConditions.value,
         order_shipping_address_uuid:
           delivery.value === "pickup"
@@ -1450,7 +1668,9 @@ const onCheckout = async () => {
       throw new Error("Created order did not return a uuid");
     }
 
-    await refreshBasket();
+    removeCoupon();
+    // The order is committed. A basket refresh failure must not report a failed checkout.
+    await refreshBasket().catch(() => {});
     showToast(
       `สร้างคำสั่งซื้อ ${response?.row?.order_number || ""} เรียบร้อยแล้ว`,
       "success",
@@ -1468,8 +1688,14 @@ const onCheckout = async () => {
   } catch (error: any) {
     console.error("Unable to create order", error);
     errorMessage.value =
+      error?.data?.data?.message ||
+      error?.data?.message ||
       error?.data?.statusMessage ||
       "ไม่สามารถสร้างคำสั่งซื้อได้ กรุณาลองใหม่อีกครั้ง";
+    if (selectedCouponUuid.value) {
+      isConfirmModalOpen.value = false;
+      await refreshCoupons();
+    }
   } finally {
     isCheckingOut.value = false;
   }

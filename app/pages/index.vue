@@ -351,7 +351,7 @@
       >
         <img
           src="@/assets/images/logo_2.png"
-          alt="Finleland Plaza"
+          alt="Finlyland Plaza"
           class="w-52 shrink-0 object-contain sm:w-64 lg:w-76"
         />
         <div class="space-y-3">

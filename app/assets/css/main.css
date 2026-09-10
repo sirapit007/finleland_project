@@ -2,11 +2,11 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: finleland --default, dark --prefersdark;
+  themes: finlyland --default, dark --prefersdark;
 }
 
 @plugin "daisyui/theme" {
-  name: "finleland";
+  name: "finlyland";
   default: false;
   prefersdark: false;
   color-scheme: "light";

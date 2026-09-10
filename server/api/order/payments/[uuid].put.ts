@@ -58,6 +58,7 @@ export default defineEventHandler(async (event) => {
               orders.order_payment_status AS current_order_payment_status,
               orders.order_number,
               orders.order_customer_name,
+              orders.order_status AS current_order_status,
               orders.order_grand_total
        FROM tb_shopping_order_payments AS base
        INNER JOIN tb_shopping_orders AS orders
@@ -111,6 +112,19 @@ export default defineEventHandler(async (event) => {
 
     if (nextStatus === "verified") {
       if (
+        ["completed", "canceled"].includes(
+          String(current.current_order_status),
+        ) ||
+        ["paid", "refunded"].includes(
+          String(current.current_order_payment_status),
+        )
+      ) {
+        throw createError({
+          statusCode: 409,
+          statusMessage: "คำสั่งซื้อนี้ไม่พร้อมรับการยืนยันชำระเงิน",
+        });
+      }
+      if (
         !transactionRef ||
         !sendingBank ||
         !transactionAt ||
@@ -122,9 +136,7 @@ export default defineEventHandler(async (event) => {
             "การอนุมัติต้องมีเลขอ้างอิง ธนาคารต้นทาง ยอดเงิน และเวลาธุรกรรม",
         });
       }
-      if (
-        verifiedAmount !== toPaymentMoney(current.order_payment_expected_amount)
-      ) {
+      if (verifiedAmount !== toPaymentMoney(current.order_grand_total)) {
         throw createError({
           statusCode: 409,
           statusMessage: "ยอดเงินในสลิปไม่ตรงกับยอดคำสั่งซื้อ",
@@ -216,7 +228,7 @@ export default defineEventHandler(async (event) => {
         `UPDATE tb_shopping_orders
          SET order_payment_method = 'merchant_qr',
              order_payment_status = CASE
-               WHEN order_payment_status = 'paid' THEN 'paid'
+               WHEN order_payment_status IN ('paid', 'refunded') THEN order_payment_status
                ELSE $1::varchar(30)
              END,
              updated_by = $2,

@@ -161,6 +161,8 @@
                       class="order-detail-grid grid min-w-0 max-w-full grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4"
                     >
                       <OrderSummarySection
+                        admin
+                        @refreshed="reloadOrder(order.uuid)"
                         class="min-w-0 max-w-full"
                         :order="order"
                         :total-quantity="orderTotalQuantity(order)"

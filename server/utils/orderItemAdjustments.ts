@@ -19,7 +19,7 @@ export async function assertOrderItemsAreEditable(
   orderUuid: string,
 ) {
   const result = await client.query(
-    `SELECT uuid::text AS uuid, order_status
+    `SELECT uuid::text AS uuid, order_status, order_payment_status, order_paid_at
      FROM tb_shopping_orders
      WHERE uuid::text = $1
        AND deleted_at IS NULL
@@ -30,12 +30,26 @@ export async function assertOrderItemsAreEditable(
   const order = result.rows[0];
 
   if (!order) {
-    throw createError({ statusCode: 404, statusMessage: "Order was not found" });
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Order was not found",
+    });
   }
   if (terminalStatuses.has(String(order.order_status || ""))) {
     throw createError({
       statusCode: 409,
       statusMessage: "Completed or canceled orders cannot be adjusted",
+    });
+  }
+
+  if (
+    order.order_paid_at ||
+    ["paid", "refunded"].includes(String(order.order_payment_status))
+  ) {
+    throw createError({
+      statusCode: 409,
+      statusMessage:
+        "คำสั่งซื้อที่ชำระเงินแล้วไม่สามารถแก้ไขยอดสินค้าได้ กรุณาดำเนินการคืนเงินก่อนสร้างคำสั่งซื้อใหม่",
     });
   }
 

@@ -1,4 +1,8 @@
 import { randomUUID } from "node:crypto";
+import {
+  consumeUserCoupon,
+  evaluateAndLockUserCoupon,
+} from "@@/server/utils/coupons";
 import { useDb } from "@@/server/utils/db";
 import { notifyLineAdminGroupOfNewOrder } from "@@/server/utils/lineMessaging";
 import {
@@ -13,6 +17,9 @@ type DeliveryMethod =
   "pickup" | "express" | "thailand_post_ems" | "flash_bulky";
 
 type OrderBody = {
+  order_user_coupon_uuid?: string;
+  order_expected_coupon_discount?: number;
+  order_expected_coupon_merchandise_total?: number;
   order_shipping_address_uuid?: string;
   order_tax_profile_uuid?: string;
   order_delivery_method?: string;
@@ -50,7 +57,25 @@ export default defineEventHandler(async (event) => {
     body.order_shipping_address_uuid || "",
   ).trim();
   const taxProfileUuid = String(body.order_tax_profile_uuid || "").trim();
+  const userCouponUuid = String(body.order_user_coupon_uuid || "").trim();
   const customerNote = String(body.order_customer_note || "").trim() || null;
+
+  for (const expected of [
+    body.order_expected_coupon_discount,
+    body.order_expected_coupon_merchandise_total,
+  ]) {
+    if (
+      expected !== undefined &&
+      (typeof expected !== "number" ||
+        !Number.isFinite(expected) ||
+        expected < 0)
+    ) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: "ยอดคูปองที่ยืนยันไม่ถูกต้อง กรุณาตรวจสอบตะกร้าอีกครั้ง",
+      });
+    }
+  }
 
   if (body.order_stock_terms_accepted !== true) {
     throw createError({
@@ -315,7 +340,35 @@ export default defineEventHandler(async (event) => {
     }
 
     const shippingFee = selectedDelivery.fee;
-    const grandTotal = toMoney(merchandiseTotal + shippingFee);
+    const coupon = userCouponUuid
+      ? await evaluateAndLockUserCoupon(client, userUuid, userCouponUuid, {
+          merchandiseTotal,
+          totalQuantity: orderItems.reduce(
+            (total, item) => total + item.quantity,
+            0,
+          ),
+          distinctItems: new Set(orderItems.map((item) => item.productUuid))
+            .size,
+        })
+      : null;
+    if (
+      coupon &&
+      ((body.order_expected_coupon_discount !== undefined &&
+        toMoney(body.order_expected_coupon_discount) !==
+          coupon.discountAmount) ||
+        (body.order_expected_coupon_merchandise_total !== undefined &&
+          toMoney(body.order_expected_coupon_merchandise_total) !==
+            merchandiseTotal))
+    ) {
+      throw createError({
+        statusCode: 409,
+        statusMessage:
+          "ราคาสินค้าหรือส่วนลดคูปองเปลี่ยนแล้ว กรุณาตรวจสอบยอดใหม่ก่อนยืนยันคำสั่งซื้อ",
+        data: { code: "COUPON_QUOTE_CHANGED" },
+      });
+    }
+    const couponDiscount = coupon?.discountAmount || 0;
+    const grandTotal = toMoney(merchandiseTotal - couponDiscount + shippingFee);
     const customerName =
       `${orderUser.firstname || ""} ${orderUser.lastname || ""}`.trim();
 
@@ -352,11 +405,14 @@ export default defineEventHandler(async (event) => {
         order_shipping_rate_version,
         order_shipping_quote,
         order_shipping_latitude,
-        order_shipping_longitude
+        order_shipping_longitude,
+        order_user_coupon,
+        order_coupon_discount,
+        order_coupon_snapshot
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
         $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26,
-        $27, $28, $29, $30::jsonb, $31, $32
+        $27, $28, $29, $30::jsonb, $31, $32, $33, $34, $35::jsonb
       )
       RETURNING *`,
       [
@@ -392,9 +448,29 @@ export default defineEventHandler(async (event) => {
         JSON.stringify(shippingQuoteSnapshot),
         shippingAddress?.shipping_latitude || null,
         shippingAddress?.shipping_longitude || null,
+        coupon?.userCouponUuid || null,
+        couponDiscount,
+        coupon ? JSON.stringify(coupon.snapshot) : null,
       ],
     );
-    const order = orderResult.rows[0];
+    let order = orderResult.rows[0];
+    // A coupon can cover all merchandise on a pickup order.
+    if (coupon && grandTotal === 0) {
+      const paidResult = await client.query(
+        `UPDATE tb_shopping_orders
+         SET order_payment_status = 'paid', order_payment_method = 'coupon',
+             order_paid_at = NOW(), updated_by = $2, updated_at = NOW()
+         WHERE uuid = $1 RETURNING *`,
+        [order.uuid, userUuid],
+      );
+      order = paidResult.rows[0];
+    }
+    if (coupon) {
+      await consumeUserCoupon(client, coupon, {
+        orderUuid: String(order.uuid),
+        userUuid,
+      });
+    }
 
     let taxDetail: Record<string, any> | null = null;
     if (taxProfile) {

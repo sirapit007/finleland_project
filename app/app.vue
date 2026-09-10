@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-const theme = ref("finleland");
+const theme = ref("finlyland");
 const { dismissToast, toast } = useToast();
 
 const toastClass = computed(() => ({
@@ -57,6 +57,6 @@ const toastIcon = computed(() => {
 });
 
 function toggleTheme() {
-  theme.value = theme.value === "finleland" ? "dark" : "finleland";
+  theme.value = theme.value === "finlyland" ? "dark" : "finlyland";
 }
 </script>

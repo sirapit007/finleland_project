@@ -114,6 +114,22 @@
           -฿{{ formatMoney(promotionDiscount) }}
         </span>
       </div>
+      <div
+        v-if="couponDiscount > 0"
+        class="flex justify-between gap-4 text-success"
+      >
+        <span>
+          <span class="flex items-center gap-1"
+            ><Icon name="lucide:ticket-percent" size="15" /> ส่วนลดคูปอง</span
+          >
+          <span
+            v-if="couponName"
+            class="mt-1 block break-words text-xs text-base-content/60"
+            >{{ couponName }}</span
+          >
+        </span>
+        <span class="shrink-0 whitespace-nowrap font-semibold">-฿{{ formatMoney(couponDiscount) }}</span>
+      </div>
       <div class="flex justify-between gap-4 text-base-content/70">
         <span>ค่าจัดส่ง</span>
         <span class="font-semibold text-base-content">
@@ -122,6 +138,17 @@
       </div>
     </div>
 
+    <p
+      v-if="!admin && order.order_coupon_usage_status === 'returned'"
+      class="mt-3 text-xs text-base-content/60"
+    >
+      คืนสิทธิ์คูปองแล้ว
+    </p>
+    <OrderCouponActions
+      v-if="admin"
+      :order="order"
+      @refreshed="emit('refreshed')"
+    />
     <div class="my-5 border-t border-base-300" />
 
     <div class="flex items-center justify-between gap-4">
@@ -142,14 +169,18 @@ type OrderSummaryRow = Record<string, any>;
 const props = withDefaults(
   defineProps<{
     order: OrderSummaryRow;
+    admin?: boolean;
     totalQuantity?: number;
     taxDetail?: OrderSummaryRow | null;
   }>(),
   {
+    admin: false,
     totalQuantity: 0,
     taxDetail: null,
   },
 );
+
+const emit = defineEmits<{ refreshed: [] }>();
 
 const taxDetail = computed(
   () => props.taxDetail || props.order.order_tax_detail || null,
@@ -236,6 +267,12 @@ const mapUrl = computed(() => {
 const promotionDiscount = computed(() =>
   Math.abs(Number(props.order.order_discount || 0)),
 );
+const couponDiscount = computed(() =>
+  Math.abs(Number(props.order.order_coupon_discount || 0)),
+);
+const couponName = computed(() =>
+  String(props.order.order_coupon_snapshot?.coupon_name || ""),
+);
 const shippingFee = computed(() => Number(props.order.order_shipping_fee || 0));
 const grandTotal = computed(() => Number(props.order.order_grand_total || 0));
 const subtotal = computed(() => {
@@ -245,7 +282,10 @@ const subtotal = computed(() => {
   }
 
   return Math.max(
-    grandTotal.value - shippingFee.value + promotionDiscount.value,
+    grandTotal.value -
+      shippingFee.value +
+      promotionDiscount.value +
+      couponDiscount.value,
     0,
   );
 });

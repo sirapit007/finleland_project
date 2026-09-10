@@ -128,8 +128,14 @@
           <dd>{{ formatMoney(subtotal) }}</dd>
         </div>
         <div>
-          <dt>ส่วนลด</dt>
+          <dt>ส่วนลดโปรโมชั่น</dt>
           <dd>-{{ formatMoney(discount) }}</dd>
+        </div>
+        <div v-if="couponDiscount > 0">
+          <dt>
+            ส่วนลดคูปอง<span v-if="couponName"> ({{ couponName }})</span>
+          </dt>
+          <dd>-{{ formatMoney(couponDiscount) }}</dd>
         </div>
         <div>
           <dt>ยอดหลังหักส่วนลด</dt>
@@ -168,9 +174,7 @@
     </section>
 
     <footer class="invoice-footer">
-      <p>
-        เอกสารฉบับนี้จัดทำจากระบบอิเล็กทรอนิกส์ กรุณาเก็บไว้เป็นหลักฐาน
-      </p>
+      <p>เอกสารฉบับนี้จัดทำจากระบบอิเล็กทรอนิกส์ กรุณาเก็บไว้เป็นหลักฐาน</p>
     </footer>
   </article>
 </template>
@@ -293,8 +297,17 @@ const shippingAddress = computed(() =>
 
 const subtotal = computed(() => money(order.value.order_subtotal));
 const discount = computed(() => Math.abs(money(order.value.order_discount)));
+const couponDiscount = computed(() =>
+  Math.abs(money(order.value.order_coupon_discount)),
+);
+const couponName = computed(() =>
+  String(order.value.order_coupon_snapshot?.coupon_name || ""),
+);
 const merchandiseTotal = computed(() =>
-  Math.max(roundMoney(subtotal.value - discount.value), 0),
+  Math.max(
+    roundMoney(subtotal.value - discount.value - couponDiscount.value),
+    0,
+  ),
 );
 const shippingFee = computed(() => money(order.value.order_shipping_fee));
 const grandTotal = computed(() => money(order.value.order_grand_total));
@@ -670,12 +683,13 @@ const amountInWords = computed(() => toThaiBahtText(grandTotal.value));
 
 .totals-list > div {
   display: grid;
-  grid-template-columns: 1fr 95px;
+  grid-template-columns: minmax(0, 1fr) 95px;
   gap: 10px;
   padding: 3px 7px;
 }
 
 .totals-list dt {
+  overflow-wrap: anywhere;
   color: #475569;
 }
 

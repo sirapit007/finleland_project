@@ -6,12 +6,18 @@ export default defineEventHandler(async (event) => {
   const actor = await requireCurrentActor(event);
 
   if (!uuid) {
-    throw createError({ statusCode: 400, statusMessage: "Order uuid is required" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Order uuid is required",
+    });
   }
 
   const db = useDb();
   const result = await db.query(
     `SELECT base.*,
+            (SELECT usage.usage_status FROM tb_shopping_order_coupon_usages AS usage
+             WHERE usage.usage_order = base.uuid AND usage.deleted_at IS NULL
+             ORDER BY usage.id DESC LIMIT 1) AS order_coupon_usage_status,
             tax_snapshot.order_tax_detail,
             concat_ws(' ', customer.firstname, customer.lastname) AS order_customer_current_name,
             concat_ws(' ', user_c.firstname, user_c.lastname) AS created_username,

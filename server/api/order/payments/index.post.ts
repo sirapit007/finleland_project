@@ -198,7 +198,7 @@ export default defineEventHandler(async (event) => {
   try {
     await createClient.query("BEGIN");
     const lockedOrderResult = await createClient.query(
-      `SELECT uuid, order_payment_status
+      `SELECT uuid, order_payment_status, order_status, order_grand_total
        FROM tb_shopping_orders
        WHERE uuid::text = $1
          AND order_user = $2
@@ -207,13 +207,19 @@ export default defineEventHandler(async (event) => {
       [orderUuid, currentUser.uuid],
     );
     const lockedOrder = lockedOrderResult.rows[0];
-    if (!lockedOrder || lockedOrder.order_payment_status === "paid") {
+    if (
+      !lockedOrder ||
+      ["paid", "refunded"].includes(String(lockedOrder.order_payment_status)) ||
+      ["completed", "canceled"].includes(String(lockedOrder.order_status))
+    ) {
       throw createError({
         statusCode: 409,
         statusMessage: "คำสั่งซื้อนี้ชำระเงินแล้วหรือไม่พร้อมรับชำระ",
       });
     }
 
+    // The order may have changed while the slip was uploading.
+    order.order_grand_total = lockedOrder.order_grand_total;
     const paymentResult = await createClient.query(
       `INSERT INTO tb_shopping_order_payments (
          order_payment_order,
@@ -391,7 +397,10 @@ export default defineEventHandler(async (event) => {
   try {
     await finalClient.query("BEGIN");
     const lockedResult = await finalClient.query(
-      `SELECT payment.*, orders.order_payment_status AS current_order_payment_status
+      `SELECT payment.*, orders.order_payment_status AS current_order_payment_status,
+              orders.order_status AS current_order_status,
+              orders.deleted_at AS order_deleted_at,
+              orders.order_grand_total AS current_order_grand_total
        FROM tb_shopping_order_payments AS payment
        INNER JOIN tb_shopping_orders AS orders
          ON orders.uuid = payment.order_payment_order
@@ -408,9 +417,27 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    if (locked.current_order_payment_status === "paid") {
+    if (
+      ["paid", "refunded"].includes(String(locked.current_order_payment_status))
+    ) {
       attemptStatus = "rejected";
       rejectionReason = "คำสั่งซื้อนี้มีการชำระเงินที่ยืนยันแล้ว";
+    }
+
+    if (
+      locked.order_deleted_at ||
+      ["completed", "canceled"].includes(String(locked.current_order_status))
+    ) {
+      attemptStatus = "manual_review";
+      rejectionReason =
+        "คำสั่งซื้อถูกยกเลิกหรือปิดแล้ว กรุณาติดต่อเจ้าหน้าที่เพื่อตรวจสอบยอดเงิน";
+    } else if (
+      attemptStatus === "verified" &&
+      verifiedAmount !== toPaymentMoney(locked.current_order_grand_total)
+    ) {
+      attemptStatus = "manual_review";
+      rejectionReason =
+        "ยอดคำสั่งซื้อเปลี่ยนระหว่างตรวจสอบสลิป กรุณาให้เจ้าหน้าที่ตรวจสอบส่วนต่าง";
     }
 
     if (sendingBank && transactionRef) {
@@ -492,7 +519,7 @@ export default defineEventHandler(async (event) => {
       `UPDATE tb_shopping_orders
        SET order_payment_method = 'merchant_qr',
            order_payment_status = CASE
-             WHEN order_payment_status = 'paid' THEN 'paid'
+             WHEN order_payment_status IN ('paid', 'refunded') THEN order_payment_status
              ELSE $1::varchar(30)
            END,
            order_paid_at = CASE
@@ -531,7 +558,7 @@ export default defineEventHandler(async (event) => {
       await db.query(
         `UPDATE tb_shopping_orders
          SET order_payment_status = CASE
-               WHEN order_payment_status = 'paid' THEN 'paid'
+               WHEN order_payment_status IN ('paid', 'refunded') THEN order_payment_status
                ELSE 'failed'
              END,
              updated_by = $1,
