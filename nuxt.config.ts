@@ -14,22 +14,22 @@ export default defineNuxtConfig({
           rel: "icon",
           type: "image/x-icon",
           sizes: "16x16 32x32 48x48",
-          href: "/favicon.ico?v=3",
+          href: "/favicon.ico?v=4",
         },
         {
           rel: "icon",
           type: "image/png",
           sizes: "32x32",
-          href: "/favicon-32x32.png?v=3",
+          href: "/favicon-32x32.png?v=4",
         },
         {
           rel: "apple-touch-icon",
           sizes: "180x180",
-          href: "/apple-touch-icon.png?v=3",
+          href: "/apple-touch-icon.png?v=4",
         },
         {
           rel: "manifest",
-          href: "/site.webmanifest",
+          href: "/site.webmanifest?v=4",
         },
       ],
       meta: [
@@ -72,7 +72,7 @@ export default defineNuxtConfig({
     shippingStoreLatitude: process.env.SHIPPING_STORE_LATITUDE || "",
     shippingStoreLongitude: process.env.SHIPPING_STORE_LONGITUDE || "",
     shippingMapUserAgent:
-      process.env.SHIPPING_MAP_USER_AGENT || "FinlelandShoppingBasket/1.0",
+      process.env.SHIPPING_MAP_USER_AGENT || "FinlylandShoppingBasket/1.0",
     thaiBulkSmsOtpKey: process.env.THAIBULKSMS_OTP_KEY,
     thaiBulkSmsOtpSecret: process.env.THAIBULKSMS_OTP_SECRET,
     otpLength: process.env.OTP_LENGTH || "6",

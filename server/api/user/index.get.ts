@@ -21,9 +21,14 @@ export default defineEventHandler(async (event) => {
   condition += query?.deleted
     ? " AND base.deleted_at IS NOT NULL "
     : " AND base.deleted_at IS NULL ";
-  condition += query?.q
-    ? ` AND (base.firstname ILIKE '%${query?.q}%' OR base.lastname ILIKE '%${query?.q}%' OR base.phone ILIKE '%${query?.q}%' OR base.email ILIKE '%${query?.q}%' OR base.role ILIKE '%${query?.q}%' )`
-    : "";
+  if (query.q) {
+    params.push(`%${String(query.q).trim()}%`);
+    condition += ` AND (base.firstname ILIKE $${params.length} OR base.lastname ILIKE $${params.length} OR base.phone ILIKE $${params.length} OR base.email ILIKE $${params.length} OR base.role ILIKE $${params.length})`;
+  }
+  if (query.role) {
+    params.push(String(query.role));
+    condition += ` AND base.role = $${params.length}`;
+  }
 
   params.push(pageSize, offset);
   const limitParam = params.length - 1;
@@ -52,7 +57,7 @@ export default defineEventHandler(async (event) => {
   const total = totalResult.rows[0]?.total ?? 0;
 
   return {
-    rows: result.rows,
+    rows: result.rows.map(({ password, ...row }) => row),
     total,
     page,
     pageSize,

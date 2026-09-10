@@ -71,6 +71,9 @@ export default defineEventHandler(async (event) => {
   params.push(pageSize, offset);
   const result = await db.query(
     `SELECT base.*,
+            (SELECT usage.usage_status FROM tb_shopping_order_coupon_usages AS usage
+             WHERE usage.usage_order = base.uuid AND usage.deleted_at IS NULL
+             ORDER BY usage.id DESC LIMIT 1) AS order_coupon_usage_status,
             COALESCE(
               base.order_shipping_latitude,
               shipping_location.shipping_latitude

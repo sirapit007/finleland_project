@@ -1,3 +1,4 @@
+import { grantSignupCoupons } from "@@/server/utils/coupons";
 import { useDb } from "@@/server/utils/db";
 import { hashPassword } from "@@/server/utils/password";
 import {
@@ -154,12 +155,13 @@ export default defineEventHandler(async (event) => {
     passwordHash = hashedPassword;
     const result = await client.query<UserRow>(
       `INSERT INTO ${USERS_TABLE}
-        (firstname, lastname, phone, email, password, role)
-       VALUES ($1, $2, $3, $4, $5, $6)
+        (firstname, lastname, phone, email, password, role, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, clock_timestamp())
        RETURNING id, uuid, firstname, lastname, phone, email, role`,
       [firstname, lastname, phone, email, hashedPassword, role],
     );
     user = result.rows[0];
+    if (user) await grantSignupCoupons(client, user.uuid);
 
     await client.query(
       `UPDATE ${OTP_TABLE}

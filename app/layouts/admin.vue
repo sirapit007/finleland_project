@@ -19,14 +19,14 @@
             class="h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-base-300 bg-base-100"
           >
             <img
-              src="/icon-192.png"
-              alt="Finleland"
+              src="/admin-logo.jpg"
+              alt="Finlyland"
               class="h-full w-full object-cover"
             />
           </div>
 
           <div class="min-w-0">
-            <div class="font-bold truncate">Finleland</div>
+            <div class="font-bold truncate">Finlyland</div>
             <div class="text-xs text-base-content/50">Admin Dashboard</div>
           </div>
         </NuxtLink>
@@ -155,7 +155,7 @@
             <div class="font-semibold leading-none">Admin Panel</div>
 
             <div class="text-xs text-base-content/50">
-              Finleland Management System
+              Finlyland Management System
             </div>
           </div>
         </div>
@@ -257,6 +257,11 @@ const navManageItems = [
 ];
 
 const navEventItems = [
+  {
+    to: "/admin/coupons",
+    label: "คูปองส่วนลด",
+    icon: "lucide:ticket-percent",
+  },
   {
     to: "/admin/promotion",
     label: "โปรโมชั่นสินค้า",

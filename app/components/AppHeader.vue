@@ -22,7 +22,7 @@
           <div
             class="mx-auto flex h-9 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
           >
-            <span class="text-xs text-primary-content/80">Finleland Plaza</span>
+            <span class="text-xs text-primary-content/80">Finlyland Plaza</span>
 
             <div class="flex items-center gap-10" v-if="isLoggedIn">
               <NuxtLink
@@ -56,7 +56,7 @@
           <NuxtLink to="/" class="shrink-0" aria-label="หน้าแรก">
             <img
               src="@/assets/images/logo.png"
-              alt="Finleland Plaza"
+              alt="Finlyland Plaza"
               class="lg:h-24 sm:h-22 h-20 w-auto object-contain"
             />
           </NuxtLink>
@@ -278,7 +278,7 @@
         >
           <div>
             <p class="text-xs font-medium tracking-wide text-primary uppercase">
-              Finleland Plaza
+              Finlyland Plaza
             </p>
             <h2 class="mt-0.5 text-lg font-bold">เมนูของฉัน</h2>
           </div>

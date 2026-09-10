@@ -7,6 +7,7 @@ import { refreshOrderTotals } from "@@/server/utils/orderTotals";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type OrderItemBody = {
+  remove_coupon?: boolean;
   order_item_unit_price?: number;
   order_item_quantity?: number;
   order_item_discount?: number;
@@ -37,6 +38,22 @@ export default defineEventHandler(async (event) => {
   try {
     await client.query("BEGIN");
 
+    const parentResult = await client.query(
+      `SELECT order_item_order FROM tb_shopping_order_items
+       WHERE uuid::text = $1 AND deleted_at IS NULL`,
+      [uuid],
+    );
+    if (!parentResult.rows[0]) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Order item was not found",
+      });
+    }
+    await assertOrderItemsAreEditable(
+      client,
+      String(parentResult.rows[0].order_item_order),
+    );
+
     const currentResult = await client.query(
       `SELECT *
        FROM tb_shopping_order_items
@@ -54,8 +71,6 @@ export default defineEventHandler(async (event) => {
         statusMessage: "Order item was not found",
       });
     }
-
-    await assertOrderItemsAreEditable(client, String(current.order_item_order));
 
     const unitPrice = toMoney(
       body.order_item_unit_price === undefined
@@ -137,6 +152,7 @@ export default defineEventHandler(async (event) => {
       client,
       String(current.order_item_order),
       userUuid,
+      { removeCoupon: body?.remove_coupon === true },
     );
 
     await client.query("COMMIT");

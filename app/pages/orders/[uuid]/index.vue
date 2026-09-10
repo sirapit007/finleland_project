@@ -95,7 +95,9 @@
                 <Icon name="lucide:scan-qr-code" size="21" />
               </div>
               <div>
-                <h2 class="sm:text-lg text-base font-bold">1. สแกน QR เพื่อชำระเงิน</h2>
+                <h2 class="sm:text-lg text-base font-bold">
+                  1. สแกน QR เพื่อชำระเงิน
+                </h2>
                 <p class="mt-1 sm:text-sm text-xs text-base-content/60">
                   กรุณาตรวจชื่อผู้รับและโอนให้ตรงกับยอดของคำสั่งซื้อนี้
                 </p>
@@ -132,7 +134,11 @@
               </button>
             </div>
 
-            <div v-else role="alert" class="alert alert-warning mt-5 sm:text-sm text-xs">
+            <div
+              v-else
+              role="alert"
+              class="alert alert-warning mt-5 sm:text-sm text-xs"
+            >
               <Icon name="lucide:triangle-alert" size="18" />
               <span>
                 ร้านค้ายังไม่ได้ตั้งค่า PromptPay ID
@@ -152,7 +158,9 @@
                 <Icon name="lucide:image-up" size="21" />
               </div>
               <div>
-                <h2 class="sm:text-lg text-base font-bold">2. แนบสลิปเพื่อยืนยัน</h2>
+                <h2 class="sm:text-lg text-base font-bold">
+                  2. แนบสลิปเพื่อยืนยัน
+                </h2>
                 <p class="mt-1 sm:text-sm text-xs text-base-content/60">
                   ระบบจะตรวจยอด บัญชีผู้รับ และเลขอ้างอิงผ่าน SlipOK
                 </p>
@@ -230,9 +238,21 @@
               size="54"
               class="mx-auto text-success"
             />
-            <h2 class="mt-4 text-xl font-bold">ชำระเงินเรียบร้อยแล้ว</h2>
+            <h2 class="mt-4 text-xl font-bold">
+              {{
+                order.order_payment_method === "coupon" &&
+                Number(order.order_grand_total) === 0
+                  ? "คูปองครอบคลุมยอดสั่งซื้อทั้งหมดแล้ว"
+                  : "ชำระเงินเรียบร้อยแล้ว"
+              }}
+            </h2>
             <p class="mt-2 text-sm text-base-content/65">
-              ร้านค้าได้รับข้อมูลการชำระเงินและจะดำเนินการคำสั่งซื้อต่อไป
+              {{
+                order.order_payment_method === "coupon" &&
+                Number(order.order_grand_total) === 0
+                  ? "ไม่มีค่าใช้จ่ายเพิ่มเติม ร้านค้าจะดำเนินการคำสั่งซื้อต่อไป"
+                  : "ร้านค้าได้รับข้อมูลการชำระเงินและจะดำเนินการคำสั่งซื้อต่อไป"
+              }}
             </p>
           </section>
 

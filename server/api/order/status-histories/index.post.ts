@@ -1,3 +1,4 @@
+import { returnOrderCoupon } from "@@/server/utils/coupons";
 import { useDb } from "@@/server/utils/db";
 import { notifyLineCustomerOfOrderStatus } from "@@/server/utils/lineMessaging";
 import { createOrderItemTransactions } from "@@/server/utils/orderItemTransactions";
@@ -33,7 +34,10 @@ export default defineEventHandler(async (event) => {
     });
   }
   if (!orderStatuses.has(nextStatus)) {
-    throw createError({ statusCode: 400, statusMessage: "Order status is invalid" });
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Order status is invalid",
+    });
   }
 
   const db = useDb();
@@ -43,7 +47,7 @@ export default defineEventHandler(async (event) => {
     await client.query("BEGIN");
 
     const currentResult = await client.query(
-      `SELECT uuid::text AS uuid, order_status, order_user, order_number
+      `SELECT uuid::text AS uuid, order_status, order_user, order_number, order_payment_status, order_paid_at, order_grand_total, order_payment_method
        FROM tb_shopping_orders
        WHERE uuid::text = $1
          AND deleted_at IS NULL
@@ -54,15 +58,45 @@ export default defineEventHandler(async (event) => {
     const currentOrder = currentResult.rows[0];
 
     if (!currentOrder) {
-      throw createError({ statusCode: 404, statusMessage: "Order was not found" });
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Order was not found",
+      });
     }
 
-    const previousStatus = String(currentOrder.order_status || "").trim() || null;
+    const previousStatus =
+      String(currentOrder.order_status || "").trim() || null;
     if (previousStatus === nextStatus) {
       throw createError({
         statusCode: 409,
         statusMessage: "Order already has this status",
       });
+    }
+
+    if (previousStatus === "canceled") {
+      throw createError({
+        statusCode: 409,
+        statusMessage:
+          "คำสั่งซื้อที่ยกเลิกแล้วไม่สามารถเปิดใหม่ได้ กรุณาสร้างคำสั่งซื้อใหม่",
+      });
+    }
+    const couponCoveredOrder =
+      Number(currentOrder.order_grand_total) === 0 &&
+      currentOrder.order_payment_method === "coupon";
+    if (
+      nextStatus === "canceled" &&
+      (couponCoveredOrder ||
+        (!currentOrder.order_paid_at &&
+          !["paid", "refunded"].includes(
+            String(currentOrder.order_payment_status),
+          )))
+    ) {
+      await returnOrderCoupon(
+        client,
+        orderUuid,
+        admin.uuid,
+        "Order canceled before payment",
+      );
     }
 
     const orderResult = await client.query(
@@ -108,7 +142,8 @@ export default defineEventHandler(async (event) => {
         ? await createOrderItemTransactions(client, {
             createdBy: admin.uuid,
             orderUuid,
-            statusHistoryUuid: String(historyResult.rows[0]?.uuid || "") || null,
+            statusHistoryUuid:
+              String(historyResult.rows[0]?.uuid || "") || null,
           })
         : [];
 
@@ -125,7 +160,10 @@ export default defineEventHandler(async (event) => {
         orderNumber: String(currentOrder.order_number),
         status: nextStatus,
       });
-      lineNotification = { sent: notification.sent, reason: notification.reason };
+      lineNotification = {
+        sent: notification.sent,
+        reason: notification.reason,
+      };
     } catch (error) {
       console.error("Unable to send LINE order status notification", error);
       lineNotification = {

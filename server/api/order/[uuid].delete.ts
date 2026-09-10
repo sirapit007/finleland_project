@@ -1,3 +1,4 @@
+import { returnOrderCoupon } from "@@/server/utils/coupons";
 import { useDb } from "@@/server/utils/db";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
@@ -23,6 +24,35 @@ export default defineEventHandler(async (event) => {
 
   try {
     await client.query("BEGIN");
+    const currentResult = await client.query(
+      `SELECT order_payment_status, order_paid_at FROM tb_shopping_orders
+       WHERE uuid::text = $1 AND deleted_at IS NULL FOR UPDATE`,
+      [uuid],
+    );
+    const current = currentResult.rows[0];
+    if (!current) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Order was not found",
+      });
+    }
+    if (
+      current.order_paid_at ||
+      ["paid", "refunded"].includes(String(current.order_payment_status))
+    ) {
+      throw createError({
+        statusCode: 409,
+        statusMessage:
+          "คำสั่งซื้อที่ชำระเงินแล้วต้องเก็บประวัติไว้ กรุณาใช้การยกเลิกและคืนเงิน",
+      });
+    }
+    await returnOrderCoupon(
+      client,
+      uuid,
+      userUuid,
+      "Unpaid order deleted by admin",
+    );
+
     const result = await client.query(
       `UPDATE tb_shopping_orders
        SET updated_by = $1,
@@ -36,7 +66,10 @@ export default defineEventHandler(async (event) => {
     );
 
     if (!result.rows[0]) {
-      throw createError({ statusCode: 404, statusMessage: "Order was not found" });
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Order was not found",
+      });
     }
 
     await client.query(

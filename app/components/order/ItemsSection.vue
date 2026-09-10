@@ -161,6 +161,15 @@
   </section>
 
   <OrderAddItemModal ref="addItemModal" :order="order" :detail="detail" />
+  <ModalRemoveConfirm
+    v-model="couponConflictOpen"
+    title="รายการใหม่ไม่ผ่านเงื่อนไขคูปอง"
+    :message="couponConflictMessage"
+    confirm-text="ถอดคูปองและบันทึก"
+    variant="warning"
+    :loading="actionLoading"
+    @confirm="confirmCouponChange"
+  />
 
   <ModalRemoveConfirm
     v-model="isRemoveConfirmOpen"
@@ -191,11 +200,21 @@ const addItemModal = ref<{ open: () => void } | null>(null);
 const removeTarget = ref<Row | null>(null);
 const isRemoveConfirmOpen = ref(false);
 const actionLoading = ref(false);
+const couponConflictOpen = ref(false);
+const couponConflictMessage = ref("");
+const pendingCouponChange = ref<null | {
+  item: Row;
+  quantity?: number;
+  action: "update" | "remove";
+}>(null);
 const { showToast } = useToast();
 
 const items = computed(() => props.detail?.items || []);
-const isTerminal = computed(() =>
-  ["completed", "canceled"].includes(props.order.order_status),
+const isTerminal = computed(
+  () =>
+    ["completed", "canceled"].includes(props.order.order_status) ||
+    Boolean(props.order.order_paid_at) ||
+    ["paid", "refunded"].includes(String(props.order.order_payment_status)),
 );
 const removeMessage = computed(
   () =>
@@ -241,49 +260,97 @@ const reloadDetails = async () => {
   await refreshNuxtData();
 };
 
-const changeQuantity = async (item: Row, amount: number) => {
-  const quantity = Number(item.order_item_quantity) + amount;
+const couponConflict = (
+  error: any,
+  action: NonNullable<typeof pendingCouponChange.value>,
+) => {
+  const code = error?.data?.data?.code || error?.data?.code;
+  if (code !== "ORDER_COUPON_CONDITIONS_CHANGED") return false;
+  pendingCouponChange.value = action;
+  couponConflictMessage.value =
+    (error?.data?.statusMessage || "สินค้าไม่ผ่านเงื่อนไขคูปองเดิม") +
+    " ต้องการถอดส่วนลดคูปอง คืนสิทธิ์ให้ผู้ใช้ และบันทึกรายการสินค้าใหม่พร้อมกันหรือไม่";
+  isRemoveConfirmOpen.value = false;
+  couponConflictOpen.value = true;
+  return true;
+};
+
+const saveQuantity = async (
+  item: Row,
+  quantity: number,
+  removeCoupon = false,
+) => {
   if (quantity < 1 || actionLoading.value) return;
   actionLoading.value = true;
-
   try {
     await $fetch("/api/order/items/" + item.uuid, {
       method: "PUT",
-      body: { order_item_quantity: quantity },
+      body: { order_item_quantity: quantity, remove_coupon: removeCoupon },
     });
-    showToast("ปรับจำนวนสินค้าแล้ว");
+    couponConflictOpen.value = false;
+    pendingCouponChange.value = null;
+    showToast(
+      removeCoupon
+        ? "ปรับจำนวนสินค้าและคืนสิทธิ์คูปองแล้ว"
+        : "ปรับจำนวนสินค้าแล้ว",
+    );
     await reloadDetails();
   } catch (error: any) {
-    showToast(
-      error?.data?.statusMessage || "ไม่สามารถปรับจำนวนสินค้าได้",
-      "error",
-    );
+    if (
+      !couponConflict(error, { action: "update", item: { ...item }, quantity })
+    ) {
+      showToast(
+        error?.data?.statusMessage || "ไม่สามารถปรับจำนวนสินค้าได้",
+        "error",
+      );
+    }
   } finally {
     actionLoading.value = false;
   }
 };
+
+const changeQuantity = (item: Row, amount: number) =>
+  saveQuantity(item, Number(item.order_item_quantity) + amount);
 
 const askRemoveItem = (item: Row) => {
   removeTarget.value = item;
   isRemoveConfirmOpen.value = true;
 };
 
-const removeItem = async () => {
-  if (!removeTarget.value || actionLoading.value) return;
+const performRemoveItem = async (item: Row, removeCoupon = false) => {
+  if (actionLoading.value) return;
   actionLoading.value = true;
-
   try {
-    await $fetch("/api/order/items/" + removeTarget.value.uuid, {
+    await $fetch("/api/order/items/" + item.uuid, {
       method: "DELETE",
+      body: { remove_coupon: removeCoupon },
     });
     isRemoveConfirmOpen.value = false;
-    showToast("ลบรายการสินค้าแล้ว");
+    couponConflictOpen.value = false;
+    pendingCouponChange.value = null;
+    showToast(
+      removeCoupon ? "ลบสินค้าและคืนสิทธิ์คูปองแล้ว" : "ลบรายการสินค้าแล้ว",
+    );
     await reloadDetails();
   } catch (error: any) {
-    showToast(error?.data?.statusMessage || "ไม่สามารถลบสินค้าได้", "error");
+    if (!couponConflict(error, { action: "remove", item: { ...item } })) {
+      showToast(error?.data?.statusMessage || "ไม่สามารถลบสินค้าได้", "error");
+    }
   } finally {
     actionLoading.value = false;
     removeTarget.value = null;
   }
+};
+
+const removeItem = () => {
+  if (removeTarget.value) return performRemoveItem(removeTarget.value);
+};
+
+const confirmCouponChange = () => {
+  const change = pendingCouponChange.value;
+  if (!change) return;
+  return change.action === "remove"
+    ? performRemoveItem(change.item, true)
+    : saveQuantity(change.item, Number(change.quantity), true);
 };
 </script>

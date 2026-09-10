@@ -7,6 +7,7 @@ import { refreshOrderTotals } from "@@/server/utils/orderTotals";
 import { requireCurrentAdmin } from "@@/server/utils/session";
 
 type OrderItemBody = {
+  remove_coupon?: boolean;
   user?: { uuid?: string };
 };
 
@@ -28,6 +29,22 @@ export default defineEventHandler(async (event) => {
 
   try {
     await client.query("BEGIN");
+    const parentResult = await client.query(
+      `SELECT order_item_order FROM tb_shopping_order_items
+       WHERE uuid::text = $1 AND deleted_at IS NULL`,
+      [uuid],
+    );
+    if (!parentResult.rows[0]) {
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Order item was not found",
+      });
+    }
+    await assertOrderItemsAreEditable(
+      client,
+      String(parentResult.rows[0].order_item_order),
+    );
+
     const currentResult = await client.query(
       `SELECT *
        FROM tb_shopping_order_items
@@ -40,13 +57,11 @@ export default defineEventHandler(async (event) => {
     const current = currentResult.rows[0];
 
     if (!current) {
-      throw createError({ statusCode: 404, statusMessage: "Order item was not found" });
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Order item was not found",
+      });
     }
-
-    await assertOrderItemsAreEditable(
-      client,
-      String(current.order_item_order),
-    );
 
     const result = await client.query(
       `UPDATE tb_shopping_order_items
@@ -71,6 +86,7 @@ export default defineEventHandler(async (event) => {
       client,
       String(current.order_item_order),
       userUuid,
+      { removeCoupon: body?.remove_coupon === true },
     );
 
     await client.query("COMMIT");
