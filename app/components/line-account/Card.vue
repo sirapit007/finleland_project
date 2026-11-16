@@ -41,6 +41,9 @@
           </p>
         </div>
       </div>
+      <p v-if="!adminContext && !activeLineAccount.line_login_verified_at" class="mt-3 text-sm text-base-content/70">
+        กรุณายืนยัน LINE อีกครั้งก่อนใช้เข้าสู่ระบบ การแจ้งเตือนคำสั่งซื้อยังใช้งานได้ตามปกติ
+      </p>
       <div v-if="!adminContext" class="mt-4 flex gap-2">
         <button
           class="btn btn-outline btn-primary btn-sm flex-1"
@@ -51,7 +54,7 @@
             v-if="isLineConnectStarting"
             class="loading loading-spinner loading-xs"
           />
-          <template v-else>เชื่อมบัญชีอื่น</template>
+          <template v-else>{{ activeLineAccount.line_login_verified_at ? 'เชื่อมบัญชีอื่น' : 'ยืนยัน LINE อีกครั้ง' }}</template>
         </button>
         <button
           class="btn btn-outline btn-error btn-sm flex-1"

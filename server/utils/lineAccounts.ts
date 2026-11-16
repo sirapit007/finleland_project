@@ -70,6 +70,7 @@ export async function upsertLineAccount(input: LineAccountInput) {
          SET line_user_id = $1,
              line_display_name = $2,
              line_picture_url = $3,
+             line_login_verified_at = now(),
              line_connected_at = now(),
              line_disconnected_at = NULL,
              line_is_connected = TRUE,
@@ -90,8 +91,8 @@ export async function upsertLineAccount(input: LineAccountInput) {
     } else {
       result = await client.query(
         `INSERT INTO ${TABLE_NAME}
-          (line_user, line_provider_id, line_user_id, line_display_name, line_picture_url, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6)
+          (line_user, line_provider_id, line_user_id, line_display_name, line_picture_url, line_login_verified_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, now(), $6)
          RETURNING *`,
         [
           input.lineUser,
@@ -108,6 +109,12 @@ export async function upsertLineAccount(input: LineAccountInput) {
     return result.rows[0];
   } catch (error) {
     await client.query("ROLLBACK");
+    if ((error as { code?: string }).code === "23505") {
+      throw createError({
+        statusCode: 409,
+        statusMessage: "This LINE account is already connected to another user",
+      });
+    }
     throw error;
   } finally {
     client.release();

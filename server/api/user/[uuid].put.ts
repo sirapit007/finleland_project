@@ -1,5 +1,5 @@
 import { useDb } from "@@/server/utils/db";
-import { hashPassword } from "@@/server/utils/password";
+import { hashPassword, verifyPassword } from "@@/server/utils/password";
 import { requireCurrentActor } from "@@/server/utils/session";
 
 type UserBody = {
@@ -8,6 +8,7 @@ type UserBody = {
   phone?: string;
   email?: string;
   password?: string;
+  currentPassword?: string;
   role?: string;
 };
 const allowedRoles = new Set(["User", "Superuser", "Admin"]);
@@ -97,6 +98,28 @@ export default defineEventHandler(async (event) => {
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
         lockKey,
       ]);
+    }
+
+    // A session alone must not be enough to change the recovery phone.
+    if (!actor.isAdmin) {
+      const current = await client.query<{ phone: string; password: string }>(
+        `SELECT phone, password FROM ${tableName}
+         WHERE uuid = $1 AND deleted_at IS NULL FOR UPDATE`,
+        [uuid],
+      );
+      const user = current.rows[0];
+      if (!user) {
+        throw createError({ statusCode: 404, statusMessage: "User not found" });
+      }
+      if (String(user.phone).trim() !== phone) {
+        const currentPassword = String(body.currentPassword || "");
+        if (!currentPassword || !(await verifyPassword(currentPassword, user.password)).valid) {
+          throw createError({
+            statusCode: 403,
+            statusMessage: "กรุณายืนยันรหัสผ่านปัจจุบันให้ถูกต้องก่อนเปลี่ยนเบอร์โทรศัพท์",
+          });
+        }
+      }
     }
 
     const duplicate = await client.query(

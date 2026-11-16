@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto";
 import { grantSignupCoupons } from "@@/server/utils/coupons";
+import { clearLineSignup, getLineSignup } from "@@/server/utils/lineAuth";
+import { getLineLoginConfig } from "@@/server/utils/lineLogin";
 import { useDb } from "@@/server/utils/db";
 import { hashPassword } from "@@/server/utils/password";
 import {
@@ -17,6 +20,7 @@ type RegisterBody = {
   email?: string;
   password?: string;
   challengeId?: string;
+  lineSignup?: boolean;
 };
 
 type UserRow = {
@@ -93,6 +97,14 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  const lineSignup = body.lineSignup === true ? getLineSignup(event, getLineLoginConfig()) : null;
+  if (body.lineSignup === true && !lineSignup) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "การยืนยัน LINE หมดอายุ กรุณาเริ่มใหม่",
+    });
+  }
+
   const db = useDb();
   const role = "User";
   const client = await db.connect();
@@ -151,6 +163,18 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    if (lineSignup) {
+      const linked = await client.query(
+        `SELECT 1 FROM tb_user_line_accounts
+         WHERE line_provider_id = $1 AND line_user_id = $2 AND deleted_at IS NULL
+         LIMIT 1`,
+        [lineSignup.providerId, lineSignup.lineUserId],
+      );
+      if (linked.rowCount) {
+        throw createError({ statusCode: 409, statusMessage: "LINE นี้เชื่อมต่อบัญชีอื่นอยู่แล้ว" });
+      }
+    }
+
     const hashedPassword = await hashPassword(password);
     passwordHash = hashedPassword;
     const result = await client.query<UserRow>(
@@ -163,15 +187,42 @@ export default defineEventHandler(async (event) => {
     user = result.rows[0];
     if (user) await grantSignupCoupons(client, user.uuid);
 
-    await client.query(
-      `UPDATE ${OTP_TABLE}
-       SET consumed_at = NOW()
-       WHERE uuid = $1`,
-      [challengeId],
-    );
+    if (user && lineSignup) {
+      await client.query(
+        `INSERT INTO tb_user_line_accounts
+          (line_user, line_provider_id, line_user_id, line_display_name, line_picture_url,
+           line_is_connected, line_connected_at, line_login_verified_at, created_by)
+         VALUES ($1, $2, $3, $4, $5, TRUE, now(), now(), $1)`,
+        [user.uuid, lineSignup.providerId, lineSignup.lineUserId, lineSignup.displayName, lineSignup.pictureUrl],
+      );
+    }
+
+    if (lineSignup) {
+      await client.query(
+        `UPDATE ${OTP_TABLE}
+         SET consumed_at = NOW(), line_signup_proof_hash = $2
+         WHERE uuid = $1`,
+        [challengeId, createHash("sha256").update(lineSignup.signupId).digest("hex")],
+      );
+    } else {
+      await client.query(
+        `UPDATE ${OTP_TABLE}
+         SET consumed_at = NOW()
+         WHERE uuid = $1`,
+        [challengeId],
+      );
+    }
     await client.query("COMMIT");
   } catch (error) {
     await client.query("ROLLBACK");
+    if ((error as { code?: string; constraint?: string }).code === "23505" &&
+        (error as { constraint?: string }).constraint === "tb_user_line_accounts_active_identity_unique") {
+      throw createError({ statusCode: 409, statusMessage: "LINE นี้เชื่อมต่อบัญชีอื่นอยู่แล้ว" });
+    }
+    if ((error as { code?: string; constraint?: string }).code === "23505" &&
+        (error as { constraint?: string }).constraint === "tb_otp_challenges_line_signup_proof_unique") {
+      throw createError({ statusCode: 403, statusMessage: "การยืนยัน LINE หมดอายุ กรุณาเริ่มใหม่" });
+    }
     throw error;
   } finally {
     client.release();
@@ -183,6 +234,8 @@ export default defineEventHandler(async (event) => {
       statusMessage: "Unable to create user",
     });
   }
+
+  if (lineSignup) clearLineSignup(event);
 
   const token = signSessionToken(
     {
@@ -213,3 +266,6 @@ export default defineEventHandler(async (event) => {
     },
   };
 });
+
+
+

@@ -71,6 +71,19 @@
       </fieldset>
     </div>
 
+    <fieldset v-if="phoneChanged" class="fieldset">
+      <legend class="fieldset-legend">ยืนยันรหัสผ่านปัจจุบันเพื่อเปลี่ยนเบอร์โทรศัพท์</legend>
+      <input
+        v-model="currentPassword"
+        type="password"
+        autocomplete="current-password"
+        class="input input-sm w-full"
+        placeholder="กรอกรหัสผ่านปัจจุบัน"
+        required
+        :disabled="isSavingProfile"
+      />
+    </fieldset>
+
     <div
       v-if="isAdminContext"
       class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4"
@@ -142,9 +155,14 @@ const { setCurrentUser, syncFromStorage, user: currentUser } = useCurrentUser();
 const profileForm = ref<UserEditorForm>(createUserEditorForm());
 const profileError = ref("");
 const isSavingProfile = ref(false);
+const currentPassword = ref("");
 
 const isAdminContext = computed(() => props.adminContext !== undefined);
 const isAdminCreate = computed(() => props.adminContext?.mode === "create");
+const phoneChanged = computed(() =>
+  !isAdminContext.value && !!currentUser.value?.uuid &&
+  profileForm.value.phone.trim() !== String(currentUser.value.phone || "").trim(),
+);
 const submitLabel = computed(() => {
   if (!isAdminContext.value) return "บันทึกข้อมูลผู้ใช้";
   return isAdminCreate.value ? "เพิ่มผู้ใช้งาน" : "บันทึกการแก้ไข";
@@ -196,6 +214,11 @@ const saveProfile = async () => {
     return;
   }
 
+  if (phoneChanged.value && !currentPassword.value) {
+    profileError.value = "กรุณากรอกรหัสผ่านปัจจุบันเพื่อเปลี่ยนเบอร์โทรศัพท์";
+    return;
+  }
+
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     profileError.value = "กรุณากรอกอีเมลให้ถูกต้อง";
     return;
@@ -232,6 +255,7 @@ const saveProfile = async () => {
     body.role = role;
     if (password) body.password = password;
   }
+  if (phoneChanged.value) body.currentPassword = currentPassword.value;
 
   const path = isAdminCreate.value
     ? "/api/user"
@@ -239,7 +263,11 @@ const saveProfile = async () => {
   const method = isAdminCreate.value ? "POST" : "PUT";
   const requestRow: UserRecord = {
     ...(props.adminContext?.mode === "edit" ? props.adminContext.user : {}),
-    ...body,
+    firstname,
+    lastname,
+    phone,
+    email,
+    ...(isAdminContext.value ? { role } : {}),
   };
 
   profileForm.value.phone = phone;
@@ -259,6 +287,7 @@ const saveProfile = async () => {
 
     const savedRow: any = { ...requestRow, ...response.row };
     profileForm.value = createUserEditorForm(savedRow);
+    currentPassword.value = "";
 
     if (isAdminContext.value) {
       emit("saved", savedRow);

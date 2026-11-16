@@ -10,7 +10,7 @@
         ยืนยันเบอร์โทรศัพท์
       </h1>
       <p class="mt-2 text-xs font-semibold text-base-content/60 sm:text-sm">
-        กรอกรหัส OTP ที่ส่งไปยัง {{ maskedPhone }}
+        {{ conditionalDelivery ? 'หากเบอร์นี้มีบัญชี ระบบจะส่งรหัส OTP ไปยัง' : 'กรอกรหัส OTP ที่ส่งไปยัง' }} {{ maskedPhone }}
       </p>
       <p v-if="refno" class="mt-1 text-xs text-base-content/50">
         หมายเลขอ้างอิง {{ refno }}
@@ -98,6 +98,7 @@ const props = withDefaults(
     resendAfter?: number;
     loading?: boolean;
     errorMessage?: string;
+    conditionalDelivery?: boolean;
   }>(),
   {
     refno: "",
@@ -106,6 +107,7 @@ const props = withDefaults(
     resendAfter: 60,
     loading: false,
     errorMessage: "",
+    conditionalDelivery: false,
   },
 );
 
