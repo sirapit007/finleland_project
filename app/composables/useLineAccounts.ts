@@ -9,6 +9,7 @@ export type LineAccount = {
   line_connected_at: string;
   line_disconnected_at: string | null;
   line_is_connected: boolean;
+  line_login_verified_at?: string | null;
   created_at: string;
   updated_at: string | null;
 };

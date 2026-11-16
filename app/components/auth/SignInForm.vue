@@ -70,20 +70,24 @@
 
       <NuxtLink
         v-if="!props.admin"
+        to="/auth/forgot-password"
+        external
         class="text-primary sm:text-sm text-xs font-semibold"
       >
-        <!-- to="/admin/forgot-password" -->
         ลืมรหัสผ่าน?
       </NuxtLink>
     </div>
 
-    <button
-      class="btn sm:btn-md btn-sm btn-primary w-full"
-      type="submit"
-      :disabled="loading"
-    >
-      {{ loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ" }}
-    </button>
+    <div class="space-y-2">
+      <button
+        class="btn sm:btn-md btn-sm btn-primary w-full"
+        type="submit"
+        :disabled="loading"
+      >
+        {{ loading ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ" }}
+      </button>
+      <AuthLineButton v-if="!props.admin" intent="login" />
+    </div>
 
     <div
       v-if="!props.admin"
@@ -115,6 +119,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   admin?: boolean;
+  afterLogin?: "/" | "/profile";
 }>();
 const emit = defineEmits(["update:leaving"]);
 
@@ -141,6 +146,11 @@ const onSubmit = async () => {
 
       if (props.admin) {
         await navigateTo("/admin", { replace: true });
+        return;
+      }
+
+      if (props.afterLogin) {
+        window.location.assign(props.afterLogin);
         return;
       }
 

@@ -5,6 +5,8 @@ import {
   readLineConnectState,
 } from "@@/server/utils/lineLogin";
 import { upsertLineAccount } from "@@/server/utils/lineAccounts";
+import { requireCurrentUser } from "@@/server/utils/session";
+import { clearLineConnectVerifier, takeLineConnectVerifier } from "@@/server/utils/lineConnectPkce";
 
 type LineTokenResponse = {
   id_token?: string;
@@ -25,6 +27,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event);
 
   if (query.error) {
+    clearLineConnectVerifier(event);
     clearLineConnectStateCookie(event);
     return sendRedirect(event, profileRedirect("cancelled"));
   }
@@ -33,9 +36,11 @@ export default defineEventHandler(async (event) => {
   const state = String(query.state || "");
   const config = getLineLoginConfig();
   const statePayload = readLineConnectState(state, config.stateSecret);
+  const codeVerifier = takeLineConnectVerifier(event);
 
   if (
     !code ||
+    !codeVerifier ||
     !statePayload ||
     !hasLineConnectStateCookie(event, statePayload.nonce)
   ) {
@@ -46,6 +51,10 @@ export default defineEventHandler(async (event) => {
   clearLineConnectStateCookie(event);
 
   try {
+    const currentUser = await requireCurrentUser(event);
+    if (currentUser.uuid !== statePayload.userUuid) {
+      throw new Error("LINE connection session changed");
+    }
     const token = await $fetch<LineTokenResponse>(
       "https://api.line.me/oauth2/v2.1/token",
       {
@@ -53,6 +62,7 @@ export default defineEventHandler(async (event) => {
         body: new URLSearchParams({
           grant_type: "authorization_code",
           code,
+          code_verifier: codeVerifier,
           redirect_uri: config.callbackUrl,
           client_id: config.channelId,
           client_secret: config.channelSecret,

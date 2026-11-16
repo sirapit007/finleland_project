@@ -58,6 +58,7 @@ export default defineNuxtConfig({
     lineLoginChannelId: process.env.LINE_LOGIN_CHANNEL_ID,
     lineLoginChannelSecret: process.env.LINE_LOGIN_CHANNEL_SECRET,
     lineLoginCallbackUrl: process.env.LINE_LOGIN_CALLBACK_URL,
+    lineLoginEmailEnabled: process.env.LINE_LOGIN_EMAIL_ENABLED === "true",
     lineProviderId: process.env.LINE_PROVIDER_ID,
     lineStateSecret: process.env.LINE_STATE_SECRET,
     lineMessagingChannelSecret: process.env.LINE_MESSAGING_CHANNEL_SECRET,
@@ -122,5 +123,5 @@ export default defineNuxtConfig({
       ),
     },
   },
-  modules: ["@nuxt/icon"],
+  modules: ["@nuxt/icon", "shadcn-nuxt"],
 });

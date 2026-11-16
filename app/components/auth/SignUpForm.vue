@@ -21,6 +21,9 @@
       <p class="mt-2 sm:text-sm text-xs text-base-content/60 font-semibold">
         สร้างบัญชีเพื่อรับสิทธิประโยชน์มากมาย
       </p>
+      <p v-if="props.lineSignup && !lineExpired" class="mt-2 text-sm text-success">
+        ยืนยันบัญชี LINE แล้ว กรุณากรอกข้อมูลเพื่อสมัครสมาชิก
+      </p>
     </div>
 
     <form @submit.prevent="onSubmit" class="space-y-2" novalidate>
@@ -28,6 +31,10 @@
         <Icon name="lucide:message-circle-x" size="20" />
         <span>{{ errorMessage }}</span>
       </div>
+      <NuxtLink v-if="lineDuplicate" to="/auth/line?result=signin" class="link link-primary text-sm">
+        ไปหน้าเข้าสู่ระบบ
+      </NuxtLink>
+      <AuthLineButton v-if="lineExpired" intent="register" />
       <div class="grid grid-cols-2 sm:gap-4 gap-2">
         <fieldset class="fieldset">
           <legend class="fieldset-legend sm:text-sm text-xs">ชื่อ</legend>
@@ -197,10 +204,12 @@
       <button
         class="btn btn-primary sm:btn-md btn-sm w-full"
         type="submit"
-        :disabled="!base.acceptPolicy || loading"
+        :disabled="!base.acceptPolicy || loading || lineDuplicate || lineExpired"
       >
         {{ loading ? "กำลังส่งรหัส OTP..." : "สมัครสมาชิก" }}
       </button>
+
+      <AuthLineButton v-if="!props.lineSignup" intent="register" />
 
       <div
         class="sm:text-sm text-xs text-center flex items-center justify-center gap-1"
@@ -219,6 +228,7 @@
 </template>
 
 <script setup lang="ts">
+const props = defineProps<{ lineSignup?: boolean; lineEmail?: string; afterSignup?: "/" }>();
 const emit = defineEmits(["update:leaving"]);
 
 type SignUpStep = "form" | "otp";
@@ -261,12 +271,24 @@ const show = ref<any>({
 
 const loading = ref<boolean>(false);
 const errorMessage = ref<string>("");
+const lineDuplicate = ref(false);
+const lineExpired = ref(false);
 const step = ref<SignUpStep>("form");
 const challenge = ref<OtpChallenge>(emptyChallenge());
 const fieldErrors = reactive({
   phone: "",
   password: "",
 });
+
+async function checkLinePending() {
+  if (!props.lineSignup) return true;
+  const pending = await $fetch<{ pending: boolean }>("/api/auth/line/pending");
+  if (pending.pending) return true;
+  lineExpired.value = true;
+  step.value = "form";
+  errorMessage.value = "การยืนยัน LINE หมดอายุ กรุณาเริ่มใหม่";
+  return false;
+}
 
 const onSubmit = async () => {
   if (loading.value) return;
@@ -312,6 +334,7 @@ const onSubmit = async () => {
 
   loading.value = true;
   try {
+    if (!await checkLinePending()) return;
     const response = await $fetch<OtpChallenge>("/api/auth/otp/request", {
       method: "POST",
       body: {
@@ -383,18 +406,30 @@ const onVerifyOtp = async (pin: string) => {
         email: String(base.value.email || "").trim(),
         password: String(base.value.password || ""),
         challengeId: challenge.value.challengeId,
+        lineSignup: Boolean(props.lineSignup),
       },
     });
 
     if (response.token) {
       localStorage.setItem("web-user", JSON.stringify(response.user));
-      await window.location.reload();
+      if (props.lineSignup || props.afterSignup) {
+        window.location.assign(props.afterSignup || "/");
+      } else {
+        window.location.reload();
+      }
     }
   } catch (error: unknown) {
     errorMessage.value = getApiErrorMessage(
       error,
       "ไม่สามารถยืนยัน OTP หรือสมัครสมาชิกได้ กรุณาลองใหม่อีกครั้ง",
     );
+    if (props.lineSignup && errorMessage.value === "LINE นี้เชื่อมต่อบัญชีอื่นอยู่แล้ว") {
+      lineDuplicate.value = true;
+      step.value = "form";
+    } else if (props.lineSignup && errorMessage.value === "การยืนยัน LINE หมดอายุ กรุณาเริ่มใหม่") {
+      lineExpired.value = true;
+      step.value = "form";
+    }
   } finally {
     loading.value = false;
   }
@@ -407,6 +442,7 @@ const onResendOtp = async () => {
   errorMessage.value = "";
 
   try {
+    if (!await checkLinePending()) return;
     const response = await $fetch<OtpChallenge>("/api/auth/otp/request", {
       method: "POST",
       body: {
@@ -445,7 +481,7 @@ onMounted(() => {
     firstname: "",
     lastname: "",
     phone: "",
-    email: "",
+    email: props.lineEmail || "",
     password: "",
     confirmPassword: "",
     acceptPolicy: false,
